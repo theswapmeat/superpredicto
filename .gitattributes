@@ -1,0 +1,12 @@
+# Automatically normalize line endings
+* text=auto
+
+# Ensure text files use LF in repo (cross-platform safety)
+*.py text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+*.sh text eol=lf

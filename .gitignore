@@ -1,0 +1,29 @@
+# === Python (server/) ===
+server/__pycache__/
+server/**/*.py[cod]
+
+# Virtual environment
+server/venv/
+
+# Flask / Django / other server frameworks
+*.log
+*.sqlite3
+instance/
+.env
+
+# === Node / Frontend (client/) ===
+client/node_modules/
+client/dist/
+client/.next/
+client/.env.local
+client/.env.*.local
+client/.turbo/
+client/yarn.lock
+client/package-lock.json
+
+# === VS Code ===
+.vscode/
+
+# === System Files ===
+.DS_Store
+Thumbs.db

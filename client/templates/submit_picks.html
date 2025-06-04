@@ -1,0 +1,25 @@
+<!-- templates/submit_picks.html -->
+{% extends "base.html" %}
+{% block content %}
+<h2>Submit/Edit Your Picks</h2>
+<form method="post">
+    {% for game in games %}
+        <div class="card mb-3">
+            <div class="card-header">
+                {{ game.home_team }} vs {{ game.away_team }} ({{ game.date_of_game }} {{ game.time_of_game }})
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <input type="number" class="form-control" name="home_score_{{ game.id }}" placeholder="Home Score">
+                    </div>
+                    <div class="col-6">
+                        <input type="number" class="form-control" name="away_score_{{ game.id }}" placeholder="Away Score">
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-success w-100">Submit Picks</button>
+</form>
+{% endblock %}

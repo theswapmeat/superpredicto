@@ -1,0 +1,27 @@
+<!-- templates/predictions.html -->
+{% extends "base.html" %}
+{% block content %}
+<h2>All User Predictions</h2>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Game</th>
+                <th>Prediction</th>
+                <th>Points Earned</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for prediction in predictions %}
+            <tr>
+                <td>{{ prediction.user.email }}</td>
+                <td>{{ prediction.game.home_team }} vs {{ prediction.game.away_team }}</td>
+                <td>{{ prediction.home_score_prediction }} - {{ prediction.away_score_prediction }}</td>
+                <td>{{ prediction.points_earned }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
