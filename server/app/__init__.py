@@ -33,8 +33,7 @@ def create_app():
     migrate.init_app(app, db)
 
     # Register blueprints
-    from .routes import main
-    from routes.keepalive import keepalive_bp
+    from .routes import main, keepalive_bp
 
     app.register_blueprint(main)
     app.register_blueprint(keepalive_bp)

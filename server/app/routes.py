@@ -82,6 +82,13 @@ def index():
         leaderboard=leaderboard_dicts,
     )
 
+# --- Keep Alive Route ---
+keepalive_bp = Blueprint("keepalive", __name__)
+
+@keepalive_bp.route("/keepalive", methods=["GET"])
+def keep_alive():
+    return jsonify({"status": "ok"}), 200
+
 
 # --- Login Required Decorator ---
 def login_required(f):
