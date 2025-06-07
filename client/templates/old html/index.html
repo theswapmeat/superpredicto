@@ -42,30 +42,17 @@
             class="text-center {% if loop.index == 1 %}table-warning {% elif loop.index == 2 %}table-info {% elif loop.index == 3 %}table-success {% endif %}"
           >
             <td>{{ loop.index }}</td>
-            <td>{{ entry.name or '-' }}</td>
-            <td class="border-thick-right">
-              {{ entry.points if entry.points is not none else '-' }}
-            </td>
-            <td>
-              {{ entry.perfect_picks if entry.perfect_picks is not none else '-'
-              }}
+            <td>{{ entry.name }}</td>
+            <td class="border-thick-right">{{ entry.points }}</td>
+            <td>{{ entry.perfect_picks }}</td>
+            <td class="d-none d-sm-table-cell">
+              {{ entry.picks_scoring_two }}
             </td>
             <td class="d-none d-sm-table-cell">
-              {{ entry.picks_scoring_two if entry.picks_scoring_two is not none
-              else '-' }}
+              {{ entry.picks_scoring_one }}
             </td>
-            <td class="d-none d-sm-table-cell">
-              {{ entry.picks_scoring_one if entry.picks_scoring_one is not none
-              else '-' }}
-            </td>
-            <td class="d-none d-sm-table-cell">
-              {{ entry.picks_scoring_zero if entry.picks_scoring_zero is not
-              none else '-' }}
-            </td>
-            <td class="d-none d-sm-table-cell">
-              {{ entry.invalid_picks if entry.invalid_picks is not none else '-'
-              }}
-            </td>
+            <td class="d-none d-sm-table-cell">{{ entry.invalid_picks }}</td>
+            <td class="d-none d-sm-table-cell">{{ entry.invalid_picks }}</td>
           </tr>
           {% endfor %} {% else %}
           <tr>

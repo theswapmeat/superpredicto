@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center mt-5">
+  <h1 class="display-4 text-warning">401 Unauthorized</h1>
+  <p>You are not authorized to view this page. Please log in with appropriate credentials.</p>
+  <a href="{{ url_for('main.login') }}" class="btn btn-primary mt-3">Go to Login</a>
+</div>
+{% endblock %}

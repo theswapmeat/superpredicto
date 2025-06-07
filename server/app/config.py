@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey")
@@ -8,3 +9,4 @@ class Config:
     RESEND_API_KEY = os.getenv("RESEND_API_KEY")
     PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID")
     PAYPAL_CLIENT_SECRET = os.getenv("PAYPAL_CLIENT_SECRET")
+    PERMANENT_SESSION_LIFETIME = timedelta(days=14)

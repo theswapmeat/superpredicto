@@ -1,12 +1,17 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 
 <h2 class="text-center mb-4">All User Predictions</h2>
 
 <!-- Filters -->
-<div class="d-flex align-items-center justify-content-between gap-2 mb-3 flex-nowrap">
+<div
+  class="d-flex align-items-center justify-content-between gap-2 mb-3 flex-nowrap"
+>
   <div class="d-flex align-items-center gap-2">
-    <select id="userFilter" class="form-select form-select-sm" style="max-width: 180px">
+    <select
+      id="userFilter"
+      class="form-select form-select-sm"
+      style="max-width: 180px"
+    >
       <option value="">All Users</option>
       {% for user in users %}
       <option value="{{ user.id }}">
@@ -15,7 +20,11 @@
       {% endfor %}
     </select>
 
-    <select id="gameFilter" class="form-select form-select-sm" style="max-width: 180px">
+    <select
+      id="gameFilter"
+      class="form-select form-select-sm"
+      style="max-width: 180px"
+    >
       <option value="">All Games</option>
       {% for game in games %}
       <option value="{{ game.id }}">
@@ -31,8 +40,11 @@
   {% include "partials/_predictions_table.html" %}
 </div>
 
-<!-- Rows Per Page Dropdown (bottom-right) -->
-<div class="d-flex justify-content-end align-items-center mt-2" style="width: 100%">
+<!-- Rows Per Page Dropdown (moved to bottom-right) -->
+<div
+  class="d-flex justify-content-end align-items-center mt-2"
+  style="width: 100%"
+>
   <label for="perPage" class="mb-0 me-2">Rows per page:</label>
   <select id="perPage" class="form-select form-select-sm" style="width: 80px">
     <option value="10">10</option>
@@ -41,15 +53,17 @@
   </select>
 </div>
 
-<!-- Responsive Styles -->
+<!-- Responsive Style Tweaks -->
 <style>
   @media (max-width: 576px) {
+    /* Compact font and padding for mobile */
     .schedule-table td,
     .schedule-table th {
       font-size: 12px;
       padding: 0.25rem;
     }
 
+    /* Hide Prediction (3rd col) and Final Score (4th col) */
     .schedule-table th:nth-child(3),
     .schedule-table td:nth-child(3),
     .schedule-table th:nth-child(4),
@@ -57,6 +71,7 @@
       display: none !important;
     }
 
+    /* Let Points Earned (5th column) stay visible and take less space */
     .schedule-table th:nth-child(5),
     .schedule-table td:nth-child(5) {
       width: 60px;
@@ -64,12 +79,14 @@
     }
   }
 
+  /* Filter dropdown widths */
   #userFilter,
   #gameFilter {
     max-width: 180px;
     min-width: 150px;
   }
 
+  /* Pagination control positioning */
   .pagination-controls {
     display: flex;
     justify-content: flex-end;
@@ -77,6 +94,7 @@
     gap: 0.5rem;
   }
 
+  /* Fixed column widths for larger screens */
   .schedule-table th:nth-child(1),
   .schedule-table td:nth-child(1) {
     width: 150px;
@@ -108,6 +126,7 @@
 
   function updatePredictions(page = 1) {
     const { userId, gameId, perPage } = getFilters();
+
     const params = new URLSearchParams();
     if (userId) params.append("user_id", userId);
     if (gameId) params.append("game_id", gameId);
@@ -118,8 +137,10 @@
       .then((response) => response.text())
       .then((html) => {
         document.getElementById("predictionsTable").innerHTML = html;
-        const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-        tooltips.forEach((el) => new bootstrap.Tooltip(el));
+        const tooltipTriggerList = document.querySelectorAll(
+          '[data-bs-toggle="tooltip"]'
+        );
+        tooltipTriggerList.forEach((el) => new bootstrap.Tooltip(el));
       });
   }
 
@@ -127,9 +148,15 @@
     updatePredictions(pageNum);
   }
 
-  document.getElementById("userFilter")?.addEventListener("change", () => updatePredictions());
-  document.getElementById("gameFilter")?.addEventListener("change", () => updatePredictions());
-  document.getElementById("perPage")?.addEventListener("change", () => updatePredictions());
+  document
+    .getElementById("userFilter")
+    ?.addEventListener("change", () => updatePredictions());
+  document
+    .getElementById("gameFilter")
+    ?.addEventListener("change", () => updatePredictions());
+  document
+    .getElementById("perPage")
+    ?.addEventListener("change", () => updatePredictions());
 </script>
 
 {% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %} {% block content %}
+<h2 class="text-center mb-4">Match Schedule</h2>
+
+<div class="table-responsive">
+  <table
+    class="table table-bordered table-hover align-middle text-nowrap schedule-table"
+  >
+    <thead class="table-dark text-center">
+      <tr>
+        <th class="d-none d-md-table-cell">Game #</th>
+        <th>Date</th>
+        <th class="d-none d-md-table-cell">Time</th>
+        <th>Home Team</th>
+        <th style="width: 70px">Score</th>
+        <th>Away Team</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for game in games %}
+      <tr
+        class="text-center {% if game.is_completed %}table-secondary{% endif %}"
+      >
+        <td class="d-none d-md-table-cell">{{ game.game_number }}</td>
+        <td>{{ game.date_of_game.strftime('%B %d, %Y') }}</td>
+        <td class="d-none d-md-table-cell">
+          {{ game.time_of_game.strftime('%H:%M') }}
+        </td>
+        <td>
+          {% if game.is_completed %}
+          <span class="text-success" title="Completed">&#x2714;</span>
+          {% else %}
+          <span class="text-warning" title="Upcoming">&#x23F3;</span>
+          {% endif %} {{ game.home_team }}
+        </td>
+        <td>
+          {% if game.home_team_score is not none and game.away_team_score is not
+          none %} {{ game.home_team_score }} - {{ game.away_team_score }} {%
+          else %} - {% endif %}
+        </td>
+        <td>{{ game.away_team }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  @media (max-width: 576px) {
+    .schedule-table td,
+    .schedule-table th {
+      font-size: 12px;
+      padding: 0.25rem;
+    }
+  }
+</style>
+{% endblock %}

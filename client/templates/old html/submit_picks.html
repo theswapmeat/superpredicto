@@ -1,11 +1,10 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+{% block content %}
 <h3 class="text-center mb-4">Submit Your Picks</h3>
 
 <form method="POST" id="picks-form">
   <div class="table-responsive">
-    <table
-      class="table table-bordered table-hover align-middle text-nowrap schedule-table"
-    >
+    <table class="table table-bordered table-hover align-middle text-nowrap schedule-table">
       <thead class="table-dark text-center">
         <tr>
           <th class="d-none d-md-table-cell">Game #</th>
@@ -17,27 +16,26 @@
         </tr>
       </thead>
       <tbody>
-        {% for game in games %} {% set editable = game.date_of_game >
-        uae_now.date() or (game.date_of_game == uae_now.date() and
-        game.time_of_game > uae_now.time()) %} {% set prediction =
-        pred_dict.get(game.id) %} {% set home_key = 'home_score_' ~ game.id %}
-        {% set away_key = 'away_score_' ~ game.id %} {% set error = form_data
-        and ((form_data.get(home_key) and not form_data.get(away_key)) or
-        (form_data.get(away_key) and not form_data.get(home_key))) %}
-        <tr
-          class="text-center {% if prediction %}table-success{% endif %} {% if error %}table-danger{% endif %}"
-        >
+        {% for game in games %}
+        {% set editable = game.date_of_game > uae_now.date() or (game.date_of_game == uae_now.date() and game.time_of_game > uae_now.time()) %}
+        {% set prediction = pred_dict.get(game.id) %}
+        {% set home_key = 'home_score_' ~ game.id %}
+        {% set away_key = 'away_score_' ~ game.id %}
+        {% set error = form_data and ((form_data.get(home_key) and not form_data.get(away_key)) or (form_data.get(away_key) and not form_data.get(home_key))) %}
+        <tr class="text-center 
+          {% if prediction %}table-success{% endif %}
+          {% if error %}table-danger{% endif %}
+        ">
           <td class="d-none d-md-table-cell">{{ game.game_number }}</td>
           <td>{{ game.date_of_game.strftime('%B %d, %Y') }}</td>
-          <td class="d-none d-md-table-cell">
-            {{ game.time_of_game.strftime('%H:%M') }}
-          </td>
+          <td class="d-none d-md-table-cell">{{ game.time_of_game.strftime('%H:%M') }}</td>
           <td>
             {% if editable %}
-            <span class="text-warning" title="Upcoming">&#x23F3;</span>
+              <span class="text-warning" title="Upcoming">&#x23F3;</span>
             {% else %}
-            <span class="text-success" title="Locked">&#x2714;</span>
-            {% endif %} {{ game.home_team }}
+              <span class="text-success" title="Locked">&#x2714;</span>
+            {% endif %}
+            {{ game.home_team }}
           </td>
           <td>
             {% if editable %}
@@ -51,12 +49,7 @@
                 step="1"
                 inputmode="numeric"
                 oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                style="
-                  width: 40px;
-                  font-size: 0.85rem;
-                  appearance: textfield;
-                  -moz-appearance: textfield;
-                "
+                style="width: 40px; font-size: 0.85rem; appearance: textfield; -moz-appearance: textfield;"
               />
               <span class="align-self-center">-</span>
               <input
@@ -68,22 +61,19 @@
                 step="1"
                 inputmode="numeric"
                 oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                style="
-                  width: 40px;
-                  font-size: 0.85rem;
-                  appearance: textfield;
-                  -moz-appearance: textfield;
-                "
+                style="width: 40px; font-size: 0.85rem; appearance: textfield; -moz-appearance: textfield;"
               />
             </div>
             {% if error %}
-            <div class="text-danger small mt-1">
-              Please enter both scores or leave both blank.
-            </div>
-            {% endif %} {% else %} {% if prediction %} {{
-            prediction.home_score_prediction }} - {{
-            prediction.away_score_prediction }} {% else %} - {% endif %} {%
-            endif %}
+              <div class="text-danger small mt-1">Please enter both scores or leave both blank.</div>
+            {% endif %}
+            {% else %}
+              {% if prediction %}
+                {{ prediction.home_score_prediction }} - {{ prediction.away_score_prediction }}
+              {% else %}
+                -
+              {% endif %}
+            {% endif %}
           </td>
           <td>{{ game.away_team }}</td>
         </tr>
@@ -91,12 +81,8 @@
       </tbody>
     </table>
   </div>
-
-  <!-- Bottom right Save button -->
-  <div class="d-flex justify-content-end mt-3">
-    <button type="submit" class="btn btn-success" id="submit-button" disabled>
-      Save Picks
-    </button>
+  <div class="text-center mt-3">
+    <button type="submit" class="btn btn-success" id="submit-button" disabled>Save Picks</button>
   </div>
 </form>
 
@@ -122,29 +108,30 @@
 
 <script>
   function validateForm() {
-    const rows = document.querySelectorAll("tr");
+    const rows = document.querySelectorAll('tr');
     let valid = false;
 
-    rows.forEach((row) => {
-      const inputs = row.querySelectorAll(".score-input");
+    rows.forEach(row => {
+      const inputs = row.querySelectorAll('.score-input');
       if (inputs.length === 2) {
         const home = inputs[0].value.trim();
         const away = inputs[1].value.trim();
         if ((home && away) || (!home && !away)) {
-          if (home && away) valid = true;
+          // this row is valid
+          if (home && away) valid = true;  // user made a change
         } else {
-          valid = false;
+          valid = false; // invalid row
         }
       }
     });
 
-    document.getElementById("submit-button").disabled = !valid;
+    document.getElementById('submit-button').disabled = !valid;
   }
 
-  document.querySelectorAll(".score-input").forEach((input) => {
-    input.addEventListener("input", validateForm);
+  document.querySelectorAll('.score-input').forEach(input => {
+    input.addEventListener('input', validateForm);
   });
 
-  window.addEventListener("load", validateForm);
+  window.addEventListener('load', validateForm);
 </script>
 {% endblock %}

@@ -1,18 +1,28 @@
-<!-- templates/dashboard.html -->
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <h2 class="text-center">Admin Dashboard</h2>
 
+{% if session.get('user_email') == 'admin@superpredicto.com' %}
+<form action="{{ url_for('main.admin_run_scoring') }}" method="get">
+  <button type="submit" class="btn btn-danger mb-3">Run Scoring Now</button>
+</form>
+{% endif %}
+
 <div class="card mt-4 shadow-sm">
-    <div class="card-body">
-        <h5 class="card-title">Invite User / Trigger Password Setup</h5>
-        <form method="post" action="{{ url_for('main.invite_user') }}">
-            <div class="mb-3">
-                <label for="invite_email" class="form-label">User Email Address</label>
-                <input type="email" class="form-control" id="invite_email" name="invite_email" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Send Invite</button>
-        </form>
-    </div>
+  <div class="card-body">
+    <h5 class="card-title">Invite User / Trigger Password Setup</h5>
+    <form method="post" action="{{ url_for('main.invite_user') }}">
+      <div class="mb-3">
+        <label for="invite_email" class="form-label">User Email Address</label>
+        <input
+          type="email"
+          class="form-control"
+          id="invite_email"
+          name="invite_email"
+          required
+        />
+      </div>
+      <button type="submit" class="btn btn-primary">Send Invite</button>
+    </form>
+  </div>
 </div>
 {% endblock %}

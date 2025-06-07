@@ -1,0 +1,39 @@
+{
+  "tournament": "2025 FIFA Club World Cup",
+  "host_country": "United States",
+  "dates": {
+    "start": "2025-06-14",
+    "end": "2025-07-13"
+  },
+  "groups": [
+    {
+      "group": "A",
+      "teams": [
+        "Palmeiras",
+        "Porto",
+        "Al Ahly",
+        "Inter Miami"
+      ],
+      "matches": [
+        {
+          "date": "2025-06-15",
+          "time": "02:00",
+          "venue": "Hard Rock Stadium, Miami Gardens",
+          "home_team": "Al Ahly",
+          "away_team": "Inter Miami",
+          "home_team_score": null,
+          "away_team_score": null
+        },
+        {
+          "date": "2025-06-15",
+          "time": "22:00",
+          "venue": "MetLife Stadium, East Rutherford",
+          "home_team": "Palmeiras",
+          "away_team": "Porto",
+          "home_team_score": null,
+          "away_team_score": null
+        }
+      ]
+    }
+  ]
+}

@@ -1,8 +1,9 @@
 import os
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from dotenv import load_dotenv
+from apscheduler.schedulers.background import BackgroundScheduler
 from .config import Config
 
 # Load environment variables from .env file
@@ -12,15 +13,16 @@ load_dotenv()
 db = SQLAlchemy()
 migrate = Migrate()
 
+
 def create_app():
     app = Flask(
         __name__,
         static_folder=os.path.abspath(
-            os.path.join(os.path.dirname(__file__), '../../client/static')
+            os.path.join(os.path.dirname(__file__), "../../client/static")
         ),
         template_folder=os.path.abspath(
-            os.path.join(os.path.dirname(__file__), '../../client/templates')
-        )
+            os.path.join(os.path.dirname(__file__), "../../client/templates")
+        ),
     )
 
     # Load configuration
@@ -32,6 +34,41 @@ def create_app():
 
     # Register blueprints
     from .routes import main
+
     app.register_blueprint(main)
+
+    # Schedule daily scoring job at 8:00 AM
+    def schedule_scoring():
+        from tasks.scoring import (
+            run_prediction_scoring,
+        )  # Delayed import to avoid circular deps
+
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(run_prediction_scoring, "cron", hour=8, minute=0)
+        scheduler.start()
+
+        # Shut down scheduler gracefully with the app
+        import atexit
+
+        atexit.register(lambda: scheduler.shutdown(wait=False))
+
+    schedule_scoring()
+
+    # Error Handlers
+    @app.errorhandler(404)
+    def not_found_error(error):
+        return render_template("404.html"), 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        return render_template("500.html"), 500
+
+    @app.errorhandler(403)
+    def forbidden_error(error):
+        return render_template("403.html"), 403
+
+    @app.errorhandler(401)
+    def unauthorized_error(error):
+        return render_template("401.html"), 401
 
     return app
