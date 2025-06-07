@@ -34,8 +34,10 @@ def create_app():
 
     # Register blueprints
     from .routes import main
+    from routes.keepalive import keepalive_bp
 
     app.register_blueprint(main)
+    app.register_blueprint(keepalive_bp)
 
     # Schedule daily scoring job at 8:00 AM
     def schedule_scoring():
