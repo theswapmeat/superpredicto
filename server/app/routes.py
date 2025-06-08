@@ -42,6 +42,9 @@ def index():
     # Fetch users excluding admin, and order based on leaderboard ranking rules
     leaderboard_users = (
         User.query.filter(User.email != "admin@superpredicto.com")
+        .filter(User.first_name.isnot(None), User.first_name != "")
+        .filter(User.last_name.isnot(None), User.last_name != "")
+        .filter(User.display_name.isnot(None), User.display_name != "")
         .order_by(
             desc(User.perfect_picks),
             desc(User.picks_scoring_two),
@@ -82,8 +85,10 @@ def index():
         leaderboard=leaderboard_dicts,
     )
 
+
 # --- Keep Alive Route ---
 keepalive_bp = Blueprint("keepalive", __name__)
+
 
 @keepalive_bp.route("/keepalive", methods=["GET"])
 def keep_alive():
@@ -176,6 +181,7 @@ def forgot_password():
 # --- Reset Password ---
 @main.route("/reset-password/<token>", methods=["GET", "POST"])
 def reset_password_token(token):
+    mode = request.args.get("mode", "reset")
     email = confirm_reset_token(token)
     if not email:
         flash("Reset link is invalid or has expired.", "danger")
@@ -200,7 +206,7 @@ def reset_password_token(token):
         flash("Your password has been set. You may now log in.", "success")
         return redirect(url_for("main.login"))
 
-    return render_template("reset_password.html")
+    return render_template("reset_password.html", mode=mode)
 
 
 # --- Submit Picks (Protected) ---
@@ -423,7 +429,9 @@ def invite_user():
 
     # Generate and send invite email
     token = generate_reset_token(email)
-    reset_url = url_for("main.reset_password_token", token=token, _external=True)
+    reset_url = url_for(
+        "main.reset_password_token", token=token, mode="invite", _external=True
+    )
 
     try:
         send_invite_email(email, reset_url)
