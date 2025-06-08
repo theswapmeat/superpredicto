@@ -1,11 +1,21 @@
 <!-- templates/guidelines.html -->
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <h2>Scoring Guidelines</h2>
 <ul class="list-group">
-    <li class="list-group-item">4 points for an exact scoreline prediction (e.g., 2-1 predicted, and actual score is 2-1).</li>
-    <li class="list-group-item">2 points for correct result + correct score for the winning team.</li>
-    <li class="list-group-item">1 point for correct result but no correct team score.</li>
-    <li class="list-group-item">0 points for incorrect result.</li>
+  <li class="list-group-item">
+    4 points for an exact scoreline prediction (e.g., 2-1 predicted, and actual
+    score is 2-1).
+  </li>
+  <li class="list-group-item">
+    2 points for correct result + correct score for the one team team.
+  </li>
+  <li class="list-group-item">
+    1 point for correct result but no correct team score.
+  </li>
+  <li class="list-group-item">
+    0 points for incorrect result, invalid pick. 1-0/0-1 picks are considered
+    invalid unless the final score is also 1-0/0-1, in which case 4 points are
+    awarded.
+  </li>
 </ul>
 {% endblock %}

@@ -1,0 +1,43 @@
+html {
+  overflow-y: scroll;
+}
+
+body {
+  font-family: "Nunito", sans-serif;
+}
+
+@media (max-width: 768px) {
+  body {
+    font-size: 0.85rem; /* slightly smaller for mobile */
+  }
+
+  table td,
+  table th {
+    font-size: 0.8rem;
+  }
+}
+
+.border-thick-right {
+  border-right: 3px solid #343a40 !important;
+}
+
+.table-wrapper {
+  max-width: 900px;
+  width: 100%;
+}
+
+.blurred {
+  filter: blur(5px);
+  color: #999;
+  user-select: none;
+  pointer-events: auto;
+  cursor: not-allowed;
+}
+
+@media (max-width: 576px) {
+  .schedule-table td,
+  .schedule-table th {
+    font-size: 12px;
+    padding: 0.25rem;
+  }
+}
