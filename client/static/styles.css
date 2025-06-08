@@ -27,9 +27,14 @@ body {
 }
 
 .blurred {
+  display: inline-block;
   filter: blur(5px);
+  -webkit-filter: blur(5px);
   color: #999;
   user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   pointer-events: auto;
   cursor: not-allowed;
 }
