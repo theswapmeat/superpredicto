@@ -198,6 +198,11 @@ def reset_password_token(token):
         flash("User not found.", "danger")
         return redirect(url_for("main.login"))
 
+    # ✅ Prevent reuse of invite link
+    if user.password_hash and mode == "invite":
+        flash("This invite link has already been used. Please log in.", "warning")
+        return redirect(url_for("main.login"))
+
     if request.method == "POST":
         new_password = request.form["new_password"]
         confirm_password = request.form["confirm_password"]
@@ -213,6 +218,7 @@ def reset_password_token(token):
         return redirect(url_for("main.login"))
 
     return render_template("reset_password.html", mode=mode)
+
 
 
 # --- Submit Picks (Protected) ---

@@ -8,7 +8,7 @@ def generate_reset_token(email):
     serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
     return serializer.dumps(email, salt=current_app.config['SECURITY_PASSWORD_SALT'])
 
-def confirm_reset_token(token, expiration=3600):
+def confirm_reset_token(token, expiration=86400):
     serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
     try:
         email = serializer.loads(token, salt=current_app.config['SECURITY_PASSWORD_SALT'], max_age=expiration)
@@ -25,7 +25,7 @@ def send_password_reset_email(to_email, reset_url):
             <p>Hello,</p>
             <p>We received a request to reset your SuperPredicto password.</p>
             <p><a href="{reset_url}">Click here to reset your password</a></p>
-            <p>This link will expire in 1 hour. If you didn't request this, just ignore this email.</p>
+            <p>This link will expire in 24 hours. If you didn't request this, just ignore this email.</p>
         """
     )
 
@@ -38,7 +38,7 @@ def send_invite_email(to_email, reset_url):
             <p>Hello,</p>
             <p>You’ve been invited to create your SuperPredicto account.</p>
             <p><a href="{reset_url}">Click here to set your password</a></p>
-            <p>This link will expire in 1 hour.</p>
+            <p>This link will expire in 24 hours.</p>
         """
     )
 
