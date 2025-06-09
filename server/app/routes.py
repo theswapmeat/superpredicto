@@ -1,4 +1,5 @@
 from flask import (
+    current_app,
     Blueprint,
     render_template,
     request,
@@ -25,7 +26,7 @@ from .utils import (
     verify_paypal_payment,
     send_payment_receipt_email,
 )
-
+import os
 
 main = Blueprint("main", __name__)
 
@@ -37,7 +38,12 @@ def index():
     needs_profile = False
     if "user_id" in session:
         user = User.query.get(session["user_id"])
-        needs_profile = not user.first_name or not user.last_name
+        if user:
+            needs_profile = not user.first_name or not user.last_name
+        else:
+            # User ID in session doesn't exist in DB; clear session
+            session.pop("user_id", None)
+
 
     # Fetch users excluding admin, and order based on leaderboard ranking rules
     leaderboard_users = (
@@ -217,6 +223,7 @@ def submit_picks():
     user = User.query.get(user_id)
 
     if not user.first_name or not user.last_name:
+        flash("Please complete your profile before submitting picks.", "warning")
         return redirect(url_for("main.profile"))
 
     if not user.is_paid:
@@ -335,6 +342,9 @@ def predictions():
 
     query = UserPrediction.query.join(UserPrediction.user).join(UserPrediction.game)
 
+    # Exclude predictions made by admin
+    query = query.filter(User.email != "admin@superpredicto.com")
+
     if user_id:
         query = query.filter(UserPrediction.user_id == user_id)
     if game_id:
@@ -344,12 +354,23 @@ def predictions():
 
     paginated_preds = query.paginate(page=page, per_page=per_page)
 
-    # Exclude admin from user filter
+    # Exclude admin from user filter dropdown
     all_users = (
-        User.query.filter(User.email != "admin@superpredicto.com")
-        .order_by(User.first_name, User.last_name)
-        .all()
+    User.query
+    .filter(
+        User.email != "admin@superpredicto.com",
+        User.is_paid == True,
+        User.is_active == True,
+        User.first_name.isnot(None),
+        User.last_name.isnot(None),
+        User.display_name.isnot(None),
+        User.first_name != "",
+        User.last_name != "",
+        User.display_name != ""
     )
+    .order_by(User.first_name, User.last_name)
+    .all()
+)
 
     all_games = Game.query.order_by(Game.date_of_game, Game.time_of_game).all()
 
@@ -362,6 +383,7 @@ def predictions():
     )
 
 
+
 # --- Predictions Filter ---
 @main.route("/predictions/filter")
 @login_required
@@ -371,24 +393,27 @@ def predictions_filter():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 50, type=int)
 
-    # Start building query
     query = UserPrediction.query.options(
         joinedload(UserPrediction.user), joinedload(UserPrediction.game)
     ).join(
+        UserPrediction.user
+    ).join(
         UserPrediction.game
-    )  # Needed for ordering by Game columns
+    ).filter(
+        User.email != "admin@superpredicto.com"
+    )
 
     if user_id:
         query = query.filter(UserPrediction.user_id == user_id)
     if game_id:
         query = query.filter(UserPrediction.game_id == game_id)
 
-    # Sort by game number ascending
     query = query.order_by(Game.game_number.asc())
 
     predictions = query.paginate(page=page, per_page=per_page)
 
     return render_template("partials/_predictions_table.html", predictions=predictions)
+
 
 
 # --- Scoring Guidelines ---
@@ -404,7 +429,10 @@ def dashboard():
     if session.get("user_email") != "admin@superpredicto.com":
         flash("Access denied.", "danger")
         return redirect(url_for("main.index"))
-    return render_template("dashboard.html")
+
+    users = User.query.filter(User.email != "admin@superpredicto.com").all()
+    return render_template("dashboard.html", users=users)
+
 
 
 # --- Invite User (Admin Only) ---
@@ -438,6 +466,40 @@ def invite_user():
         flash(f"Invitation sent to {email}.", "success")
     except Exception as e:
         flash(f"User created, but email failed: {str(e)}", "danger")
+
+    return redirect(url_for("main.dashboard"))
+
+# --- Update User Payment Status (Admin Only) ---
+@main.route("/admin/update-payments", methods=["POST"])
+@login_required
+def update_payments():
+    if session.get("user_email") != "admin@superpredicto.com":
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for("main.index"))
+
+    users = User.query.filter(User.email != "admin@superpredicto.com").all()
+    changes_made = False
+
+    for user in users:
+        paid_checkbox = f"paid_{user.id}"
+        active_checkbox = f"active_{user.id}"
+
+        is_paid_checked = paid_checkbox in request.form
+        is_active_checked = active_checkbox in request.form
+
+        if user.is_paid != is_paid_checked:
+            user.is_paid = is_paid_checked
+            changes_made = True
+
+        if user.is_active != is_active_checked:
+            user.is_active = is_active_checked
+            changes_made = True
+
+    if changes_made:
+        db.session.commit()
+        flash("User statuses updated successfully.", "success")
+    else:
+        flash("No changes detected.", "info")
 
     return redirect(url_for("main.dashboard"))
 
@@ -484,12 +546,10 @@ def profile():
         last_name = request.form.get("last_name", "").strip()
         display_name = request.form.get("display_name", "").strip()
 
-        # Validate names
         if not first_name or not last_name:
             flash("First name and last name are required.", "danger")
             return render_template("profile.html", user=user)
 
-        # Display name checks
         if not display_name:
             error = "Display name is required."
             return render_template("profile.html", user=user, error=error)
@@ -498,6 +558,16 @@ def profile():
             error = "Display name must be a single word under 10 characters."
             return render_template("profile.html", user=user, error=error)
 
+        # Check if any changes were made
+        if (
+            first_name == (user.first_name or "") and
+            last_name == (user.last_name or "") and
+            display_name == (user.display_name or "")
+        ):
+            flash("No changes detected.", "info")
+            return redirect(url_for("main.profile"))
+
+        # Apply changes
         user.first_name = first_name
         user.last_name = last_name
         user.display_name = display_name
@@ -572,14 +642,23 @@ def payment_success():
                     user.email, order_info["purchase_units"][0]["amount"]["value"]
                 )
 
+            # Set session flag to allow redirect
+            session["payment_successful"] = True
+
             return jsonify({"message": "Payment confirmed"}), 200
 
         except Exception as e:
             return jsonify({"error": f"Payment verification failed: {str(e)}"}), 500
 
     if request.method == "GET":
+        if not session.get("payment_successful"):
+            return redirect(url_for("main.index"))  # or abort(403)
+
+        # Clear the flag for one-time access
+        session.pop("payment_successful", None)
         flash("Payment completed. You may now submit your picks.", "success")
         return redirect(url_for("main.submit_picks"))
+
 
 
 # --- Schedule ---

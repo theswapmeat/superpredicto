@@ -1,11 +1,20 @@
 {% extends "base.html" %} {% block content %}
-<div class="card shadow-sm mx-auto" style="max-width: 500px">
+<div class="card shadow-sm mx-auto position-relative" style="max-width: 500px">
   <div class="card-body">
-    <h2 class="card-title text-center mb-4">Your Profile</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="card-title mb-0">Your Profile</h2>
+      <div style="width: 60px; height: 60px">
+        <img
+          src="{{ url_for('static', filename='avatars/' + (user.avatar or 'default.png')) }}"
+          alt="User Avatar"
+          class="rounded-circle w-100 h-100 object-fit-cover border border-light"
+        />
+      </div>
+    </div>
 
     <form method="post">
       <div class="mb-3">
-        <label for="first_name" class="form-label">First Name</label>
+        <label for="first_name" class="form-label">First Name*</label>
         <input
           type="text"
           class="form-control"
@@ -16,7 +25,7 @@
         />
       </div>
       <div class="mb-3">
-        <label for="last_name" class="form-label">Last Name</label>
+        <label for="last_name" class="form-label">Last Name*</label>
         <input
           type="text"
           class="form-control"
@@ -27,7 +36,7 @@
         />
       </div>
       <div class="mb-3">
-        <label for="display_name" class="form-label">Display Name</label>
+        <label for="display_name" class="form-label">Display Name*</label>
         <input
           type="text"
           class="form-control {% if error %}is-invalid{% endif %}"

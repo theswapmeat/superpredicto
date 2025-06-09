@@ -1,65 +1,21 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 
-<!-- Payment Card -->
-<div class="card shadow-sm mx-auto mt-3" style="max-width: 500px;">
-  <div class="card-body">
-    <h2 class="card-title text-center mb-3">Complete Your Payment</h2>
-    <p class="text-muted text-center">
-      Pay <strong>AED 275</strong> to unlock full access to SuperPredicto.
-    </p>
-
-    <!-- PayPal Button -->
-    <div id="paypal-button-container" class="text-center mt-4"></div>
+<div class="container mt-5">
+  <div class="card shadow-sm mx-auto" style="max-width: 600px">
+    <div class="card-body">
+      <h4 class="card-title text-center mb-4">Payment Required</h4>
+      <p class="mb-3">
+        Please make a payment of <strong>AED 275</strong> to continue using all
+        the features. Payment must be made via bank transfer to:
+      </p>
+      <ul class="list-unstyled">
+        <li><strong>Name:</strong> Anup Paul Chackunny</li>
+        <li><strong>Bank:</strong> Emirates NBD</li>
+        <li><strong>Account Number:</strong> 1014040525401</li>
+        <li><strong>IBAN:</strong> AE270260001014040525401</li>
+      </ul>
+    </div>
   </div>
 </div>
 
-<!-- Load PayPal SDK -->
-<script src="https://www.paypal.com/sdk/js?client-id=ASTSZXKCp6BVxSNIHjCvVqla0MfulIrJqNoJHiffv3UAWcvXfhQ219oRubLTsSifggseAB5gVoNHnHmP&currency=USD"></script>
-
-<script>
-  paypal.Buttons({
-    createOrder: function (data, actions) {
-      return actions.order.create({
-        purchase_units: [{
-          amount: {
-            value: "275.00",
-            currency_code: "USD"
-          }
-        }]
-      });
-    },
-    onApprove: function (data, actions) {
-      return actions.order.capture().then(function () {
-        return fetch("/payment-success", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ orderID: data.orderID })
-        })
-        .then(res => res.json())
-        .then(data => {
-          if (data.message === "Payment confirmed") {
-            window.location.href = "/payment-success";
-          } else {
-            alert("Payment failed: " + (data.error || "Unknown error"));
-          }
-        })
-        .catch(err => {
-          console.error("Payment verification failed:", err);
-          alert("An error occurred verifying the payment.");
-        });
-      });
-    }
-  }).render("#paypal-button-container");
-
-  // Auto-dismiss alerts after 4 seconds
-  // setTimeout(() => {
-  //   document.querySelectorAll(".alert").forEach(el => {
-  //     el.classList.remove("show");
-  //     el.classList.add("fade");
-  //   });
-  // }, 4000);
-</script>
 {% endblock %}

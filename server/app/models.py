@@ -12,23 +12,37 @@ class User(db.Model):
     last_name = db.Column(db.String, nullable=True)
     display_name = db.Column(db.String(20), unique=True, nullable=True)
     is_paid = db.Column(db.Boolean, default=False)
+    is_active = db.Column(db.Boolean, default=True)
     avatar = db.Column(db.String)
+    password_hash = db.Column(db.String, nullable=True)
+    must_change_password = db.Column(db.Boolean, default=True)
+
+    perfect_picks = db.Column(db.Integer, nullable=True)
+    picks_scoring_one = db.Column(db.Integer, nullable=True)
+    picks_scoring_two = db.Column(db.Integer, nullable=True)
+    picks_scoring_zero = db.Column(db.Integer, nullable=True)
+    invalid_picks = db.Column(db.Integer, nullable=True)
+
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
     updated_at = db.Column(
         db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
-    password_hash = db.Column(db.String, nullable=True)
-    must_change_password = db.Column(db.Boolean, default=True)
-    perfect_picks = db.Column(db.Integer, nullable=True)
-    picks_scoring_one = db.Column(db.Integer, nullable=True)
-    picks_scoring_two = db.Column(db.Integer, nullable=True)
-    invalid_picks = db.Column(db.Integer, nullable=True)
-    picks_scoring_zero = db.Column(db.Integer, nullable=True)
 
     __table_args__ = (UniqueConstraint("display_name", name="uq_users_display_name"),)
 
     def __repr__(self):
         return f"<User {self.email}>"
+
+
+class Tournament(db.Model):
+    __tablename__ = "tournaments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    year = db.Column(db.Integer, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+
+    def __repr__(self):
+        return f"<Tournament {self.name} ({self.year})>"
 
 
 class Game(db.Model):
@@ -43,6 +57,19 @@ class Game(db.Model):
     away_team_score = db.Column(db.Integer, nullable=True)
     is_completed = db.Column(db.Boolean, default=False)
     game_number = db.Column(db.Integer, nullable=False)
+
+    tournament_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tournaments.id"),
+        nullable=False
+        # ✅ Avoid `default=1` here; instead handle in migration or seed logic
+    )
+    tournament = db.relationship(
+        "Tournament",
+        backref=db.backref("games", lazy=True),
+        lazy=True
+    )
+
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
     updated_at = db.Column(
         db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -61,13 +88,14 @@ class UserPrediction(db.Model):
     home_score_prediction = db.Column(db.Integer, nullable=True)
     away_score_prediction = db.Column(db.Integer, nullable=True)
     points_earned = db.Column(db.Integer, default=0)
+
+    user = db.relationship("User", backref=db.backref("predictions", lazy=True), lazy=True)
+    game = db.relationship("Game", backref=db.backref("predictions", lazy=True), lazy=True)
+
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
     updated_at = db.Column(
         db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
-
-    user = db.relationship("User", backref="predictions", lazy=True)
-    game = db.relationship("Game", backref="predictions", lazy=True)
 
     def __repr__(self):
         return f"<Prediction User:{self.user_id} Game:{self.game_id}>"

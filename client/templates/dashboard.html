@@ -5,8 +5,69 @@
 <form action="{{ url_for('main.admin_run_scoring') }}" method="get">
   <button type="submit" class="btn btn-danger mb-3">Run Scoring Now</button>
 </form>
+
+<!-- Payment Status Table -->
+<div class="card mt-4 shadow-sm">
+  <div class="card-body">
+    <h5 class="card-title">User Payments</h5>
+    <form method="post" action="{{ url_for('main.update_payments') }}">
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle text-center">
+          <thead class="table-dark">
+            <tr>
+              <th>Name</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Has Paid</th>
+              <th>Is Active</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for user in users %}
+            <tr>
+              <td>
+                {% if user.first_name or user.last_name %} {{ user.first_name or
+                '' }} {{ user.last_name or '' }} {% else %} - {% endif %}
+              </td>
+              <td>{{ user.display_name if user.display_name else '-' }}</td>
+              <td>{{ user.email }}</td>
+              <td>
+                <input
+                  type="checkbox"
+                  name="paid_{{ user.id }}"
+                  {%
+                  if
+                  user.is_paid
+                  %}checked{%
+                  endif
+                  %}
+                />
+              </td>
+              <td>
+                <input
+                  type="checkbox"
+                  name="active_{{ user.id }}"
+                  {%
+                  if
+                  user.is_active
+                  %}checked{%
+                  endif
+                  %}
+                />
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <button type="submit" class="btn btn-success mt-3">Save Changes</button>
+    </form>
+  </div>
+</div>
 {% endif %}
 
+<!-- Invite Form -->
 <div class="card mt-4 shadow-sm">
   <div class="card-body">
     <h5 class="card-title">Invite User / Trigger Password Setup</h5>
