@@ -1,21 +1,87 @@
 <!-- templates/guidelines.html -->
 {% extends "base.html" %} {% block content %}
-<h2>Scoring Guidelines</h2>
-<ul class="list-group">
+<h2 class="mb-4">Scoring Guidelines</h2>
+
+<ul class="list-group mb-4">
   <li class="list-group-item">
     4 points for an exact scoreline prediction (e.g., 2-1 predicted, and actual
     score is 2-1).
   </li>
   <li class="list-group-item">
-    2 points for correct result + correct score for the one team team.
+    2 points for correct result + correct score for the winning team (e.g.,
+    predicted 3-1, actual 2-1).
   </li>
   <li class="list-group-item">
-    1 point for correct result but no correct team score.
+    1 point for correct result but neither team’s score is exact (e.g.,
+    predicted 1-0, actual 3-2).
   </li>
   <li class="list-group-item">
-    0 points for incorrect result, invalid pick. 1-0/0-1 picks are considered
-    invalid unless the final score is also 1-0/0-1, in which case 4 points are
-    awarded.
+    0 points for incorrect result or invalid pick.
+    <br />
+    <strong>Note:</strong> Predictions of <strong>1-0 or 0-1</strong> are
+    considered invalid unless the actual score is also exactly 1-0 or 0-1 — in
+    which case, 4 points are awarded.
   </li>
 </ul>
+
+<h4>Examples</h4>
+<div class="table-responsive">
+  <table class="table table-bordered align-middle text-center">
+    <thead class="table-dark">
+      <tr>
+        <th>Actual Score</th>
+        <th>User Prediction</th>
+        <th>Points Awarded</th>
+        <th>Reason</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>2-1</td>
+        <td>2-1</td>
+        <td><strong>4</strong></td>
+        <td>Perfect pick</td>
+      </tr>
+      <tr>
+        <td>2-1</td>
+        <td>3-1</td>
+        <td><strong>2</strong></td>
+        <td>Correct result + correct score for winning team</td>
+      </tr>
+      <tr>
+        <td>3-2</td>
+        <td>2-3</td>
+        <td><strong>1</strong></td>
+        <td>Incorrect result, and neither score is exact</td>
+      </tr>
+      <tr>
+        <td>0-1</td>
+        <td>1-0</td>
+        <td><strong>0</strong></td>
+        <td>
+          <strong>Invalid pick</strong> — 1-0 prediction not allowed unless
+          exact match
+        </td>
+      </tr>
+      <tr>
+        <td>3-1</td>
+        <td>0-1</td>
+        <td><strong>0</strong></td>
+        <td><strong>Invalid pick</strong> — 1-0 prediction not exact match</td>
+      </tr>
+      <tr>
+        <td>1-0</td>
+        <td>1-0</td>
+        <td><strong>4</strong></td>
+        <td>Valid 1-0 pick (exact match)</td>
+      </tr>
+      <tr>
+        <td>1-1</td>
+        <td>2-2</td>
+        <td><strong>1</strong></td>
+        <td>Correct result (draw), but no exact scores</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 {% endblock %}

@@ -151,12 +151,14 @@
     <!-- Auto-dismiss alerts -->
     <script>
       setTimeout(() => {
-        document.querySelectorAll(".alert").forEach((alert) => {
-          alert.classList.remove("show");
-          setTimeout(() => {
-            alert.remove();
-          }, 500);
-        });
+        document
+          .querySelectorAll(".alert:not(.intro-banner)")
+          .forEach((alert) => {
+            alert.classList.remove("show");
+            setTimeout(() => {
+              alert.remove();
+            }, 500);
+          });
       }, 4000);
 
       // Enable dropdown on avatar hover with delay buffer

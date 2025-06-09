@@ -23,22 +23,34 @@
         pred_dict.get(game.id) %} {% set home_key = 'home_score_' ~ game.id %}
         {% set away_key = 'away_score_' ~ game.id %} {% set error = form_data
         and ((form_data.get(home_key) and not form_data.get(away_key)) or
-        (form_data.get(away_key) and not form_data.get(home_key))) %}
+        (form_data.get(away_key) and not form_data.get(home_key))) %} {% set
+        is_invalid = form_data.get('invalid_' ~ game.id) %}
         <tr
-          class="text-center {% if prediction %}table-success{% endif %} {% if error %}table-danger{% endif %}"
+          class="text-center {% if prediction %}table-success{% endif %} {% if error or is_invalid %}table-danger{% endif %}"
         >
-          <td class="d-none d-md-table-cell">{{ game.game_number }}</td>
+          <td class="d-none d-md-table-cell">
+            {% if not editable %}
+            <img
+              src="{{ url_for('static', filename='icons/lock-alt-svgrepo-com.svg') }}"
+              alt="Locked"
+              title="Locked."
+              style="
+                width: 18px;
+                height: 18px;
+                vertical-align: middle;
+                margin-right: 4px;
+                filter: brightness(0) saturate(100%) invert(9%) sepia(91%)
+                  saturate(7417%) hue-rotate(249deg) brightness(90%)
+                  contrast(110%);
+              "
+            />
+            {% endif %}{{ game.game_number }}
+          </td>
           <td>{{ game.date_of_game.strftime('%B %d, %Y') }}</td>
           <td class="d-none d-md-table-cell">
             {{ game.time_of_game.strftime('%H:%M') }}
           </td>
-          <td>
-            {% if editable %}
-            <span class="text-warning" title="Upcoming">&#x23F3;</span>
-            {% else %}
-            <span class="text-success" title="Locked">&#x2714;</span>
-            {% endif %} {{ game.home_team }}
-          </td>
+          <td>{{ game.home_team }}</td>
           <td>
             {% if editable %}
             <div class="d-flex justify-content-between">
@@ -92,7 +104,6 @@
     </table>
   </div>
 
-  <!-- Bottom right Save button -->
   <div class="d-flex justify-content-end mt-3">
     <button type="submit" class="btn btn-success" id="submit-button" disabled>
       Save Picks
@@ -118,33 +129,63 @@
   .form-control {
     padding: 0.2rem 0.3rem;
   }
+
+  .table-danger input {
+    border-color: #dc3545;
+    background-color: #f8d7da;
+  }
+
+  .table-success input:disabled {
+    background-color: #e9fbe9;
+  }
 </style>
-
 <script>
-  function validateForm() {
-    const rows = document.querySelectorAll("tr");
-    let valid = false;
+  function validatePicksForm() {
+    const rows = document.querySelectorAll(".score-input");
+    const submitButton = document.getElementById("submit-button");
 
-    rows.forEach((row) => {
-      const inputs = row.querySelectorAll(".score-input");
-      if (inputs.length === 2) {
-        const home = inputs[0].value.trim();
-        const away = inputs[1].value.trim();
-        if ((home && away) || (!home && !away)) {
-          if (home && away) valid = true;
-        } else {
-          valid = false;
-        }
-      }
+    let allRowsValid = true;
+    let hasAtLeastOnePick = false;
+
+    const groupedRows = {};
+
+    rows.forEach((input) => {
+      const nameParts = input.name.split("_");
+      const gameId = nameParts[nameParts.length - 1];
+
+      if (!groupedRows[gameId])
+        groupedRows[gameId] = { home: null, away: null };
+
+      if (nameParts[0] === "home")
+        groupedRows[gameId].home = input.value.trim();
+      if (nameParts[0] === "away")
+        groupedRows[gameId].away = input.value.trim();
     });
 
-    document.getElementById("submit-button").disabled = !valid;
+    for (const gameId in groupedRows) {
+      const { home, away } = groupedRows[gameId];
+
+      const hasHome = home !== "";
+      const hasAway = away !== "";
+
+      if ((hasHome && !hasAway) || (!hasHome && hasAway)) {
+        allRowsValid = false;
+        break;
+      }
+
+      if (hasHome && hasAway) {
+        hasAtLeastOnePick = true;
+      }
+    }
+
+    submitButton.disabled = !(allRowsValid && hasAtLeastOnePick);
   }
 
   document.querySelectorAll(".score-input").forEach((input) => {
-    input.addEventListener("input", validateForm);
+    input.addEventListener("input", validatePicksForm);
   });
 
-  window.addEventListener("load", validateForm);
+  window.addEventListener("DOMContentLoaded", validatePicksForm);
 </script>
+
 {% endblock %}

@@ -47,6 +47,28 @@ body {
   color: #c0bfff;
 }
 
+.intro-banner {
+  background: linear-gradient(135deg, #3a2071, #5c3a99);
+  border: none;
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  font-size: 0.95rem;
+}
+
+.intro-banner .intro-link {
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.intro-banner .intro-link:hover {
+  /* text-decoration: underline; */
+  /* color: #ffe666; */
+  
+  color: #c0bfff;
+}
+
+
 /* Avatar icon in navbar */
 .user-avatar {
   width: 24px;

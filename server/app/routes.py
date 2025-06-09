@@ -232,7 +232,6 @@ def submit_picks():
 
     games = Game.query.order_by(Game.date_of_game, Game.time_of_game).all()
     uae = timezone("Asia/Dubai")
-    now_uae = datetime.now(uae)
 
     existing_predictions = {
         pred.game_id: pred
@@ -240,16 +239,14 @@ def submit_picks():
     }
 
     if request.method == "POST":
+        now_uae = datetime.now(uae)
         error_found = False
         form_data = request.form
         changes_made = False
 
         for game in games:
-            game_datetime = datetime.combine(game.date_of_game, game.time_of_game)
-            game_datetime_uae = timezone("UTC").localize(game_datetime).astimezone(uae)
-
-            if game_datetime_uae <= now_uae:
-                continue  # Game is in the past
+            # Game start time is already in UAE — no need to convert from UTC
+            game_datetime_local = uae.localize(datetime.combine(game.date_of_game, game.time_of_game))
 
             home_key = f"home_score_{game.id}"
             away_key = f"away_score_{game.id}"
@@ -259,43 +256,41 @@ def submit_picks():
 
             existing = existing_predictions.get(game.id)
 
-            # Case: One score filled but not the other
-            if (home_val and not away_val) or (away_val and not home_val):
-                flash(
-                    f"Both scores must be entered for Game #{game.game_number}.",
-                    "danger",
-                )
-                error_found = True
-                continue
-
-            # Case: both blank — remove prediction if it exists
+            # Skip empty inputs (removes prediction if it exists)
             if not home_val and not away_val:
                 if existing:
                     db.session.delete(existing)
                     changes_made = True
                 continue
 
-            # Validate that both are integers
+            # Handle incomplete input
+            if (home_val and not away_val) or (away_val and not home_val):
+                flash(f"Both scores must be entered for Game #{game.game_number}.", "danger")
+                error_found = True
+                continue
+
+            # Validate inputs are digits
             if not home_val.isdigit() or not away_val.isdigit():
-                flash(
-                    f"Scores for Game #{game.game_number} must be whole numbers.",
-                    "danger",
-                )
+                flash(f"Scores for Game #{game.game_number} must be whole numbers.", "danger")
+                error_found = True
+                continue
+
+            # ✅ Final check: reject picks if game has already started
+            if game_datetime_local <= now_uae:
+                flash(f"Game #{game.game_number} has already started. Picks not accepted.", "danger")
                 error_found = True
                 continue
 
             home_score = int(home_val)
             away_score = int(away_val)
 
-            # Update or create prediction
             if not existing:
-                new_pred = UserPrediction(
+                db.session.add(UserPrediction(
                     user_id=user_id,
                     game_id=game.id,
                     home_score_prediction=home_score,
                     away_score_prediction=away_score,
-                )
-                db.session.add(new_pred)
+                ))
                 changes_made = True
             elif (
                 existing.home_score_prediction != home_score
@@ -322,6 +317,7 @@ def submit_picks():
         flash("Your picks have been saved.", "success")
         return redirect(url_for("main.submit_picks"))
 
+    now_uae = datetime.now(uae)
     return render_template(
         "submit_picks.html",
         games=games,
@@ -329,6 +325,7 @@ def submit_picks():
         uae_now=now_uae,
         form_data={},
     )
+
 
 
 # --- All Predictions (Protected) ---

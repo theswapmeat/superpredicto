@@ -11,7 +11,7 @@
         <th>Date</th>
         <th class="d-none d-md-table-cell">Time</th>
         <th>Home Team</th>
-        <th style="width: 70px">Score</th>
+        <th style="width: 120px">Score</th>
         <th>Away Team</th>
       </tr>
     </thead>
@@ -25,17 +25,15 @@
         <td class="d-none d-md-table-cell">
           {{ game.time_of_game.strftime('%H:%M') }}
         </td>
-        <td>
-          {% if game.is_completed %}
-          <span class="text-success" title="Completed">&#x2714;</span>
-          {% else %}
-          <span class="text-warning" title="Upcoming">&#x23F3;</span>
-          {% endif %} {{ game.home_team }}
-        </td>
+        <td>{{ game.home_team }}</td>
         <td>
           {% if game.home_team_score is not none and game.away_team_score is not
-          none %} {{ game.home_team_score }} - {{ game.away_team_score }} {%
-          else %} - {% endif %}
+          none %}
+          <div class="d-flex justify-content-center align-items-center gap-2">
+            <div>{{ game.home_team_score }} - {{ game.away_team_score }}</div>
+            <input type="checkbox" checked disabled title="Completed Game" />
+          </div>
+          {% else %} - {% endif %}
         </td>
         <td>{{ game.away_team }}</td>
       </tr>
@@ -51,6 +49,10 @@
       font-size: 12px;
       padding: 0.25rem;
     }
+  }
+
+  input[type="checkbox"][disabled] {
+    cursor: not-allowed;
   }
 </style>
 {% endblock %}

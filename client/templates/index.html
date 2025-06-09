@@ -1,5 +1,43 @@
 {% extends "base.html" %} {% block content %}
+
 <h2 class="text-center mb-4">Welcome to SuperPredicto</h2>
+
+<div id="introBanner" class="intro-banner alert alert-dismissible fade show mb-4 text-white" role="alert">
+  <strong>New to SuperPredicto?</strong>
+  <ul class="mt-2 mb-0 ps-3">
+    <li>
+      Visit the 
+      <a href="{{ url_for('main.guidelines') }}" class="intro-link">Scoring Guidelines</a> 
+      for a full breakdown of how points are awarded.
+    </li>
+    <li>
+      Go to 
+      <a href="{{ url_for('main.submit_picks') }}" class="intro-link">Submit Picks</a> 
+      to enter your predictions before kickoff.
+    </li>
+    <li>
+      Scoring: 4 points for a perfect pick, 2 for right winner + correct score of winner, 1 for partial match, 
+      <strong>0 points</strong> for incorrect or invalid picks.
+    </li>
+    <li>
+      Predictions of <strong>1-0 or 0-1</strong> are considered invalid unless the actual result is exactly the same — in which case, 4 points are awarded.
+    </li>
+    <li>
+      You must <strong>complete your profile</strong> and <strong>make payment</strong> before you can submit picks.
+    </li>
+    <li>
+      <strong>Top 3 winners</strong> are based on total points. 
+      If there’s a tie, the following <strong>tie-breaker rules</strong> will apply:
+      <ol class="mt-1 mb-0 ps-3">
+        <li>Most perfect picks</li>
+        <li>Most picks earning 2 points</li>
+        <li>Most picks earning 1 point</li>
+      </ol>
+    </li>
+  </ul>
+  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close" onclick="hideIntroBanner()"></button>
+</div>
+
 
 {% if needs_profile %}
 <div class="alert alert-warning text-center" role="alert">
@@ -88,5 +126,18 @@
   </div>
 </div>
 
+<!-- Persistent Dismissal Script -->
+<script>
+  function hideIntroBanner() {
+    localStorage.setItem("hideIntroBanner", "true");
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    if (localStorage.getItem("hideIntroBanner") === "true") {
+      const banner = document.getElementById("introBanner");
+      if (banner) banner.style.display = "none";
+    }
+  });
+</script>
 
 {% endblock %}
