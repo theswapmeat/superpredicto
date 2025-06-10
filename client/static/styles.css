@@ -64,10 +64,9 @@ body {
 .intro-banner .intro-link:hover {
   /* text-decoration: underline; */
   /* color: #ffe666; */
-  
+
   color: #c0bfff;
 }
-
 
 /* Avatar icon in navbar */
 .user-avatar {
@@ -139,4 +138,14 @@ body {
     font-size: 12px;
     padding: 0.25rem;
   }
+}
+
+.support-whatsapp-link {
+  text-decoration: none;
+  color: purple;
+  transition: color 0.2s ease-in-out;
+}
+
+.support-whatsapp-link:hover {
+  color: #6f42c1; /* Bootstrap's primary purple (same as .text-primary or navbar-brand hover) */
 }

@@ -36,18 +36,20 @@ main = Blueprint("main", __name__)
 def index():
     user = None
     needs_profile = False
-    if "user_id" in session:
-        user = User.query.get(session["user_id"])
-        if user:
-            needs_profile = not user.first_name or not user.last_name
-        else:
-            # User ID in session doesn't exist in DB; clear session
-            session.pop("user_id", None)
 
+    user_id = session.get("user_id")
+    if user_id:
+        user = User.query.get(user_id)
+        if not user:
+            session.pop("user_id", None)
+            session.pop("user_email", None)
+        else:
+            needs_profile = not user.first_name or not user.last_name
 
     # Fetch users excluding admin, and order based on leaderboard ranking rules
     leaderboard_users = (
-        User.query.filter(User.email != "admin@superpredicto.com")
+        User.query
+        .filter(User.email != "admin@superpredicto.com")
         .filter(User.first_name.isnot(None), User.first_name != "")
         .filter(User.last_name.isnot(None), User.last_name != "")
         .filter(User.display_name.isnot(None), User.display_name != "")
@@ -59,7 +61,7 @@ def index():
         .all()
     )
 
-    # Prepare dicts for the template
+    # Prepare leaderboard dicts
     leaderboard_dicts = [
         {
             "name": user.display_name
@@ -92,6 +94,7 @@ def index():
     )
 
 
+
 # --- Keep Alive Route ---
 keepalive_bp = Blueprint("keepalive", __name__)
 
@@ -118,6 +121,10 @@ def login_required(f):
 # --- Login ---
 @main.route("/login", methods=["GET", "POST"])
 def login():
+    # ✅ Redirect already-logged-in users to home
+    if "user_id" in session:
+        return redirect(url_for("main.index"))
+
     # Flash only if user was redirected here due to being unauthenticated
     reason = request.args.get("reason")
     if request.method == "GET" and reason == "login_required":
@@ -343,10 +350,15 @@ def predictions():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 50, type=int)
 
+    uae = timezone("Asia/Dubai")
+    now_uae = datetime.now(uae)
+
     query = UserPrediction.query.join(UserPrediction.user).join(UserPrediction.game)
 
-    # Exclude predictions made by admin
     query = query.filter(User.email != "admin@superpredicto.com")
+
+    # ✅ Only include predictions for games that have already started
+    query = query.filter((Game.date_of_game + Game.time_of_game) <= now_uae)
 
     if user_id:
         query = query.filter(UserPrediction.user_id == user_id)
@@ -357,25 +369,31 @@ def predictions():
 
     paginated_preds = query.paginate(page=page, per_page=per_page)
 
-    # Exclude admin from user filter dropdown
+    # User & game filter dropdowns
     all_users = (
-    User.query
-    .filter(
-        User.email != "admin@superpredicto.com",
-        User.is_paid == True,
-        User.is_active == True,
-        User.first_name.isnot(None),
-        User.last_name.isnot(None),
-        User.display_name.isnot(None),
-        User.first_name != "",
-        User.last_name != "",
-        User.display_name != ""
+        User.query
+        .filter(
+            User.email != "admin@superpredicto.com",
+            User.is_paid == True,
+            User.is_active == True,
+            User.first_name.isnot(None),
+            User.last_name.isnot(None),
+            User.display_name.isnot(None),
+            User.first_name != "",
+            User.last_name != "",
+            User.display_name != ""
+        )
+        .order_by(User.first_name, User.last_name)
+        .all()
     )
-    .order_by(User.first_name, User.last_name)
-    .all()
-)
 
-    all_games = Game.query.order_by(Game.date_of_game, Game.time_of_game).all()
+    
+    all_games = (
+        Game.query
+        .filter((Game.date_of_game + Game.time_of_game) <= now_uae)
+        .order_by(Game.date_of_game, Game.time_of_game)
+        .all()
+)
 
     return render_template(
         "predictions.html",
@@ -384,7 +402,6 @@ def predictions():
         games=all_games,
         per_page=per_page,
     )
-
 
 
 # --- Predictions Filter ---
@@ -396,6 +413,9 @@ def predictions_filter():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 50, type=int)
 
+    uae = timezone("Asia/Dubai")
+    now_uae = datetime.now(uae)
+
     query = UserPrediction.query.options(
         joinedload(UserPrediction.user), joinedload(UserPrediction.game)
     ).join(
@@ -405,6 +425,9 @@ def predictions_filter():
     ).filter(
         User.email != "admin@superpredicto.com"
     )
+
+    # ✅ Only include predictions for games that have started
+    query = query.filter((Game.date_of_game + Game.time_of_game) <= now_uae)
 
     if user_id:
         query = query.filter(UserPrediction.user_id == user_id)
@@ -416,7 +439,6 @@ def predictions_filter():
     predictions = query.paginate(page=page, per_page=per_page)
 
     return render_template("partials/_predictions_table.html", predictions=predictions)
-
 
 
 # --- Scoring Guidelines ---
@@ -683,3 +705,8 @@ def admin_run_scoring():
     run_prediction_scoring()
     flash("Scoring successfully run.", "success")
     return redirect(url_for("main.dashboard"))
+
+# --- Support ---
+@main.route("/support")
+def support():
+    return render_template("support.html")

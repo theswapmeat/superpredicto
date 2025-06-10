@@ -2,32 +2,44 @@
 
 <h2 class="text-center mb-4">Welcome to SuperPredicto</h2>
 
-<div id="introBanner" class="intro-banner alert alert-dismissible fade show mb-4 text-white" role="alert">
+<div
+  id="introBanner"
+  class="intro-banner alert alert-dismissible fade show mb-4 text-white"
+  role="alert"
+>
   <strong>New to SuperPredicto?</strong>
   <ul class="mt-2 mb-0 ps-3">
     <li>
-      Visit the 
-      <a href="{{ url_for('main.guidelines') }}" class="intro-link">Scoring Guidelines</a> 
+      Visit the
+      <a href="{{ url_for('main.guidelines') }}" class="intro-link"
+        >Scoring Guidelines</a
+      >
       for a full breakdown of how points are awarded.
     </li>
     <li>
-      Go to 
-      <a href="{{ url_for('main.submit_picks') }}" class="intro-link">Submit Picks</a> 
+      Go to
+      <a href="{{ url_for('main.submit_picks') }}" class="intro-link"
+        >Submit Picks</a
+      >
       to enter your predictions before kickoff.
     </li>
     <li>
-      Scoring: 4 points for a perfect pick, 2 for right winner + correct score of winner, 1 for partial match, 
+      Scoring: 4 points for a perfect pick, 2 for right winner + correct score
+      of winner, 1 for partial match,
       <strong>0 points</strong> for incorrect or invalid picks.
     </li>
     <li>
-      Predictions of <strong>1-0 or 0-1</strong> are considered invalid unless the actual result is exactly the same — in which case, 4 points are awarded.
+      Predictions of <strong>1-0 or 0-1</strong> are considered invalid unless
+      the actual result is exactly the same — in which case, 4 points are
+      awarded.
     </li>
     <li>
-      You must <strong>complete your profile</strong> and <strong>make payment</strong> before you can submit picks.
+      You must <strong>complete your profile</strong> and
+      <strong>make payment</strong> before you can submit picks.
     </li>
     <li>
-      <strong>Top 3 winners</strong> are based on total points. 
-      If there’s a tie, the following <strong>tie-breaker rules</strong> will apply:
+      <strong>Top 3 winners</strong> are based on total points. If there’s a
+      tie, the following <strong>tie-breaker rules</strong> will apply:
       <ol class="mt-1 mb-0 ps-3">
         <li>Most perfect picks</li>
         <li>Most picks earning 2 points</li>
@@ -35,9 +47,14 @@
       </ol>
     </li>
   </ul>
-  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close" onclick="hideIntroBanner()"></button>
+  <button
+    type="button"
+    class="btn-close btn-close-white"
+    data-bs-dismiss="alert"
+    aria-label="Close"
+    onclick="hideIntroBanner()"
+  ></button>
 </div>
-
 
 {% if needs_profile %}
 <div class="alert alert-warning text-center" role="alert">
@@ -49,80 +66,127 @@
   <h4 class="text-center mb-3">
     Leaderboard - 2025 Fifa Club Football World Cup
   </h4>
-  <div class="table-wrapper mx-auto">
-    <div class="table-responsive">
-      <table
-        class="table table-bordered table-hover align-middle text-nowrap schedule-table"
-      >
-        <thead class="table-dark text-center">
-          <tr>
-            <th scope="col" style="width: 5%">Rank</th>
-            <th scope="col" style="width: 25%">Name</th>
-            <th scope="col" class="border-thick-right" style="width: 12%">
-              Points
-            </th>
-            <th scope="col" style="width: 10%">Perfect</th>
-            <th class="d-none d-sm-table-cell" scope="col" style="width: 10%">
-              2 Points
-            </th>
-            <th class="d-none d-sm-table-cell" scope="col" style="width: 10%">
-              1 Point
-            </th>
-            <th class="d-none d-sm-table-cell" scope="col" style="width: 10%">
-              0 Points
-            </th>
-            <th class="d-none d-sm-table-cell" scope="col" style="width: 10%">
-              Invalid
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {% if leaderboard %} {% for entry in leaderboard %}
-          <tr
-            class="text-center {% if loop.index == 1 %}table-warning {% elif loop.index == 2 %}table-info {% elif loop.index == 3 %}table-success {% endif %}"
+  <div class="table-responsive">
+    <table
+      class="table table-bordered table-hover align-middle text-nowrap schedule-table"
+    >
+      <thead class="table-dark text-center">
+        <tr>
+          <th
+            scope="col"
+            rowspan="2"
+            class="text-center align-middle"
+            style="width: 9.5%"
           >
-            <td>{{ loop.index }}</td>
-            <td>
-              {% if user %} {{ entry.name or '-' }} {% else %}
-              <span class="blurred" title="Login to see the rankings.">
-                {{ entry.name or '-' }}
-              </span>
-              {% endif %}
-            </td>
-            <td class="border-thick-right">
-              {{ entry.points if entry.points is not none else '-' }}
-            </td>
-            <td>
-              {{ entry.perfect_picks if entry.perfect_picks is not none else '-'
-              }}
-            </td>
-            <td class="d-none d-sm-table-cell">
-              {{ entry.picks_scoring_two if entry.picks_scoring_two is not none
-              else '-' }}
-            </td>
-            <td class="d-none d-sm-table-cell">
-              {{ entry.picks_scoring_one if entry.picks_scoring_one is not none
-              else '-' }}
-            </td>
-            <td class="d-none d-sm-table-cell">
-              {{ entry.picks_scoring_zero if entry.picks_scoring_zero is not
-              none else '-' }}
-            </td>
-            <td class="d-none d-sm-table-cell">
-              {{ entry.invalid_picks if entry.invalid_picks is not none else '-'
-              }}
-            </td>
-          </tr>
-          {% endfor %} {% else %}
-          <tr>
-            <td colspan="8" class="text-muted text-center">
-              No leaderboard data available.
-            </td>
-          </tr>
-          {% endif %}
-        </tbody>
-      </table>
-    </div>
+            Rank
+          </th>
+          <th
+            scope="col"
+            rowspan="2"
+            class="text-center align-middle"
+            style="width: 21.5%"
+          >
+            Name
+          </th>
+          <th
+            scope="col"
+            rowspan="2"
+            class="text-center align-middle border-thick-right"
+            style="width: 11.5%"
+          >
+            Points
+          </th>
+          <th colspan="5" class="d-none d-sm-table-cell small">
+            Number of -
+          </th>
+        </tr>
+        <tr>
+          <th
+            class="d-none d-sm-table-cell small"
+            scope="col"
+            style="width: 11.5%"
+          >
+            Perfect Picks
+          </th>
+          <th
+            class="d-none d-sm-table-cell small"
+            scope="col"
+            style="width: 11.5%"
+          >
+            Picks scoring 2
+          </th>
+          <th
+            class="d-none d-sm-table-cell small"
+            scope="col"
+            style="width: 11.5%"
+          >
+            Picks scoring 1
+          </th>
+          <th
+            class="d-none d-sm-table-cell small"
+            scope="col"
+            style="width: 11.5%"
+          >
+            Picks scoring 0
+          </th>
+          <th
+            class="d-none d-sm-table-cell small"
+            scope="col"
+            style="width: 11.5%"
+          >
+            Invalid Picks
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% if leaderboard %} {% set all_zero = leaderboard |
+        selectattr("points", "equalto", 0) | list | length == leaderboard |
+        length %} {% for entry in leaderboard %}
+        <tr
+          class="text-center {% if not all_zero %}{% if loop.index == 1 %}table-warning {% elif loop.index == 2 %}table-info {% elif loop.index == 3 %}table-success {% endif %}{% endif %}"
+        >
+          <td>{{ loop.index }}</td>
+          <td>
+            {% if user %} {{ entry.name or '-' }} {% else %}
+            <span class="blurred" title="Login to see the rankings.">
+              {{ entry.name or '-' }}
+            </span>
+            {% endif %}
+          </td>
+          <td class="border-thick-right">
+            {{ entry.points if entry.points is not none else '-' }}
+          </td>
+          <td>
+            {{ entry.perfect_picks if entry.perfect_picks is not none else '-'
+            }}
+          </td>
+          <td class="d-none d-sm-table-cell">
+            {{ entry.picks_scoring_two if entry.picks_scoring_two is not none
+            else '-' }}
+          </td>
+          <td class="d-none d-sm-table-cell">
+            {{ entry.picks_scoring_one if entry.picks_scoring_one is not none
+            else '-' }}
+          </td>
+          <td class="d-none d-sm-table-cell">
+            {{ entry.picks_scoring_zero if entry.picks_scoring_zero is not none
+            else '-' }}
+          </td>
+          <td class="d-none d-sm-table-cell">
+            {{ entry.invalid_picks if entry.invalid_picks is not none else '-'
+            }}
+          </td>
+        </tr>
+        {% endfor %} {% else %}
+        <tr>
+          <td colspan="8" class="text-muted text-center">
+            No leaderboard data available.
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
   </div>
 </div>
 

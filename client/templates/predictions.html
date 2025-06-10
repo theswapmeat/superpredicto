@@ -1,12 +1,43 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 
 <h2 class="text-center mb-4">All User Predictions</h2>
 
+<!-- Intro Banner -->
+<div
+  id="predictionsIntroBanner"
+  class="intro-banner alert alert-dismissible fade show mb-4 text-white"
+  role="alert"
+>
+  <strong>Viewing Everyone's Predictions</strong>
+  <ul class="mt-2 mb-0 ps-3">
+    <li>
+      You can see all user predictions here for games that have started or been
+      completed.
+    </li>
+    <li>
+      Predictions for upcoming games are hidden until kickoff to prevent users
+      from copying others’ picks.
+    </li>
+  </ul>
+  <button
+    type="button"
+    class="btn-close btn-close-white"
+    data-bs-dismiss="alert"
+    aria-label="Close"
+    onclick="hidePredictionsIntroBanner()"
+  ></button>
+</div>
+
 <!-- Filters -->
-<div class="d-flex align-items-center justify-content-between gap-2 mb-3 flex-nowrap">
+<div
+  class="d-flex align-items-center justify-content-between gap-2 mb-3 flex-nowrap"
+>
   <div class="d-flex align-items-center gap-2">
-    <select id="userFilter" class="form-select form-select-sm" style="max-width: 180px">
+    <select
+      id="userFilter"
+      class="form-select form-select-sm"
+      style="max-width: 180px"
+    >
       <option value="">All Users</option>
       {% for user in users %}
       <option value="{{ user.id }}">
@@ -15,7 +46,11 @@
       {% endfor %}
     </select>
 
-    <select id="gameFilter" class="form-select form-select-sm" style="max-width: 180px">
+    <select
+      id="gameFilter"
+      class="form-select form-select-sm"
+      style="max-width: 180px"
+    >
       <option value="">All Games</option>
       {% for game in games %}
       <option value="{{ game.id }}">
@@ -24,21 +59,19 @@
       {% endfor %}
     </select>
   </div>
+  <div class="d-flex align-items-center gap-2">
+    <label for="perPage" class="mb-0">Rows per page:</label>
+    <select id="perPage" class="form-select form-select-sm" style="width: 80px">
+      <option value="10" selected>10</option>
+      <option value="50">50</option>
+      <option value="100">100</option>
+    </select>
+  </div>
 </div>
 
 <!-- Predictions Table -->
 <div id="predictionsTable">
   {% include "partials/_predictions_table.html" %}
-</div>
-
-<!-- Rows Per Page Dropdown (bottom-right) -->
-<div class="d-flex justify-content-end align-items-center mt-2" style="width: 100%">
-  <label for="perPage" class="mb-0 me-2">Rows per page:</label>
-  <select id="perPage" class="form-select form-select-sm" style="width: 80px">
-    <option value="10">10</option>
-    <option value="50" selected>50</option>
-    <option value="100">100</option>
-  </select>
 </div>
 
 <!-- Responsive Styles -->
@@ -79,12 +112,12 @@
 
   .schedule-table th:nth-child(1),
   .schedule-table td:nth-child(1) {
-    width: 150px;
+    width: 20%;
   }
 
   .schedule-table th:nth-child(2),
   .schedule-table td:nth-child(2) {
-    width: 200px;
+    width: 40%;
   }
 
   .schedule-table th:nth-child(3),
@@ -93,7 +126,7 @@
   .schedule-table td:nth-child(4),
   .schedule-table th:nth-child(5),
   .schedule-table td:nth-child(5) {
-    width: 90px;
+    width: 10%;
   }
 </style>
 
@@ -118,7 +151,9 @@
       .then((response) => response.text())
       .then((html) => {
         document.getElementById("predictionsTable").innerHTML = html;
-        const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        const tooltips = document.querySelectorAll(
+          '[data-bs-toggle="tooltip"]'
+        );
         tooltips.forEach((el) => new bootstrap.Tooltip(el));
       });
   }
@@ -127,9 +162,26 @@
     updatePredictions(pageNum);
   }
 
-  document.getElementById("userFilter")?.addEventListener("change", () => updatePredictions());
-  document.getElementById("gameFilter")?.addEventListener("change", () => updatePredictions());
-  document.getElementById("perPage")?.addEventListener("change", () => updatePredictions());
+  document
+    .getElementById("userFilter")
+    ?.addEventListener("change", () => updatePredictions());
+  document
+    .getElementById("gameFilter")
+    ?.addEventListener("change", () => updatePredictions());
+  document
+    .getElementById("perPage")
+    ?.addEventListener("change", () => updatePredictions());
+
+  function hidePredictionsIntroBanner() {
+    localStorage.setItem("hidePredictionsIntroBanner", "true");
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    if (localStorage.getItem("hidePredictionsIntroBanner") === "true") {
+      const banner = document.getElementById("predictionsIntroBanner");
+      if (banner) banner.style.display = "none";
+    }
+  });
 </script>
 
 {% endblock %}

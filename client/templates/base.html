@@ -197,6 +197,37 @@
           }, 200);
         });
       }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const form = document.getElementById("picks-form");
+        if (form) {
+          form.addEventListener("submit", () => {
+            const spinner = document.getElementById("form-spinner");
+            if (spinner) spinner.style.display = "flex";
+          });
+        }
+      });
     </script>
+    <div
+      id="form-spinner"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.75);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <img
+        src="{{ url_for('static', filename='spinner/spinner.svg') }}"
+        alt="Loading..."
+        style="width: 60px; height: 60px"
+      />
+    </div>
   </body>
 </html>

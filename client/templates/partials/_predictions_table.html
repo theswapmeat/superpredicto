@@ -4,15 +4,15 @@
   >
     <thead class="table-dark text-center">
       <tr>
-        <th style="width: 140px">User</th>
-        <th style="width: 200px">Game</th>
-        <th class="d-none d-sm-table-cell" style="width: 100px">Prediction</th>
-        <th class="d-none d-sm-table-cell" style="width: 100px">Final Score</th>
-        <th style="width: 60px">Points</th>
+        <th style="width: 20%">User</th>
+        <th style="width: 40%">Game</th>
+        <th class="d-none d-sm-table-cell" style="width: 10%">Prediction</th>
+        <th class="d-none d-sm-table-cell" style="width: 10%">Final Score</th>
+        <th style="width: 10%">Points</th>
       </tr>
     </thead>
     <tbody>
-      {% for prediction in predictions.items %}
+      {% if predictions.items %} {% for prediction in predictions.items %}
       <tr class="text-center">
         <td>
           {% if prediction.user.display_name %} {{ prediction.user.display_name
@@ -54,7 +54,14 @@
           </span>
         </td>
       </tr>
-      {% endfor %}
+      {% endfor %} {% else %}
+      <tr>
+        <td colspan="5" class="text-center text-muted">
+          No predictions available. Try adjusting your filters or check back
+          after games have started.
+        </td>
+      </tr>
+      {% endif %}
     </tbody>
   </table>
 </div>
@@ -109,7 +116,6 @@
 
 <style>
   @media (max-width: 576px) {
-    /* Hide prediction and final score columns on mobile */
     .schedule-table th:nth-child(3),
     .schedule-table td:nth-child(3),
     .schedule-table th:nth-child(4),
@@ -117,20 +123,17 @@
       display: none !important;
     }
 
-    /* Adjust Points column for better visibility */
     .schedule-table th:nth-child(5),
     .schedule-table td:nth-child(5) {
       width: 50px;
       white-space: nowrap;
     }
 
-    /* Slightly increase Game column */
     .schedule-table th:nth-child(2),
     .schedule-table td:nth-child(2) {
       width: 60%;
     }
 
-    /* Keep font and padding compact */
     .schedule-table td,
     .schedule-table th {
       font-size: 12px;

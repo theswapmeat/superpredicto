@@ -10,7 +10,7 @@ class User(db.Model):
     email = db.Column(db.String, unique=True, nullable=False)
     first_name = db.Column(db.String, nullable=True)
     last_name = db.Column(db.String, nullable=True)
-    display_name = db.Column(db.String(20), unique=True, nullable=True)
+    display_name = db.Column(db.String(20), nullable=True)
     is_paid = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
     avatar = db.Column(db.String)
