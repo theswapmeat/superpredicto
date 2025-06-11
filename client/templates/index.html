@@ -1,5 +1,39 @@
 {% extends "base.html" %} {% block content %}
 
+<style>
+  @media (max-width: 575.98px) {
+    /* Mobile header columns */
+    .mobile-header th:nth-child(1) {
+      width: 10% !important;
+    }
+    .mobile-header th:nth-child(2) {
+      width: 50% !important;
+    }
+    .mobile-header th:nth-child(3),
+    .mobile-header th:nth-child(4) {
+      width: 20% !important;
+    }
+
+    /* Mobile table cells */
+    .mobile-stat-col.border-thick-right {
+      width: 20% !important;
+    }
+    .mobile-stat-col {
+      width: 20% !important;
+    }
+
+    /* Name column in mobile */
+    td:nth-child(2) {
+      width: 50% !important;
+    }
+
+    /* Intro banner font size */
+    .intro-banner {
+      font-size: 0.85rem;
+    }
+  }
+</style>
+
 <h2 class="text-center mb-4">Welcome to SuperPredicto</h2>
 
 <div

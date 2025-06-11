@@ -1,4 +1,5 @@
 {% extends "base.html" %} {% block content %}
+
 <h3 class="text-center mb-4">Submit Your Picks</h3>
 
 <form method="POST" id="picks-form">
@@ -25,6 +26,7 @@
         and ((form_data.get(home_key) and not form_data.get(away_key)) or
         (form_data.get(away_key) and not form_data.get(home_key))) %} {% set
         is_invalid = form_data.get('invalid_' ~ game.id) %}
+
         <tr
           class="text-center {% if prediction %}table-success{% endif %} {% if error or is_invalid %}table-danger{% endif %}"
         >
@@ -44,7 +46,7 @@
                   contrast(110%);
               "
             />
-            {% endif %}{{ game.game_number }}
+            {% endif %} {{ game.game_number }}
           </td>
           <td>{{ game.date_of_game.strftime('%B %d, %Y') }}</td>
           <td class="d-none d-md-table-cell">
@@ -70,7 +72,7 @@
                   -moz-appearance: textfield;
                 "
               />
-              <span class="align-self-center">-</span>
+              <span class="align-self-center">-&nbsp;</span>
               <input
                 type="number"
                 name="{{ away_key }}"
@@ -92,10 +94,17 @@
             <div class="text-danger small mt-1">
               Please enter both scores or leave both blank.
             </div>
-            {% endif %} {% else %} {% if prediction %} {{
-            prediction.home_score_prediction }} - {{
-            prediction.away_score_prediction }} {% else %} - {% endif %} {%
-            endif %}
+            {% endif %} {% else %} {% if prediction %}
+            <span class="score-text"
+              >{{ prediction.home_score_prediction }}</span
+            >
+            <span class="score-text">-</span>
+            <span class="score-text"
+              >{{ prediction.away_score_prediction }}</span
+            >
+            {% else %}
+            <span class="score-text">-</span>
+            {% endif %} {% endif %}
           </td>
           <td>{{ game.away_team }}</td>
         </tr>
@@ -117,6 +126,47 @@
     .schedule-table th {
       font-size: 12px;
       padding: 0.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Set specific column widths for mobile */
+    .schedule-table td:nth-child(2),
+    .schedule-table th:nth-child(2) {
+      width: 20% !important; /* Date */
+    }
+
+    .schedule-table td:nth-child(4),
+    .schedule-table th:nth-child(4) {
+      width: 30% !important; /* Home Team */
+      max-width: 100px;
+    }
+
+    .schedule-table td:nth-child(5),
+    .schedule-table th:nth-child(5) {
+      width: 20% !important; /* Score */
+    }
+
+    .schedule-table td:nth-child(6),
+    .schedule-table th:nth-child(6) {
+      width: 30% !important; /* Away Team */
+      max-width: 100px;
+    }
+
+    /* Prevent horizontal scroll */
+    .table-responsive {
+      overflow-x: hidden;
+    }
+
+    /* Optional: show full team name on hover */
+    .schedule-table td:nth-child(4):hover,
+    .schedule-table td:nth-child(6):hover {
+      white-space: normal;
+      overflow: visible;
+      position: relative;
+      z-index: 1;
+      background-color: #fff;
     }
   }
 
@@ -138,7 +188,20 @@
   .table-success input:disabled {
     background-color: #e9fbe9;
   }
+
+  /* Fix spacing around dash in non-editable score display */
+  td:nth-child(5):not(:has(input)) {
+    font-size: 0.9rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+
+  .score-text {
+    display: inline-block;
+    margin: 0 2px;
+  }
 </style>
+
 <script>
   function validatePicksForm() {
     const rows = document.querySelectorAll(".score-input");
@@ -164,7 +227,6 @@
 
     for (const gameId in groupedRows) {
       const { home, away } = groupedRows[gameId];
-
       const hasHome = home !== "";
       const hasAway = away !== "";
 
@@ -173,9 +235,7 @@
         break;
       }
 
-      if (hasHome && hasAway) {
-        hasAtLeastOnePick = true;
-      }
+      if (hasHome && hasAway) hasAtLeastOnePick = true;
     }
 
     submitButton.disabled = !(allRowsValid && hasAtLeastOnePick);

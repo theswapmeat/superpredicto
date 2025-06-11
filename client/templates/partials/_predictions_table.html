@@ -1,7 +1,5 @@
 <div class="table-responsive">
-  <table
-    class="table table-bordered table-hover align-middle text-nowrap schedule-table"
-  >
+  <table class="table table-bordered table-hover align-middle schedule-table">
     <thead class="table-dark text-center">
       <tr>
         <th style="width: 20%">User</th>
@@ -56,9 +54,11 @@
       </tr>
       {% endfor %} {% else %}
       <tr>
-        <td colspan="5" class="text-center text-muted">
-          No predictions available. Try adjusting your filters or check back
-          after games have started.
+        <td colspan="5">
+          <div class="no-predictions-message text-center text-muted">
+            No predictions available. Try adjusting your filters or check back
+            after games have started.
+          </div>
         </td>
       </tr>
       {% endif %}
@@ -80,9 +80,7 @@
       </a>
     </li>
     {% else %}
-    <li class="page-item disabled">
-      <span class="page-link">Previous</span>
-    </li>
+    <li class="page-item disabled"><span class="page-link">Previous</span></li>
     {% endif %} {% for page_num in range(1, predictions.pages + 1) %}
     <li
       class="page-item {% if page_num == predictions.page %}active{% endif %}"
@@ -106,9 +104,7 @@
       </a>
     </li>
     {% else %}
-    <li class="page-item disabled">
-      <span class="page-link">Next</span>
-    </li>
+    <li class="page-item disabled"><span class="page-link">Next</span></li>
     {% endif %}
   </ul>
 </nav>
@@ -138,6 +134,27 @@
     .schedule-table th {
       font-size: 12px;
       padding: 0.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
+
+    .no-predictions-message {
+      white-space: normal !important;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      padding: 0 !important;
+      font-size: 0.75rem !important;
+      margin: 0 !important;
+      line-height: 1.4;
+    }
+  }
+
+  .no-predictions-message {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    padding: 1rem;
+    font-size: 1rem;
   }
 </style>
