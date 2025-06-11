@@ -70,72 +70,50 @@
     <table
       class="table table-bordered table-hover align-middle text-nowrap schedule-table"
     >
-      <thead class="table-dark text-center">
+      <!-- Desktop header -->
+      <thead class="table-dark text-center desktop-header">
         <tr>
+          <th rowspan="2" style="width: 9.5%" class="align-middle">Rank</th>
+          <th rowspan="2" style="width: 21.5%" class="align-middle">Name</th>
           <th
-            scope="col"
             rowspan="2"
-            class="text-center align-middle"
-            style="width: 9.5%"
-          >
-            Rank
-          </th>
-          <th
-            scope="col"
-            rowspan="2"
-            class="text-center align-middle"
-            style="width: 21.5%"
-          >
-            Name
-          </th>
-          <th
-            scope="col"
-            rowspan="2"
-            class="text-center align-middle border-thick-right"
             style="width: 11.5%"
+            class="align-middle border-thick-right"
           >
             Points
           </th>
-          <th colspan="5" class="d-none d-sm-table-cell small">
-            Number of -
-          </th>
+          <th colspan="5" class="small">Number of -</th>
         </tr>
         <tr>
-          <th
-            class="d-none d-sm-table-cell small"
-            scope="col"
-            style="width: 11.5%"
-          >
-            Perfect Picks
-          </th>
-          <th
-            class="d-none d-sm-table-cell small"
-            scope="col"
-            style="width: 11.5%"
-          >
-            Picks scoring 2
-          </th>
-          <th
-            class="d-none d-sm-table-cell small"
-            scope="col"
-            style="width: 11.5%"
-          >
-            Picks scoring 1
-          </th>
-          <th
-            class="d-none d-sm-table-cell small"
-            scope="col"
-            style="width: 11.5%"
-          >
-            Picks scoring 0
-          </th>
-          <th
-            class="d-none d-sm-table-cell small"
-            scope="col"
-            style="width: 11.5%"
-          >
-            Invalid Picks
-          </th>
+          <th style="width: 11.5%" class="small">Perfect Picks</th>
+          <th style="width: 11.5%" class="small">Picks scoring 2</th>
+          <th style="width: 11.5%" class="small">Picks scoring 1</th>
+          <th style="width: 11.5%" class="small">Picks scoring 0</th>
+          <th style="width: 11.5%" class="small">Invalid Picks</th>
+        </tr>
+      </thead>
+
+      <!-- Tablet header -->
+      <thead class="table-dark text-center tablet-header">
+        <tr>
+          <th style="width: 9.5%">Rank</th>
+          <th style="width: 21.5%">Name</th>
+          <th style="width: 11.5%" class="border-thick-right">Points</th>
+          <th style="width: 11.5%">Perfect Picks</th>
+          <th style="width: 11.5%">Picks scoring 2</th>
+          <th style="width: 11.5%">Picks scoring 1</th>
+          <th style="width: 11.5%">Picks scoring 0</th>
+          <th style="width: 11.5%">Invalid Picks</th>
+        </tr>
+      </thead>
+
+      <!-- Mobile header -->
+      <thead class="table-dark text-center mobile-header">
+        <tr>
+          <th style="width: 9.5%">Rank</th>
+          <th style="width: 21.5%">Name</th>
+          <th class="mobile-stat-col border-thick-right">Points</th>
+          <th class="mobile-stat-col">Perfect Picks</th>
         </tr>
       </thead>
 
@@ -154,10 +132,10 @@
             </span>
             {% endif %}
           </td>
-          <td class="border-thick-right">
+          <td class="mobile-stat-col border-thick-right">
             {{ entry.points if entry.points is not none else '-' }}
           </td>
-          <td>
+          <td class="mobile-stat-col">
             {{ entry.perfect_picks if entry.perfect_picks is not none else '-'
             }}
           </td>
@@ -190,7 +168,6 @@
   </div>
 </div>
 
-<!-- Persistent Dismissal Script -->
 <script>
   function hideIntroBanner() {
     localStorage.setItem("hideIntroBanner", "true");

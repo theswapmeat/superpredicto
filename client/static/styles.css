@@ -62,13 +62,9 @@ body {
 }
 
 .intro-banner .intro-link:hover {
-  /* text-decoration: underline; */
-  /* color: #ffe666; */
-
   color: #c0bfff;
 }
 
-/* Avatar icon in navbar */
 .user-avatar {
   width: 24px;
   height: 24px;
@@ -147,5 +143,58 @@ body {
 }
 
 .support-whatsapp-link:hover {
-  color: #6f42c1; /* Bootstrap's primary purple (same as .text-primary or navbar-brand hover) */
+  color: #6f42c1;
+}
+
+/* Hide/show table headers depending on screen size */
+thead.desktop-only {
+  display: table-header-group;
+}
+thead.mobile-only {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  thead.desktop-only {
+    display: none;
+  }
+  thead.mobile-only {
+    display: table-header-group;
+  }
+}
+/* Show/hide the right thead depending on screen size */
+thead.desktop-header,
+thead.tablet-header,
+thead.mobile-header {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  thead.desktop-header {
+    display: table-header-group;
+  }
+}
+
+@media (min-width: 576px) and (max-width: 767.98px) {
+  thead.tablet-header {
+    display: table-header-group;
+  }
+}
+
+@media (max-width: 575.98px) {
+  thead.mobile-header {
+    display: table-header-group;
+  }
+}
+
+@media (max-width: 575.98px) {
+  th.mobile-perfect-picks,
+  td.mobile-perfect-picks {
+    width: 11.5% !important;
+  }
+}
+@media (max-width: 575.98px) {
+  .mobile-stat-col {
+    width: 11.5% !important;
+  }
 }
