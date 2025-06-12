@@ -4,27 +4,25 @@
   @media (max-width: 575.98px) {
     /* Mobile header columns */
     .mobile-header th:nth-child(1) {
-      width: 10% !important;
+      width: 10% !important; /* Rank - unchanged */
     }
     .mobile-header th:nth-child(2) {
-      width: 50% !important;
+      width: 20.25% !important; /* Name - increased */
     }
-    .mobile-header th:nth-child(3),
+    .mobile-header th:nth-child(3) {
+      width: 26.5% !important; /* Points - decreased */
+    }
     .mobile-header th:nth-child(4) {
-      width: 20% !important;
+      width: 26.5% !important; /* Perfect Picks - decreased */
     }
 
     /* Mobile table cells */
-    .mobile-stat-col.border-thick-right {
-      width: 20% !important;
-    }
-    .mobile-stat-col {
-      width: 20% !important;
-    }
-
-    /* Name column in mobile */
     td:nth-child(2) {
-      width: 50% !important;
+      width: 20.25% !important; /* Name cell - match header */
+    }
+    td:nth-child(3),
+    td:nth-child(4) {
+      width: 26.5% !important; /* Points and Perfect Picks - match header */
     }
 
     /* Intro banner font size */

@@ -1,173 +1,94 @@
 {% extends "base.html" %} {% block content %}
 
 <h3 class="text-center mb-4">Submit Your Picks</h3>
-
-<form method="POST" id="picks-form">
-  <div class="table-responsive">
-    <table
-      class="table table-bordered table-hover align-middle text-nowrap schedule-table"
+<div id="picks-form-container">
+  <form method="POST" id="picks-form">
+    {% set games_by_date = {} %} {% for game in games %} {% set date =
+    game.date_of_game.strftime('%B %d, %Y') %} {% if date not in games_by_date
+    %} {% set _ = games_by_date.update({date: []}) %} {% endif %} {% set _ =
+    games_by_date[date].append(game) %} {% endfor %} {% for date, games_on_date
+    in games_by_date.items() %}
+    <h5
+      class="mt-4 mb-3 date-heading d-flex align-items-center"
+      data-date="{{ date }}"
+      onclick="toggleGameGroup('{{ date }}')"
     >
-      <thead class="table-dark text-center">
-        <tr>
-          <th class="d-none d-md-table-cell">Game #</th>
-          <th>Date</th>
-          <th class="d-none d-md-table-cell">Time</th>
-          <th>Home Team</th>
-          <th style="width: 70px">Score</th>
-          <th>Away Team</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for game in games %} {% set editable = game.date_of_game >
-        uae_now.date() or (game.date_of_game == uae_now.date() and
-        game.time_of_game > uae_now.time()) %} {% set prediction =
-        pred_dict.get(game.id) %} {% set home_key = 'home_score_' ~ game.id %}
-        {% set away_key = 'away_score_' ~ game.id %} {% set error = form_data
-        and ((form_data.get(home_key) and not form_data.get(away_key)) or
-        (form_data.get(away_key) and not form_data.get(home_key))) %} {% set
-        is_invalid = form_data.get('invalid_' ~ game.id) %}
+      {{ date }}
+      <i
+        id="icon-{{ date|replace(' ', '') }}"
+        class="bi bi-caret-down ms-2"
+      ></i>
+    </h5>
+    <div class="game-group mb-4" id="group-{{ date|replace(' ', '') }}">
+      {% for game in games_on_date %} {% set editable = game.date_of_game >
+      uae_now.date() or (game.date_of_game == uae_now.date() and
+      game.time_of_game > uae_now.time()) %} {% set prediction =
+      pred_dict.get(game.id) %} {% set home_key = 'home_score_' ~ game.id %} {%
+      set away_key = 'away_score_' ~ game.id %} {% set error = form_data and
+      ((form_data.get(home_key) and not form_data.get(away_key)) or
+      (form_data.get(away_key) and not form_data.get(home_key))) %} {% set
+      is_invalid = form_data.get('invalid_' ~ game.id) %}
+      <div
+        class="d-flex justify-content-between align-items-center flex-wrap mb-2 px-2 py-2 rounded border row-active {% if error or is_invalid %} border-danger bg-light-danger {% elif prediction %} border-success bg-light-success {% else %} border-secondary {% endif %}"
+      >
+        <div class="game-label">
+          {{ game.home_team }} <span class="mx-1">v</span> {{ game.away_team }}
+        </div>
+        <div class="d-flex align-items-center score-inputs">
+          {% if editable %}
+          <input
+            type="number"
+            name="{{ home_key }}"
+            value="{% if form_data %}{{ form_data.get(home_key, '') }}{% else %}{{ prediction.home_score_prediction if prediction else '' }}{% endif %}"
+            class="form-control score-input text-center"
+            min="0"
+            step="1"
+            inputmode="numeric"
+            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+          />
+          <span class="mx-1">-</span>
+          <input
+            type="number"
+            name="{{ away_key }}"
+            value="{% if form_data %}{{ form_data.get(away_key, '') }}{% else %}{{ prediction.away_score_prediction if prediction else '' }}{% endif %}"
+            class="form-control score-input text-center"
+            min="0"
+            step="1"
+            inputmode="numeric"
+            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+          />
+          {% else %} {% if prediction %}
+          <span class="mx-1">{{ prediction.home_score_prediction }}</span>
+          <span>-</span>
+          <span class="mx-1">{{ prediction.away_score_prediction }}</span>
+          {% else %}
+          <span>-</span>
+          {% endif %} {% endif %}
+        </div>
+      </div>
+      {% if error %}
+      <div class="text-danger small mb-2">
+        Please enter both scores or leave both blank.
+      </div>
+      {% endif %} {% endfor %}
+    </div>
+    {% endfor %}
 
-        <tr
-          class="text-center {% if prediction %}table-success{% endif %} {% if error or is_invalid %}table-danger{% endif %}"
-        >
-          <td class="d-none d-md-table-cell">
-            {% if not editable %}
-            <img
-              src="{{ url_for('static', filename='icons/lock-alt-svgrepo-com.svg') }}"
-              alt="Locked"
-              title="Locked."
-              style="
-                width: 18px;
-                height: 18px;
-                vertical-align: middle;
-                margin-right: 4px;
-                filter: brightness(0) saturate(100%) invert(9%) sepia(91%)
-                  saturate(7417%) hue-rotate(249deg) brightness(90%)
-                  contrast(110%);
-              "
-            />
-            {% endif %} {{ game.game_number }}
-          </td>
-          <td>{{ game.date_of_game.strftime('%B %d, %Y') }}</td>
-          <td class="d-none d-md-table-cell">
-            {{ game.time_of_game.strftime('%H:%M') }}
-          </td>
-          <td>{{ game.home_team }}</td>
-          <td>
-            {% if editable %}
-            <div class="d-flex justify-content-between">
-              <input
-                type="number"
-                name="{{ home_key }}"
-                value="{% if form_data %}{{ form_data.get(home_key, '') }}{% else %}{{ prediction.home_score_prediction if prediction else '' }}{% endif %}"
-                class="form-control text-center me-1 score-input"
-                min="0"
-                step="1"
-                inputmode="numeric"
-                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                style="
-                  width: 40px;
-                  font-size: 0.85rem;
-                  appearance: textfield;
-                  -moz-appearance: textfield;
-                "
-              />
-              <span class="align-self-center">-&nbsp;</span>
-              <input
-                type="number"
-                name="{{ away_key }}"
-                value="{% if form_data %}{{ form_data.get(away_key, '') }}{% else %}{{ prediction.away_score_prediction if prediction else '' }}{% endif %}"
-                class="form-control text-center me-1 score-input"
-                min="0"
-                step="1"
-                inputmode="numeric"
-                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                style="
-                  width: 40px;
-                  font-size: 0.85rem;
-                  appearance: textfield;
-                  -moz-appearance: textfield;
-                "
-              />
-            </div>
-            {% if error %}
-            <div class="text-danger small mt-1">
-              Please enter both scores or leave both blank.
-            </div>
-            {% endif %} {% else %} {% if prediction %}
-            <span class="score-text"
-              >{{ prediction.home_score_prediction }}</span
-            >
-            <span class="score-text">-</span>
-            <span class="score-text"
-              >{{ prediction.away_score_prediction }}</span
-            >
-            {% else %}
-            <span class="score-text">-</span>
-            {% endif %} {% endif %}
-          </td>
-          <td>{{ game.away_team }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <div class="d-flex justify-content-end mt-3">
-    <button type="submit" class="btn btn-success" id="submit-button" disabled>
-      Save Picks
-    </button>
-  </div>
-</form>
+    <div class="d-flex justify-content-end mt-3 mb-4">
+      <button type="submit" class="btn btn-success" id="submit-button" disabled>
+        Save Picks
+      </button>
+    </div>
+  </form>
+</div>
 
 <style>
-  @media (max-width: 576px) {
-    .schedule-table td,
-    .schedule-table th {
-      font-size: 12px;
-      padding: 0.25rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Set specific column widths for mobile */
-    .schedule-table td:nth-child(2),
-    .schedule-table th:nth-child(2) {
-      width: 20% !important; /* Date */
-    }
-
-    .schedule-table td:nth-child(4),
-    .schedule-table th:nth-child(4) {
-      width: 30% !important; /* Home Team */
-      max-width: 100px;
-    }
-
-    .schedule-table td:nth-child(5),
-    .schedule-table th:nth-child(5) {
-      width: 20% !important; /* Score */
-    }
-
-    .schedule-table td:nth-child(6),
-    .schedule-table th:nth-child(6) {
-      width: 30% !important; /* Away Team */
-      max-width: 100px;
-    }
-
-    /* Prevent horizontal scroll */
-    .table-responsive {
-      overflow-x: hidden;
-    }
-
-    /* Optional: show full team name on hover */
-    .schedule-table td:nth-child(4):hover,
-    .schedule-table td:nth-child(6):hover {
-      white-space: normal;
-      overflow: visible;
-      position: relative;
-      z-index: 1;
-      background-color: #fff;
-    }
+  .score-input {
+    width: 42px;
+    font-size: 0.85rem;
+    padding: 0.2rem 0.25rem;
+    appearance: textfield;
+    -moz-appearance: textfield;
   }
 
   input[type="number"]::-webkit-inner-spin-button,
@@ -176,29 +97,61 @@
     margin: 0;
   }
 
-  .form-control {
-    padding: 0.2rem 0.3rem;
-  }
-
-  .table-danger input {
-    border-color: #dc3545;
+  .bg-light-danger {
     background-color: #f8d7da;
   }
 
-  .table-success input:disabled {
+  .bg-light-success {
     background-color: #e9fbe9;
   }
 
-  /* Fix spacing around dash in non-editable score display */
-  td:nth-child(5):not(:has(input)) {
-    font-size: 0.9rem;
-    padding-left: 0.25rem;
-    padding-right: 0.25rem;
+  .game-label {
+    font-size: 1rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70%;
   }
 
-  .score-text {
-    display: inline-block;
-    margin: 0 2px;
+  .score-inputs {
+    min-width: 90px;
+  }
+
+  .game-group .row-active:focus-within {
+    border-color: #26065d !important;
+  }
+
+  @media (max-width: 576px) {
+    .date-heading {
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .game-label {
+      font-size: 0.9rem;
+    }
+
+    .score-input {
+      width: 38px;
+      font-size: 0.8rem;
+    }
+  }
+
+  @media (min-width: 769px) {
+    #picks-form-container {
+      max-width: 60%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .game-label {
+      font-size: 0.9rem;
+    }
+
+    .date-heading {
+      font-size: 1rem;
+    }
   }
 </style>
 
@@ -208,7 +161,6 @@
     const submitButton = document.getElementById("submit-button");
 
     let allRowsValid = true;
-    let hasAtLeastOnePick = false;
 
     const groupedRows = {};
 
@@ -234,18 +186,47 @@
         allRowsValid = false;
         break;
       }
-
-      if (hasHome && hasAway) hasAtLeastOnePick = true;
     }
 
-    submitButton.disabled = !(allRowsValid && hasAtLeastOnePick);
+    submitButton.disabled = !allRowsValid;
   }
 
-  document.querySelectorAll(".score-input").forEach((input) => {
-    input.addEventListener("input", validatePicksForm);
-  });
+  function toggleGameGroup(date) {
+    const cleanDate = date.replace(/\s/g, "");
+    const group = document.getElementById("group-" + cleanDate);
+    const icon = document.getElementById("icon-" + cleanDate);
+    const isCollapsed = group.classList.toggle("d-none");
 
-  window.addEventListener("DOMContentLoaded", validatePicksForm);
+    localStorage.setItem("groupCollapsed_" + cleanDate, isCollapsed);
+
+    icon.classList.toggle("bi-caret-down", !isCollapsed);
+    icon.classList.toggle("bi-caret-right", isCollapsed);
+  }
+
+  function restoreGroupState() {
+    document.querySelectorAll(".date-heading").forEach((heading) => {
+      const date = heading.dataset.date;
+      const cleanDate = date.replace(/\s/g, "");
+      const collapsed =
+        localStorage.getItem("groupCollapsed_" + cleanDate) === "true";
+      const group = document.getElementById("group-" + cleanDate);
+      const icon = document.getElementById("icon-" + cleanDate);
+
+      if (collapsed) {
+        group.classList.add("d-none");
+        icon.classList.remove("bi-caret-down");
+        icon.classList.add("bi-caret-right");
+      }
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    validatePicksForm();
+    restoreGroupState();
+    document.querySelectorAll(".score-input").forEach((input) => {
+      input.addEventListener("input", validatePicksForm);
+    });
+  });
 </script>
 
 {% endblock %}

@@ -1,4 +1,6 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+{% block content %}
+
 <h2 class="text-center mb-4">Match Schedule</h2>
 
 <div class="table-responsive">
@@ -11,24 +13,19 @@
         <th>Date</th>
         <th class="d-none d-md-table-cell">Time</th>
         <th>Home Team</th>
-        <th style="width: 120px">Score</th>
+        <th class="score-col">Final Score</th>
         <th>Away Team</th>
       </tr>
     </thead>
     <tbody>
       {% for game in games %}
-      <tr
-        class="text-center {% if game.is_completed %}table-secondary{% endif %}"
-      >
+      <tr class="text-center {% if game.is_completed %}table-secondary{% endif %}">
         <td class="d-none d-md-table-cell">{{ game.game_number }}</td>
         <td>{{ game.date_of_game.strftime('%B %d, %Y') }}</td>
-        <td class="d-none d-md-table-cell">
-          {{ game.time_of_game.strftime('%H:%M') }}
-        </td>
+        <td class="d-none d-md-table-cell">{{ game.time_of_game.strftime('%H:%M') }}</td>
         <td>{{ game.home_team }}</td>
         <td>
-          {% if game.home_team_score is not none and game.away_team_score is not
-          none %}
+          {% if game.home_team_score is not none and game.away_team_score is not none %}
           <div class="d-flex justify-content-center align-items-center gap-2">
             <div>{{ game.home_team_score }} - {{ game.away_team_score }}</div>
             <input type="checkbox" checked disabled title="Completed Game" />
@@ -43,11 +40,24 @@
 </div>
 
 <style>
+  /* Responsive Schedule Table Styling */
   @media (max-width: 576px) {
-    .schedule-table td,
-    .schedule-table th {
+    .schedule-table {
+      table-layout: fixed; /* enables ellipsis */
+    }
+
+    .schedule-table th,
+    .schedule-table td {
       font-size: 12px;
       padding: 0.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .schedule-table th.score-col,
+    .schedule-table td:nth-child(5) {
+      width: auto !important;
     }
   }
 
@@ -55,4 +65,5 @@
     cursor: not-allowed;
   }
 </style>
+
 {% endblock %}

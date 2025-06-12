@@ -28,52 +28,58 @@
   ></button>
 </div>
 
-<!-- Filters -->
+<!-- Filters (top row) -->
 <div
-  class="d-flex align-items-center justify-content-between gap-2 mb-3 flex-nowrap"
+  class="d-flex align-items-center justify-content-start gap-2 mb-3 flex-nowrap"
 >
-  <div class="d-flex align-items-center gap-2">
-    <select
-      id="userFilter"
-      class="form-select form-select-sm"
-      style="max-width: 180px"
-    >
-      <option value="">All Users</option>
-      {% for user in users %}
-      <option value="{{ user.id }}">
-        {{ user.display_name or (user.first_name ~ ' ' ~ user.last_name) }}
-      </option>
-      {% endfor %}
-    </select>
+  <select
+    id="userFilter"
+    class="form-select form-select-sm"
+    style="max-width: 180px"
+  >
+    <option value="">All Users</option>
+    {% for user in users %}
+    <option value="{{ user.id }}">
+      {{ user.display_name or (user.first_name ~ ' ' ~ user.last_name) }}
+    </option>
+    {% endfor %}
+  </select>
 
-    <select
-      id="gameFilter"
-      class="form-select form-select-sm"
-      style="max-width: 180px"
-    >
-      <option value="">All Games</option>
-      {% for game in games %}
-      <option value="{{ game.id }}">
-        {{ game.home_team }} vs {{ game.away_team }}
-      </option>
-      {% endfor %}
-    </select>
-  </div>
+  <select
+    id="gameFilter"
+    class="form-select form-select-sm"
+    style="max-width: 180px"
+  >
+    <option value="">All Games</option>
+    {% for game in games %}
+    <option value="{{ game.id }}">
+      {{ game.home_team }} vs {{ game.away_team }}
+    </option>
+    {% endfor %}
+  </select>
+</div>
+
+<!-- Predictions Table -->
+<div id="predictionsTable">
+  {% include "partials/_predictions_table.html" %}
+</div>
+
+<!-- Bottom-left rows per page -->
+<div class="d-flex justify-content-between align-items-center flex-wrap">
   <div class="d-flex align-items-center gap-2">
-    <label for="perPage" class="mb-0" style="font-size: 0.85rem"
-      >Rows per page:</label
-    >
+    <label for="perPage" class="mb-0" style="font-size: 0.85rem">
+      Rows per page:
+    </label>
     <select id="perPage" class="form-select form-select-sm" style="width: 80px">
       <option value="10" selected>10</option>
       <option value="50">50</option>
       <option value="100">100</option>
     </select>
   </div>
-</div>
 
-<!-- Predictions Table -->
-<div id="predictionsTable">
-  {% include "partials/_predictions_table.html" %}
+  <div class="pagination-controls">
+    <!-- Pagination buttons will be injected here via partial -->
+  </div>
 </div>
 
 <!-- Scoped Page Styles -->
@@ -108,8 +114,13 @@
   .pagination-controls {
     display: flex;
     justify-content: flex-end;
-    margin-top: 1rem;
     gap: 0.5rem;
+  }
+
+  #userFilter,
+  #gameFilter {
+    max-width: 162px; /* 180px - 10% */
+    min-width: 135px;
   }
 
   /* Mobile-specific styles */
@@ -158,6 +169,11 @@
 
     #predictionsIntroBanner {
       font-size: 0.85rem !important;
+    }
+
+    .pagination-controls {
+      justify-content: center;
+      margin-top: 1rem;
     }
   }
 </style>
