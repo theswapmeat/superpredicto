@@ -1,6 +1,6 @@
 {% extends "base.html" %} {% block content %}
 
-<h3 class="text-center mb-4">Submit Your Picks</h3>
+<h3 class="text-center mb-4">Submit / Edit Your Picks</h3>
 <div id="picks-form-container">
   <form method="POST" id="picks-form">
     {% set games_by_date = {} %} {% for game in games %} {% set date =
@@ -32,8 +32,22 @@
         class="d-flex justify-content-between align-items-center flex-wrap mb-2 px-2 py-2 rounded border row-active {% if error or is_invalid %} border-danger bg-light-danger {% elif prediction %} border-success bg-light-success {% else %} border-secondary {% endif %}"
       >
         <div class="game-label">
+          <div
+            class="d-flex align-items-center"
+            style="font-size: 0.65rem; color: #26065d"
+          >
+            {% if not editable %}
+            <img
+              src="{{ url_for('static', filename='icons/lock-alt-svgrepo-com.svg') }}"
+              alt="Locked"
+              title="Locked"
+              style="height: 0.65rem; margin-right: 4px"
+            />
+            {% endif %} {{ game.time_of_game.strftime('%I:%M %p') }}
+          </div>
           {{ game.home_team }} <span class="mx-1">v</span> {{ game.away_team }}
         </div>
+
         <div class="d-flex align-items-center score-inputs">
           {% if editable %}
           <input
