@@ -28,7 +28,8 @@ client/package-lock.json
 .DS_Store
 Thumbs.db
 
-# === Random Files ===
+# === Random Files & Folders ===
 fifa_club_world_cup_2025_schedule.json
 schedule.json
 supabase_schema.sql
+/client/templates/old html/
