@@ -43,12 +43,13 @@
               title="Locked"
               style="height: 0.65rem; margin-right: 4px"
             />
-            {% endif %} {{ game.time_of_game.strftime('%I:%M %p') }}
+            {% endif %} Game {{ game.game_number }} | {{
+            game.time_of_game.strftime('%I:%M %p') }}
           </div>
           {{ game.home_team }} <span class="mx-1">v</span> {{ game.away_team }}
         </div>
 
-        <div class="d-flex align-items-center score-inputs">
+        <div class="d-flex align-items-center score-inputs justify-content-end">
           {% if editable %}
           <input
             type="number"
@@ -71,13 +72,19 @@
             inputmode="numeric"
             oninput="this.value = this.value.replace(/[^0-9]/g, '')"
           />
-          {% else %} {% if prediction %}
-          <span class="mx-1">{{ prediction.home_score_prediction }}</span>
-          <span>-</span>
-          <span class="mx-1">{{ prediction.away_score_prediction }}</span>
           {% else %}
-          <span>-</span>
-          {% endif %} {% endif %}
+          <div class="text-end small">
+            {% if prediction %}
+            <span class="mx-1">{{ prediction.home_score_prediction }}</span>
+            <span>-</span>
+            <span class="mx-1">{{ prediction.away_score_prediction }}</span>
+            {% elif game.is_completed %}
+            <span class="text-muted">N/A</span>
+            {% else %}
+            <span>-</span>
+            {% endif %}
+          </div>
+          {% endif %}
         </div>
       </div>
       {% if error %}
@@ -130,6 +137,7 @@
 
   .score-inputs {
     min-width: 90px;
+    justify-content: flex-end;
   }
 
   .game-group .row-active:focus-within {

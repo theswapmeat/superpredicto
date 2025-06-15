@@ -5,6 +5,7 @@ from flask_migrate import Migrate
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 from .config import Config
+import pytz
 
 # Load environment variables from .env file
 load_dotenv()
@@ -44,16 +45,17 @@ def create_app():
             run_prediction_scoring,
         )  # Delayed import to avoid circular deps
 
-        scheduler = BackgroundScheduler()
+        uae_timezone = pytz.timezone("Asia/Dubai")
+
+        scheduler = BackgroundScheduler(timezone=uae_timezone)
         scheduler.add_job(run_prediction_scoring, "cron", hour=8, minute=0)
+
         scheduler.start()
 
-        # Shut down scheduler gracefully with the app
+        # Shut down scheduler gracefully
         import atexit
 
         atexit.register(lambda: scheduler.shutdown(wait=False))
-
-    schedule_scoring()
 
     # Error Handlers
     @app.errorhandler(404)

@@ -465,7 +465,58 @@ def dashboard():
         return redirect(url_for("main.index"))
 
     users = User.query.filter(User.email != "admin@superpredicto.com").all()
-    return render_template("dashboard.html", users=users)
+    games = Game.query.order_by(Game.game_number).all()
+    return render_template("dashboard.html", users=users, games=games)
+
+
+# --- Dashboard (Admin Only / Update Games) ---
+@main.route("/dashboard/update-games", methods=["POST"])
+@login_required
+def update_games():
+    if session.get("user_email") != "admin@superpredicto.com":
+        flash("Access denied.", "danger")
+        return redirect(url_for("main.index"))
+
+    games = Game.query.order_by(Game.game_number).all()
+
+    for game in games:
+        # ✅ Update team names (for games 49–63)
+        if game.game_number >= 49:
+            home_team = request.form.get(f"home_team_{game.id}")
+            away_team = request.form.get(f"away_team_{game.id}")
+            if home_team is not None:
+                game.home_team = home_team.strip()
+            if away_team is not None:
+                game.away_team = away_team.strip()
+
+        # ✅ Update scores (always editable)
+        home_score = request.form.get(f"home_{game.id}")
+        away_score = request.form.get(f"away_{game.id}")
+
+        try:
+            game.home_team_score = int(home_score) if home_score != "" else None
+            game.away_team_score = int(away_score) if away_score != "" else None
+        except ValueError:
+            flash(f"Invalid score entered for Game #{game.game_number}.", "danger")
+            continue
+
+        # ✅ Determine whether to mark as completed
+        checkbox_checked = request.form.get(f"completed_{game.id}") == "on"
+        if checkbox_checked:
+            if game.home_team_score is not None and game.away_team_score is not None:
+                game.is_completed = True
+            else:
+                flash(
+                    f"Game #{game.game_number} cannot be marked as completed without both scores.",
+                    "warning",
+                )
+        else:
+            # ✅ Uncheck completed if box not checked
+            game.is_completed = False
+
+    db.session.commit()
+    flash("Games updated successfully.", "success")
+    return redirect(url_for("main.dashboard"))
 
 
 # --- Invite User (Admin Only) ---
@@ -721,9 +772,16 @@ def support():
     return render_template("support.html")
 
 
+##############################
+##  DEBUG
+##############################
+
+
 @main.route("/debug/game-timestamps")
 @login_required
 def debug_game_timestamps():
+    if session.get("user_email") != "admin@superpredicto.com":
+        abort(403)
 
     uae = timezone("Asia/Dubai")
     now_uae = datetime.now(uae)
@@ -740,9 +798,12 @@ def debug_game_timestamps():
     output += "</ul>"
     return output
 
+
 @main.route("/debug/prediction-check")
 @login_required
 def prediction_check():
+    if session.get("user_email") != "admin@superpredicto.com":
+        abort(403)
     uae = timezone("Asia/Dubai")
     now_uae = datetime.now(uae)
 
@@ -750,7 +811,7 @@ def prediction_check():
         query = UserPrediction.query.join(UserPrediction.game).filter(
             or_(
                 Game.is_completed == True,
-                (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae
+                (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae,
             )
         )
         count = query.count()

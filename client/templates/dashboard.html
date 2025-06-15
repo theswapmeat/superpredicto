@@ -1,4 +1,5 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+{% block content %}
 <h2 class="text-center">Admin Dashboard</h2>
 
 {% if session.get('user_email') == 'admin@superpredicto.com' %}
@@ -22,40 +23,14 @@
               <th>Is Active</th>
             </tr>
           </thead>
-
           <tbody>
             {% for user in users %}
             <tr>
-              <td>
-                {% if user.first_name or user.last_name %} {{ user.first_name or
-                '' }} {{ user.last_name or '' }} {% else %} - {% endif %}
-              </td>
-              <td>{{ user.display_name if user.display_name else '-' }}</td>
+              <td>{{ user.first_name or '' }} {{ user.last_name or '' }}</td>
+              <td>{{ user.display_name or '-' }}</td>
               <td>{{ user.email }}</td>
-              <td>
-                <input
-                  type="checkbox"
-                  name="paid_{{ user.id }}"
-                  {%
-                  if
-                  user.is_paid
-                  %}checked{%
-                  endif
-                  %}
-                />
-              </td>
-              <td>
-                <input
-                  type="checkbox"
-                  name="active_{{ user.id }}"
-                  {%
-                  if
-                  user.is_active
-                  %}checked{%
-                  endif
-                  %}
-                />
-              </td>
+              <td><input type="checkbox" name="paid_{{ user.id }}" {% if user.is_paid %}checked{% endif %} /></td>
+              <td><input type="checkbox" name="active_{{ user.id }}" {% if user.is_active %}checked{% endif %} /></td>
             </tr>
             {% endfor %}
           </tbody>
@@ -65,7 +40,6 @@
     </form>
   </div>
 </div>
-{% endif %}
 
 <!-- Invite Form -->
 <div class="card mt-4 shadow-sm">
@@ -74,16 +48,92 @@
     <form method="post" action="{{ url_for('main.invite_user') }}">
       <div class="mb-3">
         <label for="invite_email" class="form-label">User Email Address</label>
-        <input
-          type="email"
-          class="form-control"
-          id="invite_email"
-          name="invite_email"
-          required
-        />
+        <input type="email" class="form-control" id="invite_email" name="invite_email" required />
       </div>
       <button type="submit" class="btn btn-primary">Send Invite</button>
     </form>
   </div>
 </div>
+
+<!-- Game Results Table -->
+<div class="card mt-4 shadow-sm">
+  <div class="card-body">
+    <h5 class="card-title">Match Results</h5>
+    <form method="post" action="{{ url_for('main.update_games') }}">
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle text-center w-100">
+          <thead class="table-dark">
+            <tr>
+              <th>Game #</th>
+              <th>Teams</th>
+              <th>Score</th>
+              <th>Completed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for game in games %}
+            <tr class="d-block d-sm-table-row mb-3 mb-sm-0 border-bottom border-sm-0 {% if game.is_completed %}table-success{% endif %}">
+              <td class="d-block d-sm-table-cell">
+                <strong class="d-sm-none">Game #:</strong> {{ game.game_number }}
+              </td>
+              <td class="d-block d-sm-table-cell">
+                <strong class="d-sm-none">Teams:</strong>
+                {% if game.game_number >= 49 %}
+                  <input type="text" name="home_team_{{ game.id }}" value="{{ game.home_team }}" class="form-control team-name-input mb-1" />
+                  vs
+                  <input type="text" name="away_team_{{ game.id }}" value="{{ game.away_team }}" class="form-control team-name-input mb-1" />
+                {% else %}
+                  {{ game.home_team }} vs {{ game.away_team }}
+                {% endif %}
+              </td>
+              <td class="d-block d-sm-table-cell">
+                <strong class="d-sm-none">Score:</strong>
+                <input type="number" name="home_{{ game.id }}" value="{{ game.home_team_score if game.home_team_score is not none else '' }}" class="form-control d-inline-block text-center" style="width: 60px" />
+                -
+                <input type="number" name="away_{{ game.id }}" value="{{ game.away_team_score if game.away_team_score is not none else '' }}" class="form-control d-inline-block text-center" style="width: 60px" />
+              </td>
+              <td class="d-block d-sm-table-cell">
+                <strong class="d-sm-none">Completed:</strong>
+                <input type="checkbox" name="completed_{{ game.id }}" {% if game.is_completed %}checked{% endif %} />
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <button type="submit" class="btn btn-success mt-3">Save Results</button>
+    </form>
+  </div>
+</div>
+
+<style>
+  .team-name-input {
+    width: 250px;
+    display: inline-block;
+    text-align: center;
+  }
+
+  /* Remove number input spinners */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  @media (max-width: 576px) {
+    .team-name-input {
+      width: 100% !important;
+    }
+    .form-control {
+      margin-bottom: 0.5rem;
+    }
+    td {
+      padding: 0.5rem 0;
+    }
+  }
+</style>
+{% endif %}
 {% endblock %}
