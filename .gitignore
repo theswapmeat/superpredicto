@@ -9,9 +9,7 @@ server/venv/
 *.log
 *.sqlite3
 instance/
-.env
-.env.dev
-.env.prod
+.env*
 
 # === Node / Frontend (client/) ===
 client/node_modules/
