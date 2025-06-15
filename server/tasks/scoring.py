@@ -1,21 +1,11 @@
-import os
 from datetime import datetime
 
 from app import db
 from app.models import User, Game, UserPrediction
 
-# Set up log file path
-LOG_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../logs"))
-LOG_FILE = os.path.join(LOG_DIR, "scoring.log")
-
-
-def log_scoring_run(message: str):
-    os.makedirs(LOG_DIR, exist_ok=True)
-    with open(LOG_FILE, "a") as f:
-        f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {message}\n")
-
 
 def run_prediction_scoring():
+    print(f"[Scoring] Run started at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     try:
         users = {u.id: u for u in User.query.all()}
         for user in users.values():
@@ -99,8 +89,8 @@ def run_prediction_scoring():
                     pred.points_earned = 0
 
         db.session.commit()
-        log_scoring_run("Scoring completed successfully.")
+        print("[Scoring] Run completed successfully.")
 
     except Exception as e:
         db.session.rollback()
-        log_scoring_run(f"Scoring failed: {str(e)}")
+        print(f"[Scoring] Error occurred: {str(e)}")
