@@ -229,6 +229,9 @@
       const banner = document.getElementById("predictionsIntroBanner");
       if (banner) banner.style.display = "none";
     }
+
+    // ✅ Trigger initial fetch when page loads
+    updatePredictions();
   });
 </script>
 

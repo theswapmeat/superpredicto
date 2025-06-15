@@ -17,7 +17,7 @@ from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, cast, String, Interval, or_
 from .utils import (
     generate_reset_token,
     confirm_reset_token,
@@ -48,8 +48,7 @@ def index():
 
     # Fetch users excluding admin, and order based on leaderboard ranking rules
     leaderboard_users = (
-        User.query
-        .filter(User.email != "admin@superpredicto.com")
+        User.query.filter(User.email != "admin@superpredicto.com")
         .filter(User.first_name.isnot(None), User.first_name != "")
         .filter(User.last_name.isnot(None), User.last_name != "")
         .filter(User.display_name.isnot(None), User.display_name != "")
@@ -92,7 +91,6 @@ def index():
         needs_profile=needs_profile,
         leaderboard=leaderboard_dicts,
     )
-
 
 
 # --- Keep Alive Route ---
@@ -227,7 +225,6 @@ def reset_password_token(token):
     return render_template("reset_password.html", mode=mode)
 
 
-
 # --- Submit Picks (Protected) ---
 @main.route("/submit-picks", methods=["GET", "POST"])
 @login_required
@@ -259,7 +256,9 @@ def submit_picks():
 
         for game in games:
             # Game start time is already in UAE — no need to convert from UTC
-            game_datetime_local = uae.localize(datetime.combine(game.date_of_game, game.time_of_game))
+            game_datetime_local = uae.localize(
+                datetime.combine(game.date_of_game, game.time_of_game)
+            )
 
             home_key = f"home_score_{game.id}"
             away_key = f"away_score_{game.id}"
@@ -278,19 +277,28 @@ def submit_picks():
 
             # Handle incomplete input
             if (home_val and not away_val) or (away_val and not home_val):
-                flash(f"Both scores must be entered for Game #{game.game_number}.", "danger")
+                flash(
+                    f"Both scores must be entered for Game #{game.game_number}.",
+                    "danger",
+                )
                 error_found = True
                 continue
 
             # Validate inputs are digits
             if not home_val.isdigit() or not away_val.isdigit():
-                flash(f"Scores for Game #{game.game_number} must be whole numbers.", "danger")
+                flash(
+                    f"Scores for Game #{game.game_number} must be whole numbers.",
+                    "danger",
+                )
                 error_found = True
                 continue
 
             # ✅ Final check: reject picks if game has already started
             if game_datetime_local <= now_uae:
-                flash(f"Game #{game.game_number} has already started. Picks not accepted.", "danger")
+                flash(
+                    f"Game #{game.game_number} has already started. Picks not accepted.",
+                    "danger",
+                )
                 error_found = True
                 continue
 
@@ -298,12 +306,14 @@ def submit_picks():
             away_score = int(away_val)
 
             if not existing:
-                db.session.add(UserPrediction(
-                    user_id=user_id,
-                    game_id=game.id,
-                    home_score_prediction=home_score,
-                    away_score_prediction=away_score,
-                ))
+                db.session.add(
+                    UserPrediction(
+                        user_id=user_id,
+                        game_id=game.id,
+                        home_score_prediction=home_score,
+                        away_score_prediction=away_score,
+                    )
+                )
                 changes_made = True
             elif (
                 existing.home_score_prediction != home_score
@@ -340,7 +350,6 @@ def submit_picks():
     )
 
 
-
 # --- All Predictions (Protected) ---
 @main.route("/predictions")
 @login_required
@@ -371,8 +380,7 @@ def predictions():
 
     # User & game filter dropdowns
     all_users = (
-        User.query
-        .filter(
+        User.query.filter(
             User.email != "admin@superpredicto.com",
             User.is_paid == True,
             User.is_active == True,
@@ -381,19 +389,17 @@ def predictions():
             User.display_name.isnot(None),
             User.first_name != "",
             User.last_name != "",
-            User.display_name != ""
+            User.display_name != "",
         )
         .order_by(User.first_name, User.last_name)
         .all()
     )
 
-    
     all_games = (
-        Game.query
-        .filter((Game.date_of_game + Game.time_of_game) <= now_uae)
+        Game.query.filter((Game.date_of_game + Game.time_of_game) <= now_uae)
         .order_by(Game.date_of_game, Game.time_of_game)
         .all()
-)
+    )
 
     return render_template(
         "predictions.html",
@@ -416,18 +422,22 @@ def predictions_filter():
     uae = timezone("Asia/Dubai")
     now_uae = datetime.now(uae)
 
-    query = UserPrediction.query.options(
-        joinedload(UserPrediction.user), joinedload(UserPrediction.game)
-    ).join(
-        UserPrediction.user
-    ).join(
-        UserPrediction.game
-    ).filter(
-        User.email != "admin@superpredicto.com"
+    query = (
+        UserPrediction.query.options(
+            joinedload(UserPrediction.user), joinedload(UserPrediction.game)
+        )
+        .join(UserPrediction.user)
+        .join(UserPrediction.game)
+        .filter(User.email != "admin@superpredicto.com")
     )
 
-    # ✅ Only include predictions for games that have started
-    query = query.filter((Game.date_of_game + Game.time_of_game) <= now_uae)
+    # ✅ Correct filter using date + time interval
+    query = query.filter(
+        or_(
+            Game.is_completed == True,
+            (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae,
+        )
+    )
 
     if user_id:
         query = query.filter(UserPrediction.user_id == user_id)
@@ -435,9 +445,8 @@ def predictions_filter():
         query = query.filter(UserPrediction.game_id == game_id)
 
     query = query.order_by(Game.game_number.asc())
-
     predictions = query.paginate(page=page, per_page=per_page)
-
+    print(f"[DEBUG] {predictions.total} predictions returned to template.")
     return render_template("partials/_predictions_table.html", predictions=predictions)
 
 
@@ -457,7 +466,6 @@ def dashboard():
 
     users = User.query.filter(User.email != "admin@superpredicto.com").all()
     return render_template("dashboard.html", users=users)
-
 
 
 # --- Invite User (Admin Only) ---
@@ -493,6 +501,7 @@ def invite_user():
         flash(f"User created, but email failed: {str(e)}", "danger")
 
     return redirect(url_for("main.dashboard"))
+
 
 # --- Update User Payment Status (Admin Only) ---
 @main.route("/admin/update-payments", methods=["POST"])
@@ -585,9 +594,9 @@ def profile():
 
         # Check if any changes were made
         if (
-            first_name == (user.first_name or "") and
-            last_name == (user.last_name or "") and
-            display_name == (user.display_name or "")
+            first_name == (user.first_name or "")
+            and last_name == (user.last_name or "")
+            and display_name == (user.display_name or "")
         ):
             flash("No changes detected.", "info")
             return redirect(url_for("main.profile"))
@@ -685,7 +694,6 @@ def payment_success():
         return redirect(url_for("main.submit_picks"))
 
 
-
 # --- Schedule ---
 @main.route("/schedule")
 def schedule():
@@ -706,7 +714,46 @@ def admin_run_scoring():
     flash("Scoring successfully run.", "success")
     return redirect(url_for("main.dashboard"))
 
+
 # --- Support ---
 @main.route("/support")
 def support():
     return render_template("support.html")
+
+
+@main.route("/debug/game-timestamps")
+@login_required
+def debug_game_timestamps():
+
+    uae = timezone("Asia/Dubai")
+    now_uae = datetime.now(uae)
+
+    games = Game.query.order_by(Game.game_number).all()
+
+    output = f"<h3>Current Dubai time: {now_uae}</h3><ul>"
+    for game in games:
+        try:
+            start_dt = datetime.combine(game.date_of_game, game.time_of_game)
+            output += f"<li>Game #{game.game_number} — {game.home_team} vs {game.away_team} | Starts at: {start_dt} | Completed: {game.is_completed}</li>"
+        except Exception as e:
+            output += f"<li>Error in game #{game.id}: {e}</li>"
+    output += "</ul>"
+    return output
+
+@main.route("/debug/prediction-check")
+@login_required
+def prediction_check():
+    uae = timezone("Asia/Dubai")
+    now_uae = datetime.now(uae)
+
+    try:
+        query = UserPrediction.query.join(UserPrediction.game).filter(
+            or_(
+                Game.is_completed == True,
+                (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae
+            )
+        )
+        count = query.count()
+        return f"<h3>{count} predictions found for started or completed games</h3>"
+    except Exception as e:
+        return f"<h3>Error occurred: {e}</h3>", 500

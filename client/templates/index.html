@@ -153,9 +153,9 @@
         selectattr("points", "equalto", 0) | list | length == leaderboard |
         length %} {% for entry in leaderboard %}
         <tr
-          class="text-center {% if not all_zero %}{% if loop.index == 1 %}table-warning {% elif loop.index == 2 %}table-info {% elif loop.index == 3 %}table-success {% endif %}{% endif %}"
+          class="text-center {% if entry.points > 0 %} {% if loop.index == 1 %}table-warning {% elif loop.index == 2 %}table-info {% elif loop.index == 3 %}table-success {% endif %} {% endif %}"
         >
-          <td>{{ loop.index }}</td>
+          <td>{{ '-' if entry.points == 0 else loop.index }}</td>
           <td>
             {% if user %} {{ entry.name or '-' }} {% else %}
             <span class="blurred" title="Login to see the rankings.">
