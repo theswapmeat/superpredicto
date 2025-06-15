@@ -3,9 +3,7 @@ from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from dotenv import load_dotenv
-from apscheduler.schedulers.background import BackgroundScheduler
 from .config import Config
-import pytz
 
 # Load environment variables from .env file
 load_dotenv()
@@ -38,24 +36,6 @@ def create_app():
 
     app.register_blueprint(main)
     app.register_blueprint(keepalive_bp)
-
-    # Schedule daily scoring job at 8:00 AM
-    def schedule_scoring():
-        from tasks.scoring import (
-            run_prediction_scoring,
-        )  # Delayed import to avoid circular deps
-
-        uae_timezone = pytz.timezone("Asia/Dubai")
-
-        scheduler = BackgroundScheduler(timezone=uae_timezone)
-        scheduler.add_job(run_prediction_scoring, "cron", hour=8, minute=0)
-
-        scheduler.start()
-
-        # Shut down scheduler gracefully
-        import atexit
-
-        atexit.register(lambda: scheduler.shutdown(wait=False))
 
     # Error Handlers
     @app.errorhandler(404)
