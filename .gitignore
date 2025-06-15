@@ -10,6 +10,8 @@ server/venv/
 *.sqlite3
 instance/
 .env
+.env.dev
+.env.prod
 
 # === Node / Frontend (client/) ===
 client/node_modules/
@@ -32,3 +34,5 @@ Thumbs.db
 fifa_club_world_cup_2025_schedule.json
 schedule.json
 supabase_schema.sql
+createtables.py
+test_connection.py
