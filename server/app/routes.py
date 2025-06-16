@@ -229,125 +229,134 @@ def reset_password_token(token):
 @main.route("/submit-picks", methods=["GET", "POST"])
 @login_required
 def submit_picks():
-    user_id = session["user_id"]
-    user = User.query.get(user_id)
+    return render_template("maintenance.html", message="This page is under maintenance. Please check back in a few hours.")
 
-    if not user.first_name or not user.last_name:
-        flash("Please complete your profile before submitting picks.", "warning")
-        return redirect(url_for("main.profile"))
 
-    if not user.is_paid:
-        flash("Please complete payment to submit picks.", "warning")
-        return redirect(url_for("main.payment"))
 
-    games = Game.query.order_by(Game.date_of_game, Game.time_of_game).all()
-    uae = timezone("Asia/Dubai")
 
-    existing_predictions = {
-        pred.game_id: pred
-        for pred in UserPrediction.query.filter_by(user_id=user_id).all()
-    }
 
-    if request.method == "POST":
-        now_uae = datetime.now(uae)
-        error_found = False
-        form_data = request.form
-        changes_made = False
+# @main.route("/submit-picks", methods=["GET", "POST"])
+# @login_required
+# def submit_picks():
+#     user_id = session["user_id"]
+#     user = User.query.get(user_id)
 
-        for game in games:
-            # Game start time is already in UAE — no need to convert from UTC
-            game_datetime_local = uae.localize(
-                datetime.combine(game.date_of_game, game.time_of_game)
-            )
+#     if not user.first_name or not user.last_name:
+#         flash("Please complete your profile before submitting picks.", "warning")
+#         return redirect(url_for("main.profile"))
 
-            home_key = f"home_score_{game.id}"
-            away_key = f"away_score_{game.id}"
+#     if not user.is_paid:
+#         flash("Please complete payment to submit picks.", "warning")
+#         return redirect(url_for("main.payment"))
 
-            home_val = form_data.get(home_key, "").strip()
-            away_val = form_data.get(away_key, "").strip()
+#     games = Game.query.order_by(Game.date_of_game, Game.time_of_game).all()
+#     uae = timezone("Asia/Dubai")
 
-            existing = existing_predictions.get(game.id)
+#     existing_predictions = {
+#         pred.game_id: pred
+#         for pred in UserPrediction.query.filter_by(user_id=user_id).all()
+#     }
 
-            # Skip empty inputs (removes prediction if it exists)
-            if not home_val and not away_val:
-                if existing:
-                    db.session.delete(existing)
-                    changes_made = True
-                continue
+#     if request.method == "POST":
+#         now_uae = datetime.now(uae)
+#         error_found = False
+#         form_data = request.form
+#         changes_made = False
 
-            # Handle incomplete input
-            if (home_val and not away_val) or (away_val and not home_val):
-                flash(
-                    f"Both scores must be entered for Game #{game.game_number}.",
-                    "danger",
-                )
-                error_found = True
-                continue
+#         for game in games:
+#             # Game start time is already in UAE — no need to convert from UTC
+#             game_datetime_local = uae.localize(
+#                 datetime.combine(game.date_of_game, game.time_of_game)
+#             )
 
-            # Validate inputs are digits
-            if not home_val.isdigit() or not away_val.isdigit():
-                flash(
-                    f"Scores for Game #{game.game_number} must be whole numbers.",
-                    "danger",
-                )
-                error_found = True
-                continue
+#             home_key = f"home_score_{game.id}"
+#             away_key = f"away_score_{game.id}"
 
-            # ✅ Final check: reject picks if game has already started
-            if game_datetime_local <= now_uae:
-                flash(
-                    f"Game #{game.game_number} has already started. Picks not accepted.",
-                    "danger",
-                )
-                error_found = True
-                continue
+#             home_val = form_data.get(home_key, "").strip()
+#             away_val = form_data.get(away_key, "").strip()
 
-            home_score = int(home_val)
-            away_score = int(away_val)
+#             existing = existing_predictions.get(game.id)
 
-            if not existing:
-                db.session.add(
-                    UserPrediction(
-                        user_id=user_id,
-                        game_id=game.id,
-                        home_score_prediction=home_score,
-                        away_score_prediction=away_score,
-                    )
-                )
-                changes_made = True
-            elif (
-                existing.home_score_prediction != home_score
-                or existing.away_score_prediction != away_score
-            ):
-                existing.home_score_prediction = home_score
-                existing.away_score_prediction = away_score
-                changes_made = True
+#             # Skip empty inputs (removes prediction if it exists)
+#             if not home_val and not away_val:
+#                 if existing:
+#                     db.session.delete(existing)
+#                     changes_made = True
+#                 continue
 
-        if error_found:
-            return render_template(
-                "submit_picks.html",
-                games=games,
-                pred_dict=existing_predictions,
-                uae_now=now_uae,
-                form_data=form_data,
-            )
+#             # Handle incomplete input
+#             if (home_val and not away_val) or (away_val and not home_val):
+#                 flash(
+#                     f"Both scores must be entered for Game #{game.game_number}.",
+#                     "danger",
+#                 )
+#                 error_found = True
+#                 continue
 
-        if not changes_made:
-            flash("No changes made to your picks.", "info")
-            return redirect(url_for("main.submit_picks"))
+#             # Validate inputs are digits
+#             if not home_val.isdigit() or not away_val.isdigit():
+#                 flash(
+#                     f"Scores for Game #{game.game_number} must be whole numbers.",
+#                     "danger",
+#                 )
+#                 error_found = True
+#                 continue
 
-        db.session.commit()
-        flash("Your picks have been saved.", "success")
-        return redirect(url_for("main.submit_picks"))
+#             # ✅ Final check: reject picks if game has already started
+#             if game_datetime_local <= now_uae:
+#                 flash(
+#                     f"Game #{game.game_number} has already started. Picks not accepted.",
+#                     "danger",
+#                 )
+#                 error_found = True
+#                 continue
 
-    now_uae = datetime.now(uae)
-    return render_template(
-        "submit_picks.html",
-        games=games,
-        pred_dict=existing_predictions,
-        uae_now=now_uae,
-        form_data={},
-    )
+#             home_score = int(home_val)
+#             away_score = int(away_val)
+
+#             if not existing:
+#                 db.session.add(
+#                     UserPrediction(
+#                         user_id=user_id,
+#                         game_id=game.id,
+#                         home_score_prediction=home_score,
+#                         away_score_prediction=away_score,
+#                     )
+#                 )
+#                 changes_made = True
+#             elif (
+#                 existing.home_score_prediction != home_score
+#                 or existing.away_score_prediction != away_score
+#             ):
+#                 existing.home_score_prediction = home_score
+#                 existing.away_score_prediction = away_score
+#                 changes_made = True
+
+#         if error_found:
+#             return render_template(
+#                 "submit_picks.html",
+#                 games=games,
+#                 pred_dict=existing_predictions,
+#                 uae_now=now_uae,
+#                 form_data=form_data,
+#             )
+
+#         if not changes_made:
+#             flash("No changes made to your picks.", "info")
+#             return redirect(url_for("main.submit_picks"))
+
+#         db.session.commit()
+#         flash("Your picks have been saved.", "success")
+#         return redirect(url_for("main.submit_picks"))
+
+#     now_uae = datetime.now(uae)
+#     return render_template(
+#         "submit_picks.html",
+#         games=games,
+#         pred_dict=existing_predictions,
+#         uae_now=now_uae,
+#         form_data={},
+#     )
 
 
 # --- All Predictions (Protected) ---
