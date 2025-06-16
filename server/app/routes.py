@@ -226,137 +226,138 @@ def reset_password_token(token):
 
 
 # --- Submit Picks (Protected) ---
-@main.route("/submit-picks", methods=["GET", "POST"])
-@login_required
-def submit_picks():
-    return render_template("maintenance.html", message="This page is under maintenance. Please check back in a few hours.")
-
-
-
-
-
 # @main.route("/submit-picks", methods=["GET", "POST"])
 # @login_required
 # def submit_picks():
-#     user_id = session["user_id"]
-#     user = User.query.get(user_id)
+#     return render_template("maintenance.html", message="This page is under maintenance. Please check back in a few hours.")
 
-#     if not user.first_name or not user.last_name:
-#         flash("Please complete your profile before submitting picks.", "warning")
-#         return redirect(url_for("main.profile"))
 
-#     if not user.is_paid:
-#         flash("Please complete payment to submit picks.", "warning")
-#         return redirect(url_for("main.payment"))
+@main.route("/submit-picks", methods=["GET", "POST"])
+@login_required
+def submit_picks():
+    user_id = session["user_id"]
+    user = User.query.get(user_id)
 
-#     games = Game.query.order_by(Game.date_of_game, Game.time_of_game).all()
-#     uae = timezone("Asia/Dubai")
+    if not user.first_name or not user.last_name:
+        flash("Please complete your profile before submitting picks.", "warning")
+        return redirect(url_for("main.profile"))
 
-#     existing_predictions = {
-#         pred.game_id: pred
-#         for pred in UserPrediction.query.filter_by(user_id=user_id).all()
-#     }
+    if not user.is_paid:
+        flash("Please complete payment to submit picks.", "warning")
+        return redirect(url_for("main.payment"))
 
-#     if request.method == "POST":
-#         now_uae = datetime.now(uae)
-#         error_found = False
-#         form_data = request.form
-#         changes_made = False
+    games = Game.query.order_by(Game.date_of_game, Game.time_of_game).all()
+    uae = timezone("Asia/Dubai")
 
-#         for game in games:
-#             # Game start time is already in UAE — no need to convert from UTC
-#             game_datetime_local = uae.localize(
-#                 datetime.combine(game.date_of_game, game.time_of_game)
-#             )
+    existing_predictions = {
+        pred.game_id: pred
+        for pred in UserPrediction.query.filter_by(user_id=user_id).all()
+    }
 
-#             home_key = f"home_score_{game.id}"
-#             away_key = f"away_score_{game.id}"
+    if request.method == "POST":
+        now_uae = datetime.now(uae)
+        error_found = False
+        form_data = request.form
+        changes_made = False
+        deletion_attempted = False
 
-#             home_val = form_data.get(home_key, "").strip()
-#             away_val = form_data.get(away_key, "").strip()
+        for game in games:
+            game_datetime_local = uae.localize(
+                datetime.combine(game.date_of_game, game.time_of_game)
+            )
 
-#             existing = existing_predictions.get(game.id)
+            home_key = f"home_score_{game.id}"
+            away_key = f"away_score_{game.id}"
 
-#             # Skip empty inputs (removes prediction if it exists)
-#             if not home_val and not away_val:
-#                 if existing:
-#                     db.session.delete(existing)
-#                     changes_made = True
-#                 continue
+            home_val = form_data.get(home_key, "").strip()
+            away_val = form_data.get(away_key, "").strip()
 
-#             # Handle incomplete input
-#             if (home_val and not away_val) or (away_val and not home_val):
-#                 flash(
-#                     f"Both scores must be entered for Game #{game.game_number}.",
-#                     "danger",
-#                 )
-#                 error_found = True
-#                 continue
+            existing = existing_predictions.get(game.id)
 
-#             # Validate inputs are digits
-#             if not home_val.isdigit() or not away_val.isdigit():
-#                 flash(
-#                     f"Scores for Game #{game.game_number} must be whole numbers.",
-#                     "danger",
-#                 )
-#                 error_found = True
-#                 continue
+            # Skip empty inputs, but do NOT delete existing predictions
+            if not home_val and not away_val:
+                # if existing:
+                #     flash(
+                #         f"Once predictions have been made, deletion is not allowed. You can amend them.",
+                #         "warning",
+                #     )
+                #     deletion_attempted = True
+                continue
 
-#             # ✅ Final check: reject picks if game has already started
-#             if game_datetime_local <= now_uae:
-#                 flash(
-#                     f"Game #{game.game_number} has already started. Picks not accepted.",
-#                     "danger",
-#                 )
-#                 error_found = True
-#                 continue
+            # Handle incomplete input
+            if (home_val and not away_val) or (away_val and not home_val):
+                flash(
+                    f"Both scores must be entered for Game #{game.game_number}.",
+                    "danger",
+                )
+                error_found = True
+                continue
 
-#             home_score = int(home_val)
-#             away_score = int(away_val)
+            # Validate inputs are digits
+            if not home_val.isdigit() or not away_val.isdigit():
+                flash(
+                    f"Scores for Game #{game.game_number} must be whole numbers.",
+                    "danger",
+                )
+                error_found = True
+                continue
 
-#             if not existing:
-#                 db.session.add(
-#                     UserPrediction(
-#                         user_id=user_id,
-#                         game_id=game.id,
-#                         home_score_prediction=home_score,
-#                         away_score_prediction=away_score,
-#                     )
-#                 )
-#                 changes_made = True
-#             elif (
-#                 existing.home_score_prediction != home_score
-#                 or existing.away_score_prediction != away_score
-#             ):
-#                 existing.home_score_prediction = home_score
-#                 existing.away_score_prediction = away_score
-#                 changes_made = True
+            # Reject picks if game has already started
+            if game_datetime_local <= now_uae:
+                flash(
+                    f"Game #{game.game_number} has already started. Picks not accepted.",
+                    "danger",
+                )
+                error_found = True
+                continue
 
-#         if error_found:
-#             return render_template(
-#                 "submit_picks.html",
-#                 games=games,
-#                 pred_dict=existing_predictions,
-#                 uae_now=now_uae,
-#                 form_data=form_data,
-#             )
+            home_score = int(home_val)
+            away_score = int(away_val)
 
-#         if not changes_made:
-#             flash("No changes made to your picks.", "info")
-#             return redirect(url_for("main.submit_picks"))
+            if not existing:
+                db.session.add(
+                    UserPrediction(
+                        user_id=user_id,
+                        game_id=game.id,
+                        home_score_prediction=home_score,
+                        away_score_prediction=away_score,
+                    )
+                )
+                changes_made = True
+            elif (
+                existing.home_score_prediction != home_score
+                or existing.away_score_prediction != away_score
+            ):
+                existing.home_score_prediction = home_score
+                existing.away_score_prediction = away_score
+                changes_made = True
 
-#         db.session.commit()
-#         flash("Your picks have been saved.", "success")
-#         return redirect(url_for("main.submit_picks"))
+        if error_found:
+            return render_template(
+                "submit_picks.html",
+                games=games,
+                pred_dict=existing_predictions,
+                uae_now=now_uae,
+                form_data=form_data,
+            )
 
-#     now_uae = datetime.now(uae)
-#     return render_template(
-#         "submit_picks.html",
-#         games=games,
-#         pred_dict=existing_predictions,
-#         uae_now=now_uae,
-#         form_data={},
-#     )
+        if not changes_made:
+            flash("No changes made to your picks. Reminder - you cannot delete predictions once they have been made.", "info")
+            return redirect(url_for("main.submit_picks"))
+
+        db.session.commit()
+        flash("Your picks have been saved.", "success")
+        return redirect(url_for("main.submit_picks"))
+
+    now_uae = datetime.now(uae)
+    return render_template(
+        "submit_picks.html",
+        games=games,
+        pred_dict=existing_predictions,
+        uae_now=now_uae,
+        form_data={},
+    )
+
 
 
 # --- All Predictions (Protected) ---
@@ -400,26 +401,29 @@ def predictions():
             User.last_name != "",
             User.display_name != "",
         )
-        .order_by(User.first_name, User.last_name)
+        .order_by(User.display_name)
         .all()
     )
 
-    all_games = (
-        Game.query.filter((Game.date_of_game + Game.time_of_game) <= now_uae)
-        .order_by(Game.date_of_game, Game.time_of_game)
-        .all()
-    )
+    all_games = Game.query.order_by(Game.date_of_game, Game.time_of_game).all()
+
+    # Only keep games that are completed or already started
+    visible_games = [
+        g for g in all_games
+        if g.is_completed or uae.localize(datetime.combine(g.date_of_game, g.time_of_game)) <= now_uae
+    ]
 
     return render_template(
         "predictions.html",
         predictions=paginated_preds,
         users=all_users,
-        games=all_games,
+        games=visible_games,
         per_page=per_page,
     )
 
 
 # --- Predictions Filter ---
+
 @main.route("/predictions/filter")
 @login_required
 def predictions_filter():
@@ -431,32 +435,54 @@ def predictions_filter():
     uae = timezone("Asia/Dubai")
     now_uae = datetime.now(uae)
 
-    query = (
+    # Load all predictions with joins
+    all_predictions = (
         UserPrediction.query.options(
-            joinedload(UserPrediction.user), joinedload(UserPrediction.game)
+            joinedload(UserPrediction.user),
+            joinedload(UserPrediction.game)
         )
         .join(UserPrediction.user)
         .join(UserPrediction.game)
         .filter(User.email != "admin@superpredicto.com")
+        .all()
     )
 
-    # ✅ Correct filter using date + time interval
-    query = query.filter(
-        or_(
-            Game.is_completed == True,
-            (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae,
+    # Filter in Python: only include predictions for games that are completed or already started
+    filtered_preds = [
+        p for p in all_predictions
+        if p.game
+        and (
+            p.game.is_completed
+            or uae.localize(datetime.combine(p.game.date_of_game, p.game.time_of_game)) <= now_uae
         )
+        and (not user_id or p.user_id == user_id)
+        and (not game_id or p.game_id == game_id)
+    ]
+
+    filtered_preds.sort(key=lambda p: p.game.game_number if p.game and p.game.game_number is not None else 0)
+
+    # Manual pagination
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_preds = filtered_preds[start:end]
+
+    class SimplePagination: 
+        def __init__(self, items, total, page, per_page):
+            self.items = items
+            self.total = total
+            self.page = page
+            self.per_page = per_page
+            self.pages = (total + per_page - 1) // per_page  # total pages
+            self.has_prev = page > 1
+            self.has_next = page < self.pages
+            self.prev_num = page - 1 if self.has_prev else None
+            self.next_num = page + 1 if self.has_next else None
+
+    print(f"[DEBUG] {len(filtered_preds)} predictions returned to template.")
+    return render_template(
+        "partials/_predictions_table.html",
+        predictions=SimplePagination(paginated_preds, len(filtered_preds), page, per_page)
     )
-
-    if user_id:
-        query = query.filter(UserPrediction.user_id == user_id)
-    if game_id:
-        query = query.filter(UserPrediction.game_id == game_id)
-
-    query = query.order_by(Game.game_number.asc())
-    predictions = query.paginate(page=page, per_page=per_page)
-    print(f"[DEBUG] {predictions.total} predictions returned to template.")
-    return render_template("partials/_predictions_table.html", predictions=predictions)
 
 
 # --- Scoring Guidelines ---

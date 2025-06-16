@@ -1,5 +1,28 @@
 {% extends "base.html" %} {% block content %}
 
+<div
+  id="submitpicksintrobanner"
+  class="intro-banner alert alert-dismissible fade show mb-4 text-white"
+  role="alert"
+>
+  <strong>Submitting / Editing Your Picks</strong>
+  <ul class="mt-2 mb-0 ps-3">
+    <li>
+      Enter your predictions and click Save at the bottom.
+    </li>
+    <li>
+      Please note that you cannot delete a prediction once it's been made.  You can,  however, amend it prior to kickoff.
+    </li>
+  </ul>
+  <button
+    type="button"
+    class="btn-close btn-close-white"
+    data-bs-dismiss="alert"
+    aria-label="Close"
+    onclick="hideSubmitPicksIntroBanner()"
+  ></button>
+</div>
+
 <h3 class="text-center mb-4">Submit / Edit Your Picks</h3>
 <div id="picks-form-container">
   <form method="POST" id="picks-form">
@@ -178,6 +201,17 @@
 </style>
 
 <script>
+  function hideSubmitPicksIntroBanner() {
+    localStorage.setItem("hideSubmitPicksIntroBanner", "true");
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    if (localStorage.getItem("hideSubmitPicksIntroBanner") === "true") {
+      const banner = document.getElementById("submitpicksintrobanner");
+      if (banner) banner.style.display = "none";
+    }
+  });
+  
   function validatePicksForm() {
     const rows = document.querySelectorAll(".score-input");
     const submitButton = document.getElementById("submit-button");
