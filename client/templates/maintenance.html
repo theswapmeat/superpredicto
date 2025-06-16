@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-5">
+  <div class="alert alert-warning text-center intro-banner mb-5 text-white" role="alert" style="font-size: 1.1rem;">
+    <h4 class="alert-heading">Under Maintenance</h4>
+    <p class="mb-3">
+      {{ message or "This page is currently unavailable. Please try again later." }}
+    </p>
+    <hr>
+    <p class="mb-0">We appreciate your patience.</p>
+  </div>
+</div>
+
+{% endblock %}
