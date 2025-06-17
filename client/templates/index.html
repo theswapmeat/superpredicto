@@ -98,6 +98,10 @@
     Leaderboard - 2025 Fifa Club Football World Cup
   </h4>
   <div class="table-responsive">
+    <div class="text-muted small mb-2">
+      Standings after {{ completed_games_count }} game{{ 's' if
+      completed_games_count != 1 else '' }}
+    </div>
     <table
       class="table table-bordered table-hover align-middle text-nowrap schedule-table"
     >
@@ -155,7 +159,12 @@
         <tr
           class="text-center {% if entry.points > 0 %} {% if loop.index == 1 %}table-warning {% elif loop.index == 2 %}table-info {% elif loop.index == 3 %}table-success {% endif %} {% endif %}"
         >
-          <td>{{ '-' if entry.points == 0 else loop.index }}</td>
+          <td>
+            {% if loop.last and entry.points == 0 %}
+            <span title="Last place 😬">🥄</span>
+            {% elif entry.points == 0 %} - {% else %} {{ loop.index }} {% endif
+            %}
+          </td>
           <td>
             {% if user %} {{ entry.name or '-' }} {% else %}
             <span class="blurred" title="Login to see the rankings.">

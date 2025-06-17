@@ -34,8 +34,11 @@ main = Blueprint("main", __name__)
 # --- Home Page ---
 @main.route("/")
 def index():
+    from sqlalchemy import or_
+
     user = None
     needs_profile = False
+    completed_games_count = Game.query.filter_by(is_completed=True).count()
 
     user_id = session.get("user_id")
     if user_id:
@@ -46,50 +49,54 @@ def index():
         else:
             needs_profile = not user.first_name or not user.last_name
 
-    # Fetch users excluding admin, and order based on leaderboard ranking rules
-    leaderboard_users = (
+    # Fetch all relevant users
+    raw_users = (
         User.query.filter(User.email != "admin@superpredicto.com")
         .filter(User.first_name.isnot(None), User.first_name != "")
         .filter(User.last_name.isnot(None), User.last_name != "")
         .filter(User.display_name.isnot(None), User.display_name != "")
-        .order_by(
-            desc(User.perfect_picks),
-            desc(User.picks_scoring_two),
-            desc(User.picks_scoring_one),
-        )
         .all()
     )
 
-    # Prepare leaderboard dicts
-    leaderboard_dicts = [
-        {
-            "name": user.display_name
-            or f"{user.first_name or ''} {user.last_name or ''}".strip()
-            or "-",
-            "points": sum(
-                filter(
-                    None,
-                    [
-                        (user.perfect_picks or 0) * 4,
-                        (user.picks_scoring_two or 0) * 2,
-                        (user.picks_scoring_one or 0) * 1,
-                    ],
-                )
-            ),
-            "perfect_picks": user.perfect_picks or 0,
-            "picks_scoring_two": user.picks_scoring_two or 0,
-            "picks_scoring_one": user.picks_scoring_one or 0,
-            "picks_scoring_zero": user.picks_scoring_zero or 0,
-            "invalid_picks": user.invalid_picks or 0,
-        }
-        for user in leaderboard_users
-    ]
+    # Build leaderboard dicts with calculated points
+    leaderboard_dicts = []
+    for u in raw_users:
+        perfect = u.perfect_picks or 0
+        two = u.picks_scoring_two or 0
+        one = u.picks_scoring_one or 0
+
+        points = perfect * 4 + two * 2 + one * 1
+
+        leaderboard_dicts.append(
+            {
+                "name": u.display_name
+                or f"{u.first_name or ''} {u.last_name or ''}".strip()
+                or "-",
+                "points": points,
+                "perfect_picks": perfect,
+                "picks_scoring_two": two,
+                "picks_scoring_one": one,
+                "picks_scoring_zero": u.picks_scoring_zero or 0,
+                "invalid_picks": u.invalid_picks or 0,
+            }
+        )
+
+    # Sort by ranking logic
+    leaderboard_dicts.sort(
+        key=lambda x: (
+            -x["points"],
+            -x["perfect_picks"],
+            -x["picks_scoring_two"],
+            -x["picks_scoring_one"],
+        )
+    )
 
     return render_template(
         "index.html",
         user=user,
         needs_profile=needs_profile,
         leaderboard=leaderboard_dicts,
+        completed_games_count=completed_games_count,
     )
 
 
@@ -342,7 +349,10 @@ def submit_picks():
             )
 
         if not changes_made:
-            flash("No changes made to your picks. Reminder - you cannot delete predictions once they have been made.", "info")
+            flash(
+                "No changes made to your picks. Reminder - you cannot delete predictions once they have been made.",
+                "info",
+            )
             return redirect(url_for("main.submit_picks"))
 
         db.session.commit()
@@ -357,7 +367,6 @@ def submit_picks():
         uae_now=now_uae,
         form_data={},
     )
-
 
 
 # --- All Predictions (Protected) ---
@@ -409,8 +418,10 @@ def predictions():
 
     # Only keep games that are completed or already started
     visible_games = [
-        g for g in all_games
-        if g.is_completed or uae.localize(datetime.combine(g.date_of_game, g.time_of_game)) <= now_uae
+        g
+        for g in all_games
+        if g.is_completed
+        or uae.localize(datetime.combine(g.date_of_game, g.time_of_game)) <= now_uae
     ]
 
     return render_template(
@@ -423,6 +434,7 @@ def predictions():
 
 
 # --- Predictions Filter ---
+
 
 @main.route("/predictions/filter")
 @login_required
@@ -438,8 +450,7 @@ def predictions_filter():
     # Load all predictions with joins
     all_predictions = (
         UserPrediction.query.options(
-            joinedload(UserPrediction.user),
-            joinedload(UserPrediction.game)
+            joinedload(UserPrediction.user), joinedload(UserPrediction.game)
         )
         .join(UserPrediction.user)
         .join(UserPrediction.game)
@@ -449,24 +460,30 @@ def predictions_filter():
 
     # Filter in Python: only include predictions for games that are completed or already started
     filtered_preds = [
-        p for p in all_predictions
+        p
+        for p in all_predictions
         if p.game
         and (
             p.game.is_completed
-            or uae.localize(datetime.combine(p.game.date_of_game, p.game.time_of_game)) <= now_uae
+            or uae.localize(datetime.combine(p.game.date_of_game, p.game.time_of_game))
+            <= now_uae
         )
         and (not user_id or p.user_id == user_id)
         and (not game_id or p.game_id == game_id)
     ]
 
-    filtered_preds.sort(key=lambda p: p.game.game_number if p.game and p.game.game_number is not None else 0)
+    filtered_preds.sort(
+        key=lambda p: (
+            p.game.game_number if p.game and p.game.game_number is not None else 0
+        )
+    )
 
     # Manual pagination
     start = (page - 1) * per_page
     end = start + per_page
     paginated_preds = filtered_preds[start:end]
 
-    class SimplePagination: 
+    class SimplePagination:
         def __init__(self, items, total, page, per_page):
             self.items = items
             self.total = total
@@ -481,7 +498,9 @@ def predictions_filter():
     print(f"[DEBUG] {len(filtered_preds)} predictions returned to template.")
     return render_template(
         "partials/_predictions_table.html",
-        predictions=SimplePagination(paginated_preds, len(filtered_preds), page, per_page)
+        predictions=SimplePagination(
+            paginated_preds, len(filtered_preds), page, per_page
+        ),
     )
 
 

@@ -7,11 +7,10 @@
 >
   <strong>Submitting / Editing Your Picks</strong>
   <ul class="mt-2 mb-0 ps-3">
+    <li>Enter your predictions and click Save at the bottom.</li>
     <li>
-      Enter your predictions and click Save at the bottom.
-    </li>
-    <li>
-      Please note that you cannot delete a prediction once it's been made.  You can,  however, amend it prior to kickoff.
+      Please note that you cannot delete a prediction once it's been made. You
+      can, however, amend it prior to kickoff.
     </li>
   </ul>
   <button
@@ -52,7 +51,7 @@
       (form_data.get(away_key) and not form_data.get(home_key))) %} {% set
       is_invalid = form_data.get('invalid_' ~ game.id) %}
       <div
-        class="d-flex justify-content-between align-items-center flex-wrap mb-2 px-2 py-2 rounded border row-active {% if error or is_invalid %} border-danger bg-light-danger {% elif prediction %} border-success bg-light-success {% else %} border-secondary {% endif %}"
+        class="d-flex justify-content-between align-items-center flex-wrap mb-2 px-2 py-2 rounded border row-active {% if error or is_invalid %} border-danger bg-light-danger {% elif prediction %} border-success bg-light-success {% else %} border-secondary {% endif %} {% if not editable %} bg-light-locked {% endif %}"
       >
         <div class="game-label">
           <div
@@ -149,6 +148,10 @@
     background-color: #e9fbe9;
   }
 
+  .bg-light-locked {
+    background-color: #f1f1f1;
+  }
+
   .game-label {
     font-size: 1rem;
     font-weight: 500;
@@ -211,7 +214,7 @@
       if (banner) banner.style.display = "none";
     }
   });
-  
+
   function validatePicksForm() {
     const rows = document.querySelectorAll(".score-input");
     const submitButton = document.getElementById("submit-button");

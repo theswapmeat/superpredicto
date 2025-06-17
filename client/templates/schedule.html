@@ -1,5 +1,4 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 
 <h2 class="text-center mb-4">Match Schedule</h2>
 
@@ -19,13 +18,18 @@
     </thead>
     <tbody>
       {% for game in games %}
-      <tr class="text-center {% if game.is_completed %}table-secondary{% endif %}">
+      <tr
+        class="text-center {% if game.is_completed %}bg-light-locked{% endif %}"
+      >
         <td class="d-none d-md-table-cell">{{ game.game_number }}</td>
         <td>{{ game.date_of_game.strftime('%B %d, %Y') }}</td>
-        <td class="d-none d-md-table-cell">{{ game.time_of_game.strftime('%H:%M') }}</td>
+        <td class="d-none d-md-table-cell">
+          {{ game.time_of_game.strftime('%H:%M') }}
+        </td>
         <td>{{ game.home_team }}</td>
         <td>
-          {% if game.home_team_score is not none and game.away_team_score is not none %}
+          {% if game.home_team_score is not none and game.away_team_score is not
+          none %}
           <div class="d-flex justify-content-center align-items-center gap-2">
             <div>{{ game.home_team_score }} - {{ game.away_team_score }}</div>
             <input type="checkbox" checked disabled title="Completed Game" />
@@ -40,10 +44,16 @@
 </div>
 
 <style>
+  /* Ensure all td/th in completed rows use light grey */
+  tr.bg-light-locked > td,
+  tr.bg-light-locked > th {
+    background-color: #f1f1f1 !important;
+  }
+
   /* Responsive Schedule Table Styling */
   @media (max-width: 576px) {
     .schedule-table {
-      table-layout: fixed; /* enables ellipsis */
+      table-layout: fixed;
     }
 
     .schedule-table th,
