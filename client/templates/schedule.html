@@ -1,79 +1,264 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+{% block title %}Match Schedule — SuperPredicto{% endblock %}
 
-<h2 class="text-center mb-4">Match Schedule</h2>
-
-<div class="table-responsive">
-  <table
-    class="table table-bordered table-hover align-middle text-nowrap schedule-table"
-  >
-    <thead class="table-dark text-center">
-      <tr>
-        <th class="d-none d-md-table-cell">Game #</th>
-        <th>Date</th>
-        <th class="d-none d-md-table-cell">Time</th>
-        <th>Home Team</th>
-        <th class="score-col">Final Score</th>
-        <th>Away Team</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for game in games %}
-      <tr
-        class="text-center {% if game.is_completed %}bg-light-locked{% endif %}"
-      >
-        <td class="d-none d-md-table-cell">{{ game.game_number }}</td>
-        <td>{{ game.date_of_game.strftime('%B %d, %Y') }}</td>
-        <td class="d-none d-md-table-cell">
-          {{ game.time_of_game.strftime('%H:%M') }}
-        </td>
-        <td>{{ game.home_team }}</td>
-        <td>
-          {% if game.home_team_score is not none and game.away_team_score is not
-          none %}
-          <div class="d-flex justify-content-center align-items-center gap-2">
-            <div>{{ game.home_team_score }} - {{ game.away_team_score }}</div>
-            <input type="checkbox" checked disabled title="Completed Game" />
-          </div>
-          {% else %} - {% endif %}
-        </td>
-        <td>{{ game.away_team }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
+{% block extra_head %}
 <style>
-  /* Ensure all td/th in completed rows use light grey */
-  tr.bg-light-locked > td,
-  tr.bg-light-locked > th {
-    background-color: #f1f1f1 !important;
+  .pwrap { max-width:1040px; margin:0 auto; padding:0 32px; }
+
+  /* PAGE HEADER (shared with /submit-picks & /predictions) */
+  .page-head { position:relative; padding:40px 0 18px; }
+  .page-head::before { content:""; position:absolute; inset:0; z-index:0; pointer-events:none; background:radial-gradient(720px 360px at 80% -20%, rgba(0,209,122,.12), transparent 60%); }
+  .ph-inner { position:relative; z-index:1; display:flex; align-items:flex-end; justify-content:space-between; gap:30px; flex-wrap:wrap; }
+  .ph-left { display:flex; flex-direction:column; gap:10px; }
+  .kicker { display:inline-flex; align-items:center; gap:9px; font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+  .kicker .hb { width:40px; height:12px; }
+  .kicker .hb path { stroke:var(--em); }
+  h1.page-title { font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:clamp(28px,3.4vw,44px); line-height:1; letter-spacing:-.01em; text-transform:uppercase; }
+  h1.page-title span { color:var(--emb); }
+  .ph-note { font-size:14px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+  .ph-note i { color:var(--muted-2); }
+
+  /* count card (right) — mirrors progress/info card */
+  .count-card { display:flex; align-items:center; gap:16px; background:linear-gradient(180deg,var(--panel),var(--ink-2)); border:1px solid var(--line-strong); border-radius:16px; padding:14px 22px; box-shadow:0 24px 50px -34px rgba(0,0,0,.8); }
+  .count-card .cc-num { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:30px; line-height:1; color:var(--emb); }
+  .count-card .cc-lbl { font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-2); }
+
+  /* TOOLBAR — centered container, space-between contents */
+  .toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:8px auto 22px; flex-wrap:wrap; }
+  .filterseg { display:flex; gap:4px; background:var(--ink-2); border:1px solid var(--line); border-radius:11px; padding:4px; }
+  .filterseg button { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:13px; letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; color:var(--muted); padding:9px 15px; border-radius:8px; border:none; background:transparent; cursor:pointer; transition:all .15s ease; }
+  .filterseg button.on { background:var(--em); color:#06210F; }
+  .filterseg button:not(.on):hover { color:var(--text); }
+  .ghostbtn { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:13px; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; color:var(--muted); background:transparent; border:1px solid var(--line); border-radius:9px; padding:9px 15px; cursor:pointer; transition:all .15s ease; display:inline-flex; align-items:center; gap:7px; }
+  .ghostbtn:hover { color:var(--text); border-color:var(--line-strong); }
+
+  /* DAY GROUPS (shared with /submit-picks) */
+  .day { margin-bottom:18px; }
+  .day-head { display:flex; align-items:center; gap:14px; width:100%; cursor:pointer; background:transparent; border:none; padding:10px 4px; text-align:left; color:inherit; }
+  .chev { width:26px; height:26px; flex:0 0 auto; border-radius:7px; border:1px solid var(--line); display:grid; place-items:center; color:var(--muted); transition:transform .22s ease,color .15s ease,border-color .15s ease; }
+  .day.collapsed .chev { transform:rotate(-90deg); }
+  .day-head:hover .chev { color:var(--emb); border-color:var(--line-strong); }
+  .day-date { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:19px; letter-spacing:.02em; color:var(--text); text-transform:uppercase; white-space:nowrap; }
+  .day-dow { color:var(--emb); }
+  .day-count { margin-left:auto; display:inline-flex; align-items:center; gap:8px; font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-2); }
+  .day-count .pip { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.14); }
+  .games { display:flex; flex-direction:column; gap:10px; padding-top:6px; }
+  .day.collapsed .games { display:none; }
+
+  /* GAME CARD (read-only) */
+  .game { display:grid; grid-template-columns:110px minmax(0,1fr) auto; align-items:center; gap:18px; background:linear-gradient(180deg,var(--ink-2),#0A0F22); border:1px solid var(--line); border-left:3px solid transparent; border-radius:14px; padding:16px 20px; transition:border-color .18s ease, background .18s ease; }
+  .game:hover { border-color:var(--line-strong); }
+  .game.completed { border-left-color:var(--em); background:linear-gradient(180deg, rgba(0,209,122,.06), rgba(0,209,122,.02)); }
+  .game.live { border-left-color:var(--gold); }
+  .g-meta { display:flex; flex-direction:column; gap:5px; }
+  .g-no { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--emb); }
+  .game:not(.completed) .g-no { color:var(--muted-2); }
+  .g-time { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); white-space:nowrap; }
+  .g-time i { color:var(--muted-2); font-size:13px; }
+  .g-match { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap:16px; width:100%; min-width:0; }
+  .side { display:flex; align-items:center; gap:12px; min-width:0; }
+  .side.home { justify-content:flex-end; }
+  .side.away { justify-content:flex-start; }
+  .tbadge { width:42px; height:42px; border-radius:11px; flex:0 0 auto; display:grid; place-items:center; font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:14px; letter-spacing:.02em; border:1px solid var(--line-strong); }
+  .tbadge.home { background:linear-gradient(160deg,#1b2a57,#101938); color:#dfe8ff; }
+  .tbadge.away { background:linear-gradient(160deg,#5a1730,#330f1d); color:#ffd6df; }
+  .tname { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:16px; letter-spacing:.01em; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; max-width:150px; }
+  .vsv { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:12px; letter-spacing:.1em; color:var(--muted-2); }
+
+  /* RESULT area (right) */
+  .g-result { display:flex; align-items:center; gap:10px; flex:0 0 auto; min-width:130px; justify-content:flex-end; }
+  .sbox { width:48px; height:50px; border-radius:11px; background:#070B18; border:1.5px solid var(--line-strong); display:grid; place-items:center; font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:26px; color:var(--text); }
+  .game.completed .sbox { border-color:rgba(0,209,122,.5); }
+  .dash { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:22px; color:var(--muted-2); }
+  .tag { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:11px; letter-spacing:.1em; text-transform:uppercase; padding:5px 10px; border-radius:7px; white-space:nowrap; }
+  .tag.ft { background:var(--em-dim); color:var(--emb); border:1px solid rgba(0,209,122,.4); }
+  .tag.live { background:rgba(244,199,82,.14); color:var(--gold); border:1px solid rgba(244,199,82,.4); }
+  .tag.soon { background:rgba(255,255,255,.05); color:var(--muted); border:1px solid var(--line); }
+
+  #sched-main { padding-bottom:60px; }
+  .empty-note { text-align:center; color:var(--muted); padding:50px 0; }
+
+  @media (max-width:720px) {
+    .pwrap { padding-left:18px; padding-right:18px; }
+    .ph-inner { align-items:flex-start; }
+    .game { grid-template-columns:1fr; gap:14px; }
+    .g-meta { flex-direction:row; align-items:center; gap:12px; }
+    .g-match { justify-content:center; }
+    .tname { font-size:14.5px; max-width:90px; }
+    .g-result { justify-content:flex-start; }
+    .toolbar { justify-content:center; }
   }
-
-  /* Responsive Schedule Table Styling */
-  @media (max-width: 576px) {
-    .schedule-table {
-      table-layout: fixed;
-    }
-
-    .schedule-table th,
-    .schedule-table td {
-      font-size: 12px;
-      padding: 0.25rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .schedule-table th.score-col,
-    .schedule-table td:nth-child(5) {
-      width: auto !important;
-    }
-  }
-
-  input[type="checkbox"][disabled] {
-    cursor: not-allowed;
+  @media (max-width:400px) {
+    .tbadge { width:34px; height:34px; font-size:12px; border-radius:9px; }
+    .tname { font-size:13px; max-width:66px; }
+    .g-match { gap:10px; }
+    .sbox { width:44px; height:46px; font-size:24px; }
   }
 </style>
+{% endblock %}
 
+{% block body %}
+<section class="page-head">
+  <div class="pwrap ph-inner">
+    <div class="ph-left">
+      <span class="kicker">
+        <svg class="hb" viewBox="0 0 240 60" fill="none"><path pathLength="100" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30" /></svg>
+        Fixtures
+      </span>
+      <h1 class="page-title">Match <span>Schedule</span></h1>
+      <p class="ph-note"><i class="bi bi-clock"></i> Dates &amp; times shown in your timezone (<span class="user-tz-label"></span>).</p>
+    </div>
+    <div class="count-card">
+      <div>
+        <div class="cc-num">{{ games|length }}</div>
+        <div class="cc-lbl">Matches</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="pwrap toolbar">
+  <div class="filterseg">
+    <button type="button" class="on" data-filter="all">All matches</button>
+    <button type="button" data-filter="upcoming">Upcoming</button>
+    <button type="button" data-filter="completed">Completed</button>
+  </div>
+  <div class="tool-actions">
+    <button class="ghostbtn" id="collapseAll" type="button">
+      <i class="bi bi-chevron-up"></i> <span class="cl-txt">Collapse all</span>
+    </button>
+  </div>
+</div>
+
+<main class="pwrap" id="sched-main">
+  <div id="sched-list">
+    {% for game in games %}
+    {% set completed = game.home_team_score is not none and game.away_team_score is not none %}
+    <div class="game-item game{% if completed %} completed{% endif %}"
+         id="game-{{ game.id }}" data-utc="{{ game.kickoff_utc().isoformat() }}"
+         data-completed="{{ 1 if completed else 0 }}">
+      <div class="g-meta">
+        <span class="g-no">Game {{ game.game_number }}</span>
+        <span class="g-time"><i class="bi bi-clock"></i><span class="gt" data-utc="{{ game.kickoff_utc().isoformat() }}">{{ game.time_of_game.strftime('%I:%M %p') }}</span></span>
+      </div>
+      <div class="g-match">
+        <div class="side home">
+          <span class="tname">{{ game.home_team }}</span>
+          <span class="tbadge home">{{ game.home_team[:3]|upper }}</span>
+        </div>
+        <span class="vsv">VS</span>
+        <div class="side away">
+          <span class="tbadge away">{{ game.away_team[:3]|upper }}</span>
+          <span class="tname">{{ game.away_team }}</span>
+        </div>
+      </div>
+      <div class="g-result">
+        {% if completed %}
+        <span class="sbox">{{ game.home_team_score }}</span>
+        <span class="dash">–</span>
+        <span class="sbox">{{ game.away_team_score }}</span>
+        <span class="tag ft">FT</span>
+        {% else %}
+        <span class="tag soon" data-soon>Upcoming</span>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <p class="empty-note">No matches have been scheduled for this tournament yet.</p>
+    {% endfor %}
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (function () {
+    var list = document.getElementById("sched-list");
+    if (!list) return;
+    var now = Date.now();
+
+    // ---- group flat cards into day sections by the viewer's LOCAL date ----
+    function buildDays() {
+      var items = Array.from(list.querySelectorAll(".game-item"));
+      if (!items.length) return;
+      var groups = new Map();
+      items.forEach(function (it) {
+        var d = new Date(it.dataset.utc);
+        var gt = it.querySelector(".gt");
+        if (gt) gt.textContent = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        // mark live = kicked off but not completed
+        if (it.dataset.completed === "0" && d.getTime() <= now) {
+          it.classList.add("live");
+          var soon = it.querySelector("[data-soon]");
+          if (soon) { soon.classList.remove("soon"); soon.classList.add("live"); soon.textContent = "Live / Pending"; }
+        }
+        var key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+        if (!groups.has(key)) groups.set(key, {
+          dow: d.toLocaleDateString([], { weekday: "long" }),
+          datestr: d.toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" }),
+          items: [],
+        });
+        groups.get(key).items.push(it);
+      });
+      list.textContent = "";
+      groups.forEach(function (g, key) {
+        var day = document.createElement("section");
+        day.className = "day"; day.dataset.dateKey = key;
+        if (localStorage.getItem("spSchedCollapsed_" + key) === "true") day.classList.add("collapsed");
+        var done = g.items.filter(function (it) { return it.dataset.completed === "1"; }).length;
+        var head = document.createElement("button");
+        head.type = "button"; head.className = "day-head";
+        head.innerHTML =
+          '<span class="chev"><i class="bi bi-chevron-down"></i></span>' +
+          '<span class="day-date"><span class="day-dow">' + g.dow + ',</span> ' + g.datestr + "</span>" +
+          '<span class="day-count"><span class="pip"></span><span class="txt">' + g.items.length + ' match' + (g.items.length === 1 ? '' : 'es') + '</span></span>';
+        head.addEventListener("click", function () {
+          day.classList.toggle("collapsed");
+          localStorage.setItem("spSchedCollapsed_" + key, day.classList.contains("collapsed"));
+        });
+        var wrap = document.createElement("div");
+        wrap.className = "games";
+        g.items.forEach(function (it) { wrap.appendChild(it); });
+        day.appendChild(head); day.appendChild(wrap);
+        list.appendChild(day);
+      });
+    }
+
+    // ---- filters ----
+    var filter = "all";
+    function applyFilter() {
+      list.querySelectorAll(".game-item").forEach(function (it) {
+        var show = true;
+        if (filter === "completed") show = it.dataset.completed === "1";
+        else if (filter === "upcoming") show = it.dataset.completed === "0";
+        it.style.display = show ? "" : "none";
+      });
+      list.querySelectorAll(".day").forEach(function (d) {
+        var any = Array.from(d.querySelectorAll(".game-item")).some(function (it) { return it.style.display !== "none"; });
+        d.style.display = any ? "" : "none";
+      });
+    }
+    document.querySelectorAll(".filterseg button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        document.querySelectorAll(".filterseg button").forEach(function (x) { x.classList.remove("on"); });
+        b.classList.add("on"); filter = b.dataset.filter; applyFilter();
+      });
+    });
+
+    // ---- collapse all ----
+    var allCollapsed = false;
+    var collapseBtn = document.getElementById("collapseAll");
+    if (collapseBtn) collapseBtn.addEventListener("click", function () {
+      allCollapsed = !allCollapsed;
+      list.querySelectorAll(".day").forEach(function (d) {
+        d.classList.toggle("collapsed", allCollapsed);
+        localStorage.setItem("spSchedCollapsed_" + d.dataset.dateKey, allCollapsed);
+      });
+      collapseBtn.querySelector(".cl-txt").textContent = allCollapsed ? "Expand all" : "Collapse all";
+    });
+
+    buildDays();
+    applyFilter();
+  })();
+</script>
 {% endblock %}

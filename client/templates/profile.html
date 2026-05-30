@@ -1,69 +1,49 @@
-{% extends "base.html" %} {% block content %}
-<div class="card shadow-sm mx-auto position-relative" style="max-width: 500px">
-  <div class="card-body">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 class="card-title mb-0">Your Profile</h2>
-      <div style="width: 60px; height: 60px">
+{% extends "base.html" %}
+{% block title %}Your Profile — SuperPredicto{% endblock %}
+{% block content %}
+<div class="auth-wrap" style="max-width:520px">
+  <div class="panel auth-card">
+    <div class="d-flex justify-content-between align-items-center" style="margin-bottom:24px; gap:16px">
+      <div>
+        <span class="auth-kicker" style="margin-bottom:8px">
+          <svg class="hb" viewBox="0 0 240 60" fill="none"><path pathLength="100" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30" /></svg>
+          Your account
+        </span>
+        <h1 class="auth-title" style="text-align:left">Your <span>Profile</span></h1>
+      </div>
+      <div style="width:64px; height:64px; flex:0 0 auto">
         <img
           src="{{ url_for('static', filename='avatars/' + (user.avatar or 'default.png')) }}"
           alt="User Avatar"
-          class="rounded-circle w-100 h-100 object-fit-cover border border-light"
+          class="rounded-circle w-100 h-100"
+          style="object-fit:cover; border:2px solid var(--line-strong)"
         />
       </div>
     </div>
 
     <form method="post">
-      <div class="mb-3">
-        <label for="first_name" class="form-label">First Name*</label>
-        <input
-          type="text"
-          class="form-control"
-          id="first_name"
-          name="first_name"
-          value="{{ user.first_name or '' }}"
-          required
-        />
+      <div class="sp-field">
+        <label for="first_name" class="sp-label">First name *</label>
+        <input type="text" class="sp-input" id="first_name" name="first_name" value="{{ user.first_name or '' }}" required />
       </div>
-      <div class="mb-3">
-        <label for="last_name" class="form-label">Last Name*</label>
-        <input
-          type="text"
-          class="form-control"
-          id="last_name"
-          name="last_name"
-          value="{{ user.last_name or '' }}"
-          required
-        />
+      <div class="sp-field">
+        <label for="last_name" class="sp-label">Last name *</label>
+        <input type="text" class="sp-input" id="last_name" name="last_name" value="{{ user.last_name or '' }}" required />
       </div>
-      <div class="mb-3">
-        <label for="display_name" class="form-label">Display Name*</label>
-        <input
-          type="text"
-          class="form-control {% if error %}is-invalid{% endif %}"
-          id="display_name"
-          name="display_name"
-          value="{{ user.display_name or '' }}"
-          required
-        />
+      <div class="sp-field">
+        <label for="display_name" class="sp-label">Display name *</label>
+        <input type="text" class="sp-input {% if error %}invalid{% endif %}" id="display_name" name="display_name" value="{{ user.display_name or '' }}" required />
         {% if error %}
-        <div class="invalid-feedback">{{ error }}</div>
+        <div class="sp-error">{{ error }}</div>
         {% else %}
-        <span class="form-text text-muted"
-          >One word only, fewer than 10 characters.</span
-        >
+        <div class="sp-help">One word only, fewer than 10 characters.</div>
         {% endif %}
       </div>
-      <div class="mb-3">
-        <label for="email" class="form-label">Email Address</label>
-        <input
-          type="email"
-          class="form-control"
-          id="email"
-          value="{{ user.email }}"
-          disabled
-        />
+      <div class="sp-field">
+        <label for="email" class="sp-label">Email address</label>
+        <input type="email" class="sp-input" id="email" value="{{ user.email }}" disabled />
       </div>
-      <button type="submit" class="btn btn-primary w-100">Save</button>
+      <button type="submit" class="sp-btn sp-btn-primary sp-btn-block">Save changes</button>
     </form>
   </div>
 </div>

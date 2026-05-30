@@ -1,12 +1,20 @@
 import os
+from dotenv import load_dotenv
+
+# --- Environment loading (MUST happen before Config is imported) ---
+# Config reads os.getenv(...) at import time, so the correct env files must be
+# loaded first. Shared secrets live in `.env`; the active database URL lives in
+# `.env.<APP_ENV>` (.env.dev = local Postgres, .env.prod = Supabase).
+# APP_ENV defaults to "dev" so a local run never accidentally connects to production.
+_SERVER_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_APP_ENV = os.getenv("APP_ENV", "dev")
+load_dotenv(os.path.join(_SERVER_DIR, ".env"))  # shared/base secrets
+load_dotenv(os.path.join(_SERVER_DIR, f".env.{_APP_ENV}"), override=True)  # env-specific DB URL
+
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from dotenv import load_dotenv
 from .config import Config
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Initialize extensions
 db = SQLAlchemy()

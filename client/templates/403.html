@@ -1,8 +1,11 @@
+<!-- 403.html -->
 {% extends "base.html" %}
+{% block title %}Forbidden — SuperPredicto{% endblock %}
 {% block content %}
-<div class="text-center mt-5">
-  <h1 class="display-4 text-danger">403 Forbidden</h1>
-  <p>You do not have permission to access this resource.</p>
-  <a href="{{ url_for('main.index') }}" class="btn btn-primary mt-3">Back to Home</a>
+<div class="auth-wrap" style="text-align:center; padding-top:64px">
+  <div style="font-family:'Saira Condensed',sans-serif; font-weight:900; font-size:clamp(72px,14vw,120px); line-height:.9; letter-spacing:-.02em; color:#FF6B7D">403</div>
+  <h1 class="auth-title" style="margin-top:10px">Access <span>Forbidden</span></h1>
+  <p class="auth-sub" style="margin:12px auto 22px">You don't have permission to access this resource.</p>
+  <a href="{{ url_for('main.index') }}" class="sp-btn sp-btn-primary">← Back to home</a>
 </div>
 {% endblock %}

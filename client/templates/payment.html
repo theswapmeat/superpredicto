@@ -1,21 +1,31 @@
-{% extends "base.html" %} {% block content %}
-
-<div class="container mt-5">
-  <div class="card shadow-sm mx-auto" style="max-width: 600px">
-    <div class="card-body">
-      <h4 class="card-title text-center mb-4">Payment Required</h4>
-      <p class="mb-3">
-        Please make a payment of <strong>AED 275</strong> to continue using all
-        the features. Payment must be made via bank transfer to:
-      </p>
-      <ul class="list-unstyled">
-        <li><strong>Name:</strong> Anup Paul Chackunny</li>
-        <li><strong>Bank:</strong> Emirates NBD</li>
-        <li><strong>Account Number:</strong> 1014040525401</li>
-        <li><strong>IBAN:</strong> AE270260001014040525401</li>
-      </ul>
+{% extends "base.html" %}
+{% block title %}Payment — SuperPredicto{% endblock %}
+{% block content %}
+<div class="auth-wrap" style="max-width:520px">
+  <div class="panel auth-card">
+    <div class="auth-head">
+      <span class="auth-kicker">
+        <svg class="hb" viewBox="0 0 240 60" fill="none"><path pathLength="100" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30" /></svg>
+        Entry fee
+      </span>
+      <h1 class="auth-title">Payment <span>Required</span></h1>
+      <p class="auth-sub">Pay your <b style="color:var(--text)">AED 275</b> entry fee by bank transfer to join the season.</p>
     </div>
+
+    <div class="sp-note" style="margin-bottom:18px">
+      <i class="bi bi-bank"></i>
+      <div>
+        <div style="font-family:'Saira Condensed',sans-serif; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-2); font-size:12px; margin-bottom:8px">Bank transfer details</div>
+        <table style="width:100%; font-size:14px; color:var(--text)">
+          <tr><td style="color:var(--muted); padding:3px 14px 3px 0">Name</td><td>Anup Paul Chackunny</td></tr>
+          <tr><td style="color:var(--muted); padding:3px 14px 3px 0">Bank</td><td>Emirates NBD</td></tr>
+          <tr><td style="color:var(--muted); padding:3px 14px 3px 0">Account</td><td>1014040525401</td></tr>
+          <tr><td style="color:var(--muted); padding:3px 14px 3px 0">IBAN</td><td>AE270260001014040525401</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <p class="auth-sub" style="max-width:none; text-align:center">Once your transfer is received, your account will be activated for predictions.</p>
   </div>
 </div>
-
 {% endblock %}

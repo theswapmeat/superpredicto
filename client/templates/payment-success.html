@@ -1,8 +1,12 @@
 {% extends "base.html" %}
+{% block title %}Payment Successful — SuperPredicto{% endblock %}
 {% block content %}
-    <div class="alert alert-success text-center mt-4">
-        <h4 class="alert-heading">Payment Successful!</h4>
-        <p>Thank you! Your payment has been received and your account is now activated.</p>
-        <a href="/" class="btn btn-primary mt-3">Go to Home</a>
-    </div>
+<div class="auth-wrap">
+  <div class="panel auth-card" style="text-align:center">
+    <div style="font-size:46px; line-height:1; margin-bottom:6px">✅</div>
+    <h1 class="auth-title">Payment <span>Successful</span></h1>
+    <p class="auth-sub" style="margin:12px auto 22px">Thank you! Your payment has been received and your account is now activated.</p>
+    <a href="/" class="sp-btn sp-btn-primary sp-btn-block">Go to home →</a>
+  </div>
+</div>
 {% endblock %}

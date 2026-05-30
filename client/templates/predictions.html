@@ -1,190 +1,180 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+{% block title %}All Predictions — SuperPredicto{% endblock %}
 
-<h2 class="text-center mb-4">All User Predictions</h2>
-
-<!-- Intro Banner -->
-<div
-  id="predictionsIntroBanner"
-  class="intro-banner alert alert-dismissible fade show mb-4 text-white"
-  role="alert"
->
-  <strong>Viewing Everyone's Predictions</strong>
-  <ul class="mt-2 mb-0 ps-3">
-    <li>
-      You can see all user predictions here for games that have started or been
-      completed.
-    </li>
-    <li>
-      Predictions for upcoming games are hidden until kickoff to prevent users
-      from copying others’ picks.
-    </li>
-  </ul>
-  <button
-    type="button"
-    class="btn-close btn-close-white"
-    data-bs-dismiss="alert"
-    aria-label="Close"
-    onclick="hidePredictionsIntroBanner()"
-  ></button>
-</div>
-
-<!-- Filters (top row) -->
-<div
-  class="d-flex align-items-center justify-content-start gap-2 mb-3 flex-nowrap"
->
-  <select
-    id="userFilter"
-    class="form-select form-select-sm"
-    style="max-width: 180px"
-  >
-    <option value="">All Users</option>
-    {% for user in users %}
-    <option value="{{ user.id }}">
-      {{ user.display_name or (user.first_name ~ ' ' ~ user.last_name) }}
-    </option>
-    {% endfor %}
-  </select>
-
-  <select
-    id="gameFilter"
-    class="form-select form-select-sm"
-    style="max-width: 180px"
-  >
-    <option value="">All Games</option>
-    {% for game in games %}
-    <option value="{{ game.id }}">
-      {{ game.home_team }} vs {{ game.away_team }}
-    </option>
-    {% endfor %}
-  </select>
-</div>
-
-<!-- Predictions Table -->
-<div id="predictionsTable">
-  {% include "partials/_predictions_table.html" %}
-</div>
-
-<!-- Bottom-left rows per page -->
-<div class="d-flex justify-content-between align-items-center flex-wrap">
-  <div class="d-flex align-items-center gap-2">
-    <label for="perPage" class="mb-0" style="font-size: 0.85rem">
-      Rows per page:
-    </label>
-    <select id="perPage" class="form-select form-select-sm" style="width: 80px">
-      <option value="10">10</option>
-      <option value="50" selected>50</option>
-      <option value="100">100</option>
-    </select>
-  </div>
-
-  <div class="pagination-controls">
-    <!-- Pagination buttons will be injected here via partial -->
-  </div>
-</div>
-
-<!-- Scoped Page Styles -->
+{% block extra_head %}
 <style>
-  /* General widths for desktop view */
-  .schedule-table th:nth-child(1),
-  .schedule-table td:nth-child(1) {
-    width: 20%;
-  }
+  .pwrap { max-width:1040px; margin:0 auto; padding:0 32px; }
 
-  .schedule-table th:nth-child(2),
-  .schedule-table td:nth-child(2) {
-    width: 40%;
-  }
+  /* PAGE HEADER (shared with /submit-picks) */
+  .page-head { position:relative; padding:40px 0 18px; }
+  .page-head::before { content:""; position:absolute; inset:0; z-index:0; pointer-events:none; background:radial-gradient(720px 360px at 80% -20%, rgba(0,209,122,.12), transparent 60%); }
+  .ph-inner { position:relative; z-index:1; display:flex; align-items:flex-end; justify-content:space-between; gap:30px; flex-wrap:wrap; }
+  .ph-left { display:flex; flex-direction:column; gap:10px; }
+  .kicker { display:inline-flex; align-items:center; gap:9px; font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+  .kicker .hb { width:40px; height:12px; }
+  .kicker .hb path { stroke:var(--em); }
+  h1.page-title { font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:clamp(28px,3.4vw,44px); line-height:1; letter-spacing:-.01em; text-transform:uppercase; }
+  h1.page-title span { color:var(--emb); }
+  .ph-note { font-size:14px; color:var(--muted); display:flex; align-items:center; gap:8px; max-width:560px; }
+  .ph-note i { color:var(--muted-2); }
 
-  .schedule-table th:nth-child(3),
-  .schedule-table td:nth-child(3),
-  .schedule-table th:nth-child(4),
-  .schedule-table td:nth-child(4),
-  .schedule-table th:nth-child(5),
-  .schedule-table td:nth-child(5) {
-    width: 10%;
-  }
+  /* INFO CARD (right side of header) — mirrors .progress-card */
+  .info-card { display:flex; align-items:flex-start; gap:13px; max-width:340px; background:linear-gradient(180deg,var(--panel),var(--ink-2)); border:1px solid var(--line-strong); border-radius:16px; padding:15px 18px; box-shadow:0 24px 50px -34px rgba(0,0,0,.8); }
+  .info-card i { color:var(--emb); font-size:18px; margin-top:1px; flex:0 0 auto; }
+  .info-card p { font-size:13px; line-height:1.5; color:var(--muted); margin:0; }
+  .info-card b { color:var(--text); font-weight:600; }
+  .info-card .ic-close { margin-left:6px; background:transparent; border:none; color:var(--muted-2); cursor:pointer; font-size:15px; line-height:1; padding:2px; }
+  .info-card .ic-close:hover { color:var(--text); }
 
-  /* Filters */
-  #userFilter,
-  #gameFilter {
-    max-width: 180px;
-    min-width: 150px;
-  }
+  /* TOOLBAR — centered container, space-between contents */
+  .toolbar { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin:14px auto 22px; flex-wrap:wrap; }
+  .field { display:flex; flex-direction:column; gap:6px; }
+  .field label { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted-2); padding-left:2px; }
+  .filters { display:flex; gap:12px; flex-wrap:wrap; }
+  .selctl { font-family:"Saira Condensed",sans-serif; font-weight:600; font-size:14px; color:var(--text); background:var(--ink-2); border:1px solid var(--line); border-radius:10px; padding:9px 34px 9px 13px; cursor:pointer; appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238E97B2' viewBox='0 0 16 16'%3E%3Cpath d='M3.2 5.6 8 10.4l4.8-4.8' stroke='%238E97B2' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; transition:border-color .15s ease; }
+  .selctl:hover { border-color:var(--line-strong); }
+  .selctl:focus { outline:none; border-color:var(--em); box-shadow:0 0 0 3px var(--em-dim); }
+  /* width:auto -> the control sizes to its widest <option>, and the native
+     popup inherits that width (so the widest result is never truncated). */
+  .selctl.userf, .selctl.gamef { width:auto; min-width:160px; max-width:100%; }
 
-  .pagination-controls {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-  }
+  /* segmented control (matches /submit-picks filters) */
+  .filterseg { display:flex; gap:4px; background:var(--ink-2); border:1px solid var(--line); border-radius:11px; padding:4px; }
+  .filterseg button { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:13px; letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; color:var(--muted); padding:9px 15px; border-radius:8px; border:none; background:transparent; cursor:pointer; transition:all .15s ease; }
+  .filterseg button.on { background:var(--em); color:#06210F; }
+  .filterseg button:not(.on):hover { color:var(--text); }
 
-  #userFilter,
-  #gameFilter {
-    max-width: 162px; /* 180px - 10% */
-    min-width: 135px;
-  }
+  /* PREDICTIONS TABLE — rows as dark cards (matches game cards) */
+  .pred-wrap { overflow-x:auto; padding-bottom:6px; }
+  .pred-table { width:100%; border-collapse:separate; border-spacing:0 8px; }
+  .pred-table thead th { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted-2); text-align:center; padding:0 14px 6px; white-space:nowrap; }
+  .pred-table thead th.user { text-align:left; }
+  .pred-table tbody tr { background:linear-gradient(180deg,var(--ink-2),#0A0F22); transition:border-color .18s ease, background .18s ease; }
+  .pred-table tbody td { padding:13px 14px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); text-align:center; vertical-align:middle; font-size:14px; color:var(--text); }
+  .pred-table tbody td:first-child { border-left:1px solid var(--line); border-top-left-radius:13px; border-bottom-left-radius:13px; text-align:left; }
+  .pred-table tbody td:last-child { border-right:1px solid var(--line); border-top-right-radius:13px; border-bottom-right-radius:13px; }
+  .pred-table tbody tr:hover td { border-color:var(--line-strong); }
+  .pred-table tbody tr:hover td:first-child { border-left-color:var(--line-strong); }
+  .pred-table tbody tr:hover td:last-child { border-right-color:var(--line-strong); }
+  .u-name { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:16px; letter-spacing:.01em; }
+  .g-teams { font-family:"Saira Condensed",sans-serif; font-weight:600; font-size:15px; color:var(--text); white-space:nowrap; }
+  .g-teams .vs { color:var(--muted-2); font-size:12px; letter-spacing:.08em; margin:0 7px; }
+  .score-cell { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:17px; letter-spacing:.04em; color:var(--text); white-space:nowrap; }
+  .score-cell.muted { color:var(--muted-2); }
+  /* points pill */
+  .pts { display:inline-grid; place-items:center; min-width:34px; height:30px; padding:0 9px; border-radius:9px; font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:16px; border:1px solid var(--line-strong); }
+  .pts.p4 { background:var(--em); color:#06210F; border-color:transparent; box-shadow:0 0 0 1px rgba(29,239,147,.3); }
+  .pts.p2 { background:var(--em-dim); color:var(--emb); border-color:rgba(0,209,122,.4); }
+  .pts.p1 { background:rgba(255,255,255,.05); color:var(--text); }
+  .pts.p0 { background:rgba(255,255,255,.03); color:var(--muted-2); }
+  .no-rows { text-align:center; color:var(--muted); padding:46px 16px; font-size:14.5px; }
 
-  /* Mobile-specific styles */
-  @media (max-width: 576px) {
-    .schedule-table th,
-    .schedule-table td {
-      font-size: 12px;
-      padding: 0.25rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+  /* PAGINATION */
+  .pager { display:flex; align-items:center; justify-content:flex-end; gap:6px; margin-top:18px; flex-wrap:wrap; }
+  .pager a, .pager span.pg { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:13.5px; letter-spacing:.03em; min-width:38px; height:38px; padding:0 12px; border-radius:9px; border:1px solid var(--line); background:var(--ink-2); color:var(--muted); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; transition:all .14s ease; }
+  .pager a:hover { color:var(--text); border-color:var(--line-strong); }
+  .pager .pg.active { background:var(--em); color:#06210F; border-color:transparent; }
+  .pager .pg.disabled { opacity:.4; cursor:not-allowed; }
 
-    .schedule-table th:nth-child(1),
-    .schedule-table td:nth-child(1) {
-      width: 20% !important; /* User */
-    }
+  .pred-foot { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:6px; flex-wrap:wrap; }
 
-    .schedule-table th:nth-child(2),
-    .schedule-table td:nth-child(2) {
-      width: 60% !important; /* Game */
-    }
-
-    .schedule-table th:nth-child(5),
-    .schedule-table td:nth-child(5) {
-      width: 20% !important; /* Points */
-    }
-
-    .schedule-table th:nth-child(3),
-    .schedule-table td:nth-child(3),
-    .schedule-table th:nth-child(4),
-    .schedule-table td:nth-child(4) {
-      display: none !important; /* Hide Prediction & Final Score */
-    }
-
-    .table-responsive {
-      overflow-x: hidden;
-    }
-
-    #userFilter,
-    #gameFilter,
-    #perPage,
-    label[for="perPage"] {
-      font-size: 0.75rem !important;
-    }
-
-    #predictionsIntroBanner {
-      font-size: 0.85rem !important;
-    }
-
-    .pagination-controls {
-      justify-content: center;
-      margin-top: 1rem;
-    }
+  @media (max-width:760px) {
+    .pwrap { padding-left:18px; padding-right:18px; }
+    .ph-inner { align-items:flex-start; }
+    .info-card { max-width:none; }
+    .toolbar { align-items:stretch; }
+    .selctl.userf, .selctl.gamef { min-width:0; width:100%; }
+    .pred-table thead th:nth-child(3), .pred-table tbody td:nth-child(3),
+    .pred-table thead th:nth-child(4), .pred-table tbody td:nth-child(4) { display:none; }
+    .pager { justify-content:center; }
   }
 </style>
+{% endblock %}
 
-<!-- JavaScript -->
+{% block body %}
+<section class="page-head">
+  <div class="pwrap ph-inner">
+    <div class="ph-left">
+      <span class="kicker">
+        <svg class="hb" viewBox="0 0 240 60" fill="none"><path pathLength="100" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30" /></svg>
+        League Predictions
+      </span>
+      <h1 class="page-title">All User <span>Predictions</span></h1>
+      <p class="ph-note"><i class="bi bi-clock"></i> Predictions for upcoming games stay hidden until kickoff so no one can copy others' picks.</p>
+    </div>
+    <div class="info-card" id="predictionsIntroBanner">
+      <i class="bi bi-eye-fill"></i>
+      <p>You can see <b>everyone's predictions</b> here for games that have already started or finished.</p>
+      <button type="button" class="ic-close" aria-label="Dismiss" onclick="hidePredictionsIntroBanner()"><i class="bi bi-x-lg"></i></button>
+    </div>
+  </div>
+</section>
+
+<div class="pwrap toolbar">
+  <div class="filters">
+    <div class="field">
+      <label for="userFilter">User</label>
+      <select id="userFilter" class="selctl userf">
+        <option value="">All Users</option>
+        {% for user in users %}
+        <option value="{{ user.id }}">{{ user.display_name or (user.first_name ~ ' ' ~ user.last_name) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="gameFilter">Game</label>
+      <select id="gameFilter" class="selctl gamef">
+        <option value="">All Games</option>
+        {% for game in games %}
+        <option value="{{ game.id }}">{{ game.home_team }} vs {{ game.away_team }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="field">
+    <label>Rows per page</label>
+    <div class="filterseg" id="perPageSeg">
+      <button type="button" class="on" data-perpage="10">10</button>
+      <button type="button" data-perpage="50">50</button>
+      <button type="button" data-perpage="100">100</button>
+    </div>
+  </div>
+</div>
+
+<main class="pwrap">
+  <div id="predictionsTable">
+    {% include "partials/_predictions_table.html" %}
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
 <script>
   function getFilters() {
     const userId = document.getElementById("userFilter")?.value;
     const gameId = document.getElementById("gameFilter")?.value;
-    const perPage = document.getElementById("perPage")?.value || 50;
+    const perPage = document.querySelector("#perPageSeg button.on")?.dataset.perpage || 10;
     return { userId, gameId, perPage };
+  }
+
+  // Shimmer placeholder shown while the table loads.
+  function buildSkeleton(rows) {
+    let body = "";
+    for (let i = 0; i < (rows || 8); i++) {
+      body +=
+        '<tr>' +
+        '<td><span class="skeleton sk-line" style="width:78%"></span></td>' +
+        '<td><span class="skeleton sk-line" style="width:88%;margin:0 auto"></span></td>' +
+        '<td><span class="skeleton sk-line" style="width:46px;margin:0 auto"></span></td>' +
+        '<td><span class="skeleton sk-line" style="width:46px;margin:0 auto"></span></td>' +
+        '<td><span class="skeleton sk-pill" style="margin:0 auto"></span></td>' +
+        '</tr>';
+    }
+    return (
+      '<div class="pred-wrap"><table class="pred-table"><thead><tr>' +
+      '<th class="user">User</th><th>Game</th><th>Prediction</th><th>Final Score</th><th>Points</th>' +
+      '</tr></thead><tbody>' + body + '</tbody></table></div>'
+    );
   }
 
   function updatePredictions(page = 1) {
@@ -195,33 +185,38 @@
     params.append("page", page);
     params.append("per_page", perPage);
 
+    const target = document.getElementById("predictionsTable");
+    target.innerHTML = buildSkeleton(parseInt(perPage, 10) > 10 ? 10 : 8);
+
     fetch(`/predictions/filter?${params.toString()}`)
-      .then((response) => response.text())
+      .then((response) => { if (!response.ok) throw new Error(response.status); return response.text(); })
       .then((html) => {
-        document.getElementById("predictionsTable").innerHTML = html;
-        const tooltips = document.querySelectorAll(
-          '[data-bs-toggle="tooltip"]'
-        );
-        tooltips.forEach((el) => new bootstrap.Tooltip(el));
+        target.innerHTML = html;
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => new bootstrap.Tooltip(el));
+      })
+      .catch(() => {
+        target.innerHTML =
+          '<div class="no-rows">Couldn\'t load predictions. ' +
+          '<a href="#" onclick="updatePredictions(' + page + '); return false;" style="color:var(--emb)">Retry</a></div>';
       });
   }
 
-  function changePage(pageNum) {
-    updatePredictions(pageNum);
-  }
+  function changePage(pageNum) { updatePredictions(pageNum); }
 
-  document
-    .getElementById("userFilter")
-    ?.addEventListener("change", () => updatePredictions());
-  document
-    .getElementById("gameFilter")
-    ?.addEventListener("change", () => updatePredictions());
-  document
-    .getElementById("perPage")
-    ?.addEventListener("change", () => updatePredictions());
+  document.getElementById("userFilter")?.addEventListener("change", () => updatePredictions());
+  document.getElementById("gameFilter")?.addEventListener("change", () => updatePredictions());
+  document.querySelectorAll("#perPageSeg button").forEach((b) => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll("#perPageSeg button").forEach((x) => x.classList.remove("on"));
+      b.classList.add("on");
+      updatePredictions();
+    });
+  });
 
   function hidePredictionsIntroBanner() {
     localStorage.setItem("hidePredictionsIntroBanner", "true");
+    const banner = document.getElementById("predictionsIntroBanner");
+    if (banner) banner.style.display = "none";
   }
 
   window.addEventListener("DOMContentLoaded", () => {
@@ -229,10 +224,7 @@
       const banner = document.getElementById("predictionsIntroBanner");
       if (banner) banner.style.display = "none";
     }
-
-    // ✅ Trigger initial fetch when page loads
     updatePredictions();
   });
 </script>
-
 {% endblock %}

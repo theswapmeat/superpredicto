@@ -1,224 +1,379 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+{% block title %}SuperPredicto — Prediction League{% endblock %}
 
+{% block extra_head %}
 <style>
-  @media (max-width: 575.98px) {
-    /* Mobile header columns */
-    .mobile-header th:nth-child(1) {
-      width: 10% !important; /* Rank - unchanged */
-    }
-    .mobile-header th:nth-child(2) {
-      width: 28.25% !important; /* Name - increased by 10% */
-    }
-    .mobile-header th:nth-child(3) {
-      width: 21.5% !important; /* Points - decreased by 5% */
-    }
-    .mobile-header th:nth-child(4) {
-      width: 21.5% !important; /* Perfect Picks - decreased by 5% */
-    }
+  html { scroll-behavior:smooth; }
+  .wrap { max-width:1240px; margin:0 auto; padding:0 32px; }
 
-    /* Mobile table cells */
-    td:nth-child(2) {
-      width: 28.25% !important;
-    }
-    td:nth-child(3),
-    td:nth-child(4) {
-      width: 21.5% !important;
-    }
+  /* HERO */
+  .hero { position:relative; padding:70px 0 60px; }
+  .hero::before { content:""; position:absolute; inset:0; z-index:0; pointer-events:none; background:radial-gradient(900px 520px at 78% -8%, rgba(0,209,122,.16), transparent 60%),radial-gradient(700px 480px at 8% 30%, rgba(46,73,160,.20), transparent 62%); }
+  .hero-grid { position:relative; z-index:1; display:grid; grid-template-columns:1.08fr .92fr; gap:56px; align-items:center; }
+  .eyebrow { display:inline-flex; align-items:center; gap:10px; font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:13px; letter-spacing:.18em; text-transform:uppercase; color:var(--emb); padding:7px 14px; border-radius:100px; background:var(--em-dim); border:1px solid rgba(0,209,122,.28); }
+  .eyebrow .dot { width:7px; height:7px; border-radius:50%; background:var(--em); box-shadow:0 0 0 4px rgba(0,209,122,.22); }
+  h1.hero-title { font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:clamp(38px,5vw,70px); line-height:1.0; letter-spacing:-.01em; text-transform:uppercase; margin:22px 0 0; }
+  h1.hero-title .l1 { display:block; }
+  h1.hero-title em { color:var(--emb); font-style:normal; display:block; transform:skewX(-9deg); transform-origin:left; margin-top:.06em; }
+  .hero-sub { margin-top:28px; font-size:18px; line-height:1.55; color:var(--muted); max-width:520px; }
+  .hero-cta { display:flex; align-items:center; gap:14px; margin-top:32px; flex-wrap:wrap; }
+  .sp-btn-ghost { background:transparent; color:var(--text); border-color:var(--line-strong); }
+  .sp-btn-ghost:hover { border-color:var(--em); color:var(--emb); }
+  .sp-btn-lg { font-size:15px; padding:15px 26px; }
+  .hero-meta { display:flex; align-items:center; gap:30px; margin-top:38px; padding-top:24px; border-top:1px solid var(--line); flex-wrap:wrap; }
+  .hero-meta .stat { display:flex; flex-direction:column; gap:3px; }
+  .hero-meta .num { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:30px; line-height:1; color:var(--text); }
+  .hero-meta .lbl { font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-2); }
+  .hero-meta .sep { width:1px; align-self:stretch; background:var(--line); }
 
-    .intro-banner {
-      font-size: 0.85rem;
-    }
+  /* PICK CARD */
+  .pickcard { position:relative; background:linear-gradient(180deg,var(--panel),var(--ink-2)); border:1px solid var(--line-strong); border-radius:20px; padding:24px 24px 26px; box-shadow:0 40px 80px -40px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.05); }
+  .pc-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:10px; }
+  .pc-tag { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:12.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  .live { display:inline-flex; align-items:center; gap:7px; font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--emb); }
+  .live .hb-mini { width:46px; height:16px; display:block; }
+  .hb-mini .trk { stroke:rgba(29,239,147,.22); }
+  .hb-mini .run { stroke:var(--emb); stroke-dasharray:30 100; animation:sweep 1.6s linear infinite; }
+  .matchup { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px; padding:8px 0 18px; }
+  .team { display:flex; flex-direction:column; align-items:center; gap:12px; min-width:0; }
+  .badge { width:60px; height:60px; border-radius:16px; display:grid; place-items:center; font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:22px; letter-spacing:.02em; border:1px solid var(--line-strong); }
+  .badge.home { background:linear-gradient(160deg,#1d3a8a,#0f1f4d); color:#cfe0ff; }
+  .badge.away { background:linear-gradient(160deg,#7a1530,#3d0f1c); color:#ffd4dd; }
+  .team .nm { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:14.5px; letter-spacing:.03em; text-transform:uppercase; color:var(--text); text-align:center; max-width:120px; }
+  .score { display:flex; align-items:center; justify-content:center; gap:8px; }
+  .stepper { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .stepbtn { width:30px; height:24px; border-radius:7px; border:1px solid var(--line-strong); background:rgba(255,255,255,.03); color:var(--muted); cursor:pointer; display:grid; place-items:center; font-size:13px; line-height:1; transition:all .12s ease; }
+  .stepbtn:hover { border-color:var(--em); color:var(--emb); background:var(--em-dim); }
+  .scoreval { width:54px; height:64px; border-radius:12px; background:#070B18; border:1px solid var(--line-strong); display:grid; place-items:center; font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:40px; color:var(--text); box-shadow:inset 0 2px 14px rgba(0,0,0,.6); }
+  .vs { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:14px; color:var(--muted-2); letter-spacing:.1em; }
+  .joinprompt { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:13.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); text-align:center; max-width:150px; line-height:1.35; }
+  .pc-foot { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:6px; padding-top:18px; border-top:1px solid var(--line); }
+  .pc-kick { font-size:13px; color:var(--muted); }
+  .pc-kick b { color:var(--text); font-weight:600; }
+  .countdown { display:block; margin-top:6px; font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--emb); }
+  .countdown.closed { color:#FF6B7D; }
+  .lockbtn { font-family:"Saira Condensed",sans-serif; font-weight:700; letter-spacing:.05em; text-transform:uppercase; font-size:13.5px; padding:11px 18px; border-radius:9px; background:var(--em); color:#06210F; cursor:pointer; border:none; white-space:nowrap; transition:background .15s ease, transform .12s ease; }
+  .lockbtn:hover { background:var(--emb); transform:translateY(-1px); }
+  .lockbtn:disabled, .lockbtn.locked { background:rgba(255,255,255,.08); color:var(--muted); cursor:default; transform:none; box-shadow:none; }
+  .pc-empty { display:flex; flex-direction:column; align-items:center; gap:14px; padding:38px 0 28px; text-align:center; }
+  .pc-empty-ico { font-size:38px; }
+  .pc-empty-txt { color:var(--muted); font-size:15px; max-width:240px; }
+
+  /* LEADERBOARD */
+  .board { padding:24px 0 80px; position:relative; }
+  .board-head { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:24px; flex-wrap:wrap; }
+  .board-head .ttl { display:flex; flex-direction:column; gap:8px; }
+  .kicker { display:inline-flex; align-items:center; gap:9px; font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+  .kicker .hb-rule { width:40px; height:12px; }
+  .kicker .hb-rule path { stroke:var(--em); }
+  .board-head h2 { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:clamp(28px,3.6vw,46px); line-height:1; letter-spacing:-.005em; text-transform:uppercase; }
+  .board-head h2 span { color:var(--emb); }
+  .seg { display:flex; gap:4px; background:var(--ink-2); border:1px solid var(--line); border-radius:11px; padding:4px; flex-wrap:wrap; }
+  .seg button { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:13px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); padding:9px 16px; border-radius:8px; border:none; background:transparent; cursor:pointer; transition:all .15s ease; display:inline-flex; align-items:center; }
+  .seg button.on { background:var(--em); color:#06210F; }
+  .seg button:not(.on):not(.soon):hover { color:var(--text); }
+  .seg button.soon { color:var(--muted-2); cursor:not-allowed; opacity:.7; }
+  .seg .soonlbl { font-size:9px; letter-spacing:.08em; color:var(--em); background:var(--em-dim); padding:1px 5px; border-radius:4px; margin-left:6px; }
+  .table-card { background:linear-gradient(180deg,var(--ink-2),#0A0F22); border:1px solid var(--line); border-radius:18px; overflow:hidden; box-shadow:0 40px 90px -50px rgba(0,0,0,.9); }
+  .table-scroll { overflow-x:auto; }
+  .table-card table { width:100%; border-collapse:collapse; }
+  .table-card thead .grouprow th { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted-2); padding:16px 18px 6px; text-align:center; }
+  .table-card thead .grouprow th.spanhead { border-bottom:1px solid var(--line); color:var(--muted); }
+  .table-card thead .colrow th { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); padding:14px 18px; text-align:center; white-space:nowrap; border-bottom:1px solid var(--line-strong); background:rgba(255,255,255,.015); }
+  .table-card thead .colrow th.lft { text-align:left; }
+  .table-card th.divider, .table-card td.divider { border-left:1px solid var(--line); }
+  .table-card tbody td { padding:16px 18px; text-align:center; font-size:15.5px; color:var(--text); border-bottom:1px solid rgba(255,255,255,.05); }
+  .table-card tbody tr:last-child td { border-bottom:none; }
+  .table-card tbody tr { transition:background .14s ease; }
+  .table-card tbody tr:hover { background:rgba(0,209,122,.045); }
+  td.rank { width:84px; }
+  .rankwrap { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:11px; font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:18px; background:rgba(255,255,255,.04); border:1px solid var(--line); color:var(--muted); }
+  tr.r1 .rankwrap { background:rgba(244,199,82,.14); border-color:rgba(244,199,82,.5); color:var(--gold); }
+  tr.r2 .rankwrap { background:rgba(201,210,228,.12); border-color:rgba(201,210,228,.42); color:var(--silver); }
+  tr.r3 .rankwrap { background:rgba(216,150,90,.14); border-color:rgba(216,150,90,.46); color:var(--bronze); }
+  td.player { text-align:left; }
+  .playercell { display:flex; align-items:center; gap:14px; }
+  .pavatar { width:40px; height:40px; border-radius:11px; flex:0 0 auto; display:grid; place-items:center; font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:16px; background:linear-gradient(150deg,#23305c,#111a37); border:1px solid var(--line-strong); color:var(--emb); }
+  .playercell .pmeta { display:flex; flex-direction:column; gap:5px; }
+  .playercell .pname { display:flex; align-items:center; gap:9px; font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:17px; letter-spacing:.02em; line-height:1; color:var(--text); }
+  .pname.blurname { filter:blur(5px); user-select:none; }
+  .youchip { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--emb); background:var(--em-dim); border:1px solid rgba(0,209,122,.3); padding:2px 7px; border-radius:5px; filter:none; }
+  td.points .pts { font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:26px; color:var(--text); line-height:1; }
+  td.points .ptslbl { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted-2); }
+  .cell-num { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:18px; color:var(--text); }
+  .cell-num.zero { color:var(--muted-2); font-weight:600; }
+  td.perfect .cell-num:not(.zero) { color:var(--emb); }
+  td.invalid .cell-num:not(.zero) { color:#FF6B7D; }
+  .board-foot { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 22px; border-top:1px solid var(--line); background:rgba(255,255,255,.012); flex-wrap:wrap; }
+  .board-foot .note { font-size:13.5px; color:var(--muted); }
+  .board-foot .note b { color:var(--text); font-weight:600; }
+  .ghost-link { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:13.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--emb); display:inline-flex; align-items:center; gap:7px; }
+  .emptyrow td { padding:40px 18px; color:var(--muted); }
+  .board-hint { margin-top:16px; text-align:center; font-size:13.5px; color:var(--muted); }
+  .board-hint a { color:var(--emb); font-weight:600; }
+
+  /* RESPONSIVE (hero / board) */
+  @media (max-width:992px) {
+    .hero-grid { grid-template-columns:1fr; gap:38px; }
+    .pickcard { max-width:520px; margin:0 auto; width:100%; }
+    .hero { padding:50px 0 44px; }
+  }
+  @media (max-width:768px) {
+    .wrap { padding:0 20px; }
+    .hero-meta { gap:18px; }
+    .hero-meta .num { font-size:24px; }
+    .table-card table { min-width:720px; }
+    .board { padding:18px 0 64px; }
+  }
+  @media (max-width:560px) {
+    .hero { padding:36px 0 36px; }
+    .hero-sub { font-size:16px; }
+    .hero-cta .sp-btn { flex:1; }
+    .pickcard { padding:20px 16px 22px; }
+    .badge { width:52px; height:52px; font-size:19px; }
+    .scoreval { width:46px; height:56px; font-size:32px; }
+    .pc-foot { flex-direction:column; align-items:stretch; gap:12px; }
+    .pc-foot .lockbtn { width:100%; text-align:center; }
+    .seg .soon { display:none; }
+    .board-head { align-items:flex-start; }
   }
 </style>
+{% endblock %}
 
-<h2 class="text-center mb-4">Welcome to SuperPredicto</h2>
+{% block body %}
+{% if show_hero %}
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow"><span class="dot"></span> Current Tournament · {{ tournament.name }}</span>
+      <h1 class="hero-title"><span class="l1">Call every match.</span><em>Run the table.</em></h1>
+      <p class="hero-sub">Lock in your scoreline before kickoff, bank points for every correct call, and climb a leaderboard that updates the moment the final whistle blows. {{ match_count }} matches. One champion of predictions.</p>
+      <div class="hero-cta">
+        <a class="sp-btn sp-btn-primary sp-btn-lg" href="{% if logged_in %}{{ url_for('main.submit_picks') }}{% else %}{{ url_for('main.login') }}{% endif %}">Submit your picks →</a>
+        <a class="sp-btn sp-btn-ghost sp-btn-lg" href="#board">View the leaderboard</a>
+      </div>
+      <div class="hero-meta">
+        <div class="stat"><span class="num">{{ match_count }}</span><span class="lbl">Matches</span></div>
+        <div class="sep"></div>
+        <div class="stat"><span class="num">{{ team_count }}</span><span class="lbl">Teams</span></div>
+        <div class="sep"></div>
+        <div class="stat"><span class="num">{{ perfect_pts }}pts</span><span class="lbl">per perfect pick</span></div>
+        <div class="sep"></div>
+        <div class="stat"><span class="num">{{ match_count * perfect_pts }}pts</span><span class="lbl">Up for grabs</span></div>
+      </div>
+    </div>
 
-<div
-  id="introBanner"
-  class="intro-banner alert alert-dismissible fade show mb-4 text-white"
-  role="alert"
->
-  <strong>New to SuperPredicto?</strong>
-  <ul class="mt-2 mb-0 ps-3">
-    <li>
-      Visit the
-      <a href="{{ url_for('main.guidelines') }}" class="intro-link"
-        >Scoring Guidelines</a
-      >
-      for a full breakdown of how points are awarded.
-    </li>
-    <li>
-      Go to
-      <a href="{{ url_for('main.submit_picks') }}" class="intro-link"
-        >Submit Picks</a
-      >
-      to enter your predictions before kickoff.
-    </li>
-    <li>
-      Scoring: 4 points for a perfect pick, 2 for right winner + correct score
-      of winner, 1 for partial match, <strong>0 points</strong> for incorrect or
-      invalid picks.
-    </li>
-    <li>
-      Predictions of <strong>1-0 or 0-1</strong> are considered invalid unless
-      the actual result is exactly the same — in which case, 4 points are
-      awarded.
-    </li>
-    <li>
-      You must <strong>complete your profile</strong> and
-      <strong>make payment</strong> before you can submit picks.
-    </li>
-    <li>
-      <strong>Top 3 winners</strong> are based on total points. If there’s a
-      tie, the following <strong>tie-breaker rules</strong> will apply:
-      <ol class="mt-1 mb-0 ps-3">
-        <li>Most perfect picks</li>
-        <li>Most picks earning 2 points</li>
-        <li>Most picks earning 1 point</li>
-      </ol>
-    </li>
-  </ul>
-  <button
-    type="button"
-    class="btn-close btn-close-white"
-    data-bs-dismiss="alert"
-    aria-label="Close"
-    onclick="hideIntroBanner()"
-  ></button>
-</div>
-
-{% if needs_profile %}
-<div class="alert alert-warning text-center" role="alert">
-  Please complete your profile to continue using all features.
-</div>
+    <div class="pickcard">
+      {% if open_game %}
+      {% set ih = user_pick.home_score_prediction if user_pick else 0 %}
+      {% set ia = user_pick.away_score_prediction if user_pick else 0 %}
+      <div class="pc-head">
+        <span class="pc-tag">Game {{ open_game.game_number }} · {{ 'Group' if open_game.stage == 'group' else 'Knockout' }}</span>
+        <span class="live">
+          <svg class="hb-mini" viewBox="0 0 240 60" fill="none">
+            <path class="trk" pathLength="100" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30" />
+            <path class="run" pathLength="100" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30" />
+          </svg>
+          Picks open
+        </span>
+      </div>
+      <form method="POST" action="{{ url_for('main.lock_pick') }}" id="pickForm" data-haspick="{{ 'true' if user_pick else 'false' }}" data-init-home="{{ ih }}" data-init-away="{{ ia }}">
+        <input type="hidden" name="game_id" value="{{ open_game.id }}" />
+        <input type="hidden" name="home_score" id="homeScore" value="{{ ih }}" />
+        <input type="hidden" name="away_score" id="awayScore" value="{{ ia }}" />
+        <div class="matchup">
+          <div class="team">
+            <div class="badge home">{{ open_game.home_team[:3]|upper }}</div>
+            <div class="nm">{{ open_game.home_team }}</div>
+          </div>
+          <div class="score">
+            {% if logged_in and not is_eligible %}
+            <div class="joinprompt">Join the tournament to make your pick</div>
+            {% else %}
+            <div class="stepper">
+              <button type="button" class="stepbtn" data-step="home" data-dir="1" aria-label="increase home">▲</button>
+              <div class="scoreval" id="sHome">{{ ih }}</div>
+              <button type="button" class="stepbtn" data-step="home" data-dir="-1" aria-label="decrease home">▼</button>
+            </div>
+            <span class="vs">VS</span>
+            <div class="stepper">
+              <button type="button" class="stepbtn" data-step="away" data-dir="1" aria-label="increase away">▲</button>
+              <div class="scoreval" id="sAway">{{ ia }}</div>
+              <button type="button" class="stepbtn" data-step="away" data-dir="-1" aria-label="decrease away">▼</button>
+            </div>
+            {% endif %}
+          </div>
+          <div class="team">
+            <div class="badge away">{{ open_game.away_team[:3]|upper }}</div>
+            <div class="nm">{{ open_game.away_team }}</div>
+          </div>
+        </div>
+        <div class="pc-foot">
+          <span class="pc-kick">
+            Kickoff <b class="kick-time" data-utc="{{ open_game.kickoff_utc().isoformat() }}">{{ open_game.date_of_game.strftime('%b %d') }} · {{ open_game.time_of_game.strftime('%I:%M %p') }}</b>
+            <span class="countdown" id="countdown" data-kickoff="{{ open_game.kickoff_utc().isoformat() }}"></span>
+          </span>
+          {% if not logged_in %}
+          <a class="lockbtn" href="{{ url_for('main.login') }}">Log in to pick</a>
+          {% elif not is_eligible %}
+          <a class="lockbtn" href="{{ url_for('main.payment') }}">Join to pick</a>
+          {% else %}
+          <button type="submit" class="lockbtn" id="lockBtn">Lock pick</button>
+          {% endif %}
+        </div>
+      </form>
+      {% else %}
+      <div class="pc-head"><span class="pc-tag">Live pick</span></div>
+      <div class="pc-empty">
+        <div class="pc-empty-ico">⚽</div>
+        <div class="pc-empty-txt">No matches are open for predictions right now.</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
 {% endif %}
 
-<div class="mb-4 p-3 bg-white">
-  <h4 class="text-center mb-3">
-    Leaderboard - 2025 Fifa Club Football World Cup
-  </h4>
-  <div class="table-responsive">
-    <div class="text-muted small mb-2">
-      Standings after {{ completed_games_count }} game{{ 's' if
-      completed_games_count != 1 else '' }}
+<section class="board" id="board">
+  <div class="wrap">
+    <div class="board-head">
+      <div class="ttl">
+        <span class="kicker">
+          <svg class="hb-rule" viewBox="0 0 240 60" fill="none"><path pathLength="100" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30" /></svg>
+          {% if tournament and not tournament.is_active %}Final Standings{% else %}Live Standings{% endif %}
+        </span>
+        <h2>
+          {% if not tournament %}Leaderboard
+          {% elif tournament.is_active %}Leaderboard — <span>{{ tournament.name }}</span>
+          {% else %}Final Leaderboard — <span>{{ tournament.year }} {{ tournament.name }}</span>{% endif %}
+        </h2>
+      </div>
     </div>
-    <table
-      class="table table-bordered table-hover align-middle text-nowrap schedule-table"
-    >
-      <!-- Desktop header -->
-      <thead class="table-dark text-center desktop-header">
-        <tr>
-          <th rowspan="2" style="width: 9.5%" class="align-middle">Rank</th>
-          <th rowspan="2" style="width: 21.5%" class="align-middle">Name</th>
-          <th
-            rowspan="2"
-            style="width: 11.5%"
-            class="align-middle border-thick-right"
-          >
-            Points
-          </th>
-          <th colspan="5" class="small">Number of -</th>
-        </tr>
-        <tr>
-          <th style="width: 11.5%" class="small">Perfect Picks</th>
-          <th style="width: 11.5%" class="small">Picks scoring 2</th>
-          <th style="width: 11.5%" class="small">Picks scoring 1</th>
-          <th style="width: 11.5%" class="small">Picks scoring 0</th>
-          <th style="width: 11.5%" class="small">Invalid Picks</th>
-        </tr>
-      </thead>
 
-      <!-- Tablet header -->
-      <thead class="table-dark text-center tablet-header">
-        <tr>
-          <th style="width: 9.5%">Rank</th>
-          <th style="width: 21.5%">Name</th>
-          <th style="width: 11.5%" class="border-thick-right">Points</th>
-          <th style="width: 11.5%">Perfect Picks</th>
-          <th style="width: 11.5%">Picks scoring 2</th>
-          <th style="width: 11.5%">Picks scoring 1</th>
-          <th style="width: 11.5%">Picks scoring 0</th>
-          <th style="width: 11.5%">Invalid Picks</th>
-        </tr>
-      </thead>
-
-      <!-- Mobile header -->
-      <thead class="table-dark text-center mobile-header">
-        <tr>
-          <th style="width: 9.5%">Rank</th>
-          <th style="width: 28.25%">Name</th>
-          <th class="mobile-stat-col border-thick-right">Pts</th>
-          <th class="mobile-stat-col">Perfect Pks</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        {% if leaderboard %} {% set all_zero = leaderboard |
-        selectattr("points", "equalto", 0) | list | length == leaderboard |
-        length %} {% for entry in leaderboard %}
-        <tr
-          class="text-center {% if entry.points > 0 %} {% if loop.index == 1 %}table-warning {% elif loop.index == 2 %}table-info {% elif loop.index == 3 %}table-success {% endif %} {% endif %}"
-        >
-          <td>
-            {% if loop.last and entry.points == 0 %}
-            <span title="Last place 😬">🥄</span>
-            {% elif entry.points == 0 %} - {% else %} {{ loop.index }} {% endif
-            %}
-          </td>
-          <td>
-            {% if user %} {{ entry.name or '-' }} {% else %}
-            <span class="blurred" title="Login to see the rankings.">
-              {{ entry.name or '-' }}
-            </span>
-            {% endif %}
-          </td>
-          <td class="mobile-stat-col border-thick-right">
-            {{ entry.points if entry.points is not none else '-' }}
-          </td>
-          <td class="mobile-stat-col">
-            {{ entry.perfect_picks if entry.perfect_picks is not none else '-'
-            }}
-          </td>
-          <td class="d-none d-sm-table-cell">
-            {{ entry.picks_scoring_two if entry.picks_scoring_two is not none
-            else '-' }}
-          </td>
-          <td class="d-none d-sm-table-cell">
-            {{ entry.picks_scoring_one if entry.picks_scoring_one is not none
-            else '-' }}
-          </td>
-          <td class="d-none d-sm-table-cell">
-            {{ entry.picks_scoring_zero if entry.picks_scoring_zero is not none
-            else '-' }}
-          </td>
-          <td class="d-none d-sm-table-cell">
-            {{ entry.invalid_picks if entry.invalid_picks is not none else '-'
-            }}
-          </td>
-        </tr>
-        {% endfor %} {% else %}
-        <tr>
-          <td colspan="8" class="text-muted text-center">
-            No leaderboard data available.
-          </td>
-        </tr>
+    <div class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr class="grouprow"><th colspan="3"></th><th class="spanhead" colspan="5">Number of —</th></tr>
+            <tr class="colrow">
+              <th>Rank</th>
+              <th class="lft">Player</th>
+              <th>Points</th>
+              <th class="divider">Perfect Picks</th>
+              <th>Picks Scoring 2</th>
+              <th>Picks Scoring 1</th>
+              <th>Picks Scoring 0</th>
+              <th>Invalid Picks</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in leaderboard %}
+            <tr class="{% if entry.rank == 1 %}r1{% elif entry.rank == 2 %}r2{% elif entry.rank == 3 %}r3{% endif %}">
+              <td class="rank"><span class="rankwrap">{{ entry.rank if entry.rank is not none else '—' }}</span></td>
+              <td class="player">
+                <div class="playercell">
+                  <div class="pavatar">{{ entry.initials }}</div>
+                  <div class="pmeta">
+                    <span class="pname {% if not logged_in %}blurname{% endif %}">{{ entry.name }}{% if entry.is_you %}<span class="youchip">You</span>{% endif %}</span>
+                  </div>
+                </div>
+              </td>
+              <td class="points"><div class="pts">{{ entry.points }}</div><div class="ptslbl">pts</div></td>
+              <td class="perfect divider"><span class="cell-num {% if entry.perfect_picks == 0 %}zero{% endif %}">{{ entry.perfect_picks }}</span></td>
+              <td><span class="cell-num {% if entry.picks_scoring_two == 0 %}zero{% endif %}">{{ entry.picks_scoring_two }}</span></td>
+              <td><span class="cell-num {% if entry.picks_scoring_one == 0 %}zero{% endif %}">{{ entry.picks_scoring_one }}</span></td>
+              <td><span class="cell-num {% if entry.picks_scoring_zero == 0 %}zero{% endif %}">{{ entry.picks_scoring_zero }}</span></td>
+              <td class="invalid"><span class="cell-num {% if entry.invalid_picks == 0 %}zero{% endif %}">{{ entry.invalid_picks }}</span></td>
+            </tr>
+            {% else %}
+            <tr class="emptyrow"><td colspan="8">No standings yet — be the first to get your picks in.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="board-foot">
+        {% if tournament and not tournament.is_active %}
+        <span class="note">Final standings for the {{ tournament.year }} season.</span>
+        {% else %}
+        <span class="note">Points populate as matches are scored. <b>Get your picks in</b> to climb the board.</span>
         {% endif %}
-      </tbody>
-    </table>
-  </div>
-</div>
+        <a class="ghost-link" href="/guidelines">Scoring guidelines →</a>
+      </div>
+    </div>
 
+    {% if not logged_in %}
+    <p class="board-hint">Player names are hidden — <a href="/login">log in</a> to reveal the full leaderboard.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
 <script>
-  function hideIntroBanner() {
-    localStorage.setItem("hideIntroBanner", "true");
+  // Localize the kickoff time to the viewer's zone
+  document.querySelectorAll(".kick-time[data-utc]").forEach(function (el) {
+    var d = new Date(el.dataset.utc);
+    el.textContent = d.toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  });
+
+  // Countdown (days / hrs / mins / secs)
+  var cd = document.getElementById("countdown");
+  var lockBtn = document.getElementById("lockBtn");
+  if (cd && cd.dataset.kickoff) {
+    var target = new Date(cd.dataset.kickoff).getTime();
+    var timer = setInterval(tick, 1000);
+    tick();
+    function tick() {
+      var diff = target - Date.now();
+      if (diff <= 0) {
+        cd.textContent = "Picks closed";
+        cd.classList.add("closed");
+        if (lockBtn) { lockBtn.disabled = true; lockBtn.textContent = "Picks closed"; }
+        clearInterval(timer);
+        return;
+      }
+      var s = Math.floor(diff / 1000);
+      var days = Math.floor(s / 86400), hrs = Math.floor((s % 86400) / 3600), mins = Math.floor((s % 3600) / 60), secs = s % 60;
+      cd.textContent = "Kicks off in " + (days > 0 ? days + "d " : "") + hrs + "h " + mins + "m " + secs + "s";
+    }
   }
 
-  window.addEventListener("DOMContentLoaded", () => {
-    if (localStorage.getItem("hideIntroBanner") === "true") {
-      const banner = document.getElementById("introBanner");
-      if (banner) banner.style.display = "none";
+  // Score steppers + amend logic
+  var pickForm = document.getElementById("pickForm");
+  if (pickForm && lockBtn) {
+    var hasPick = pickForm.dataset.haspick === "true";
+    var initHome = parseInt(pickForm.dataset.initHome, 10) || 0;
+    var initAway = parseInt(pickForm.dataset.initAway, 10) || 0;
+    var home = initHome, away = initAway;
+    var sHome = document.getElementById("sHome"), sAway = document.getElementById("sAway");
+    var homeInput = document.getElementById("homeScore"), awayInput = document.getElementById("awayScore");
+    function refresh() {
+      if (sHome) sHome.textContent = home;
+      if (sAway) sAway.textContent = away;
+      homeInput.value = home; awayInput.value = away;
+      if (hasPick) {
+        var changed = home !== initHome || away !== initAway;
+        lockBtn.textContent = changed ? "Amend pick" : "Picked ✓";
+        lockBtn.disabled = !changed;
+        lockBtn.classList.toggle("locked", !changed);
+      } else {
+        lockBtn.textContent = "Lock pick";
+        lockBtn.disabled = false;
+      }
     }
-  });
+    document.querySelectorAll(".stepbtn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var k = b.dataset.step, dir = +b.dataset.dir;
+        if (k === "home") home = Math.max(0, Math.min(20, home + dir));
+        else away = Math.max(0, Math.min(20, away + dir));
+        refresh();
+      });
+    });
+    refresh();
+    pickForm.addEventListener("submit", function () {
+      var ov = document.getElementById("hbOverlay");
+      if (ov) ov.classList.add("show");
+    });
+  }
 </script>
-
 {% endblock %}

@@ -1,7 +1,16 @@
 import os
 import requests
-from flask import current_app
+from flask import current_app, url_for
 from itsdangerous import URLSafeTimedSerializer
+
+# Public, absolute URL to the email logo. Emails are read in an inbox, so the
+# image needs a fully-qualified URL; url_for(_external) gives the right host in
+# each environment, and we fall back to the prod domain outside a request.
+def _logo_url():
+    try:
+        return url_for("static", filename="brand/superpredicto-ondark.png", _external=True)
+    except Exception:
+        return "https://superpredicto.com/static/brand/superpredicto-ondark.png"
 
 # --- Token Management ---
 def generate_reset_token(email):
@@ -16,31 +25,132 @@ def confirm_reset_token(token, expiration=86400):
         return None
     return email
 
-# --- Send Password Reset Email ---
-def send_password_reset_email(to_email, reset_url):
-    _send_email(
-        to_email,
-        subject="Reset Your SuperPredicto Password",
-        html=f"""
-            <p>Hello,</p>
-            <p>We received a request to reset your SuperPredicto password.</p>
-            <p><a href="{reset_url}">Click here to reset your password</a></p>
-            <p>This link will expire in 24 hours. If you didn't request this, just ignore this email.</p>
-        """
+# --- Shared branded email layout -------------------------------------------
+# A light, table-based template with inline styles so it renders reliably across
+# Gmail / Outlook / Apple Mail. Keep new emails going through this for consistency.
+def _email_layout(heading, body_html, cta_text=None, cta_url=None, footer_note=None):
+    button = ""
+    if cta_text and cta_url:
+        button = f"""
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 6px;">
+          <tr>
+            <td align="center" bgcolor="#00D17A" style="border-radius:10px;">
+              <a href="{cta_url}" target="_blank"
+                 style="display:inline-block;padding:14px 30px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#06210F;text-decoration:none;border-radius:10px;">
+                {cta_text}</a>
+            </td>
+          </tr>
+        </table>"""
+
+    fallback = ""
+    if cta_url:
+        fallback = f"""
+        <p style="margin:14px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#8a94a6;">Or paste this link into your browser:</p>
+        <p style="margin:4px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;word-break:break-all;"><a href="{cta_url}" style="color:#0a9d5e;">{cta_url}</a></p>"""
+
+    note = ""
+    if footer_note:
+        note = f'<p style="margin:18px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#8a94a6;">{footer_note}</p>'
+
+    return f"""<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f4f6fb;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6fb;padding:28px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border:1px solid #e6e9f0;border-radius:16px;overflow:hidden;">
+        <tr><td bgcolor="#0B1020" style="background:#0B1020;padding:22px 32px;">
+          <img src="{_logo_url()}" width="190" height="60" alt="SuperPredicto"
+               style="display:block;border:0;width:190px;height:60px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:20px;" />
+        </td></tr>
+        <tr><td style="padding:22px 32px 0;">
+          <h1 style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:23px;line-height:1.25;color:#0B1020;">{heading}</h1>
+          <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#3d4759;">{body_html}</div>
+          {button}
+          {fallback}
+          {note}
+        </td></tr>
+        <tr><td style="padding:24px 32px 28px;">
+          <div style="border-top:1px solid #eef1f6;padding-top:16px;">
+            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#9aa3b2;">© 2026 SuperPredicto</p>
+          </div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+
+# --- Email content builders -------------------------------------------------
+# Each returns (subject, html). Kept separate from sending so the content can be
+# previewed in a browser without dispatching a real email (see /dev/email-preview).
+def build_password_reset_email(reset_url):
+    return (
+        "Reset your SuperPredicto password",
+        _email_layout(
+            heading="Reset your password",
+            body_html=(
+                "<p style='margin:0;'>We received a request to reset your SuperPredicto "
+                "password. Click below to choose a new one — it only takes a moment.</p>"
+            ),
+            cta_text="Reset password →",
+            cta_url=reset_url,
+            footer_note="This link expires in 24 hours. If you didn't request this, you can safely ignore this email — your password won't change.",
+        ),
     )
 
-# --- Send Admin Invite Email ---
-def send_invite_email(to_email, reset_url):
-    _send_email(
-        to_email,
-        subject="You're Invited to Join SuperPredicto",
-        html=f"""
-            <p>Hello,</p>
-            <p>You’ve been invited to create your SuperPredicto account.</p>
-            <p><a href="{reset_url}">Click here to set your password</a></p>
-            <p>This link will expire in 24 hours.</p>
-        """
+
+def build_invite_email(reset_url):
+    return (
+        "You're invited to SuperPredicto — World Cup 2026",
+        _email_layout(
+            heading="You're invited to play ⚽",
+            body_html=(
+                "<p style='margin:0 0 12px;'>You've been invited to join the "
+                "<b>FIFA World Cup 2026 Prediction League</b> on SuperPredicto.</p>"
+                "<p style='margin:0;'>Predict the scorelines, bank points for every correct call, "
+                "and battle your friends up the leaderboard. Set your password to create your "
+                "account and get started.</p>"
+            ),
+            cta_text="Set your password →",
+            cta_url=reset_url,
+            footer_note="This link expires in 24 hours. If you weren't expecting this invite, you can safely ignore this email.",
+        ),
     )
+
+
+def build_tournament_invite_email(set_password_url, year=2026):
+    return (
+        f"You're in — World Cup {year} on SuperPredicto",
+        _email_layout(
+            heading=f"You're in for World Cup {year} ⚽",
+            body_html=(
+                f"<p style='margin:0 0 12px;'>Good news — you've been added to the "
+                f"<b>FIFA World Cup {year} Prediction League</b> on SuperPredicto.</p>"
+                "<p style='margin:0;'>To keep your account secure, set a fresh password before "
+                "you start. Then make your first pick before kickoff and climb the leaderboard.</p>"
+            ),
+            cta_text="Set your password →",
+            cta_url=set_password_url,
+            footer_note="This link expires in 24 hours. If you'd rather sit this one out, just ignore this email.",
+        ),
+    )
+
+
+# --- Senders ---------------------------------------------------------------
+def send_password_reset_email(to_email, reset_url):
+    subject, html = build_password_reset_email(reset_url)
+    _send_email(to_email, subject=subject, html=html)
+
+
+def send_invite_email(to_email, reset_url):
+    subject, html = build_invite_email(reset_url)
+    _send_email(to_email, subject=subject, html=html)
+
+
+def send_tournament_invite_email(to_email, set_password_url, year=2026):
+    subject, html = build_tournament_invite_email(set_password_url, year)
+    _send_email(to_email, subject=subject, html=html)
 
 # --- Verify Paypal ---
 def verify_paypal_payment(order_id):

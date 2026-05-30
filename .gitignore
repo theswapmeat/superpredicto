@@ -24,6 +24,13 @@ client/package-lock.json
 # === VS Code ===
 .vscode/
 
+# === Database backups (contain full DB dump — never commit) ===
+backup/
+*.backup
+*.backup.gz
+*.dump
+*.sql.gz
+
 # === System Files ===
 .DS_Store
 Thumbs.db

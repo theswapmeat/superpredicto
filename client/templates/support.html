@@ -1,33 +1,32 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+{% block title %}Support — SuperPredicto{% endblock %}
+{% block content %}
+<div class="auth-wrap" style="max-width:600px">
+  <div class="panel auth-card">
+    <div class="auth-head">
+      <span class="auth-kicker">
+        <svg class="hb" viewBox="0 0 240 60" fill="none"><path pathLength="100" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30" /></svg>
+        Support
+      </span>
+      <h1 class="auth-title">Uh-oh.</h1>
+      <p class="auth-sub">If you've made it here, something probably went wrong — and honestly, that's impressive.</p>
+    </div>
 
-<div class="container my-5">
-  <h5 class="mb-3">Uh-oh. You’re on the support page. That can’t be good.</h5>
+    <p style="color:var(--muted); font-size:14.5px; line-height:1.6">
+      SuperPredicto is almost foolproof, but you've clearly found the one button I forgot to label properly. Don't worry though — I'm here to help. Probably. Eventually.
+    </p>
 
-  <p>
-    If you’ve made it here, something probably went wrong — and honestly, that’s
-    impressive. SuperPredicto is almost foolproof, but you’ve clearly found the
-    one button I forgot to label properly.
-  </p>
+    <p style="color:var(--muted); font-size:14.5px; margin-top:14px; margin-bottom:8px">In the meantime, try the classic fixes:</p>
+    <ul style="color:var(--muted); font-size:14.5px; line-height:1.8; padding-left:20px; margin:0">
+      <li>Refresh the page.</li>
+      <li>Log out and back in.</li>
+      <li>Blame your internet.</li>
+      <li>Ask Alan (🤣) what to do.</li>
+    </ul>
 
-  <p>Don’t worry though — I'm here to help. Probably. Eventually.</p>
-
-  <p>In the meantime, try the classic fix:</p>
-  <ul class="ps-3">
-    <li>Refresh the page.</li>
-    <li>Log out and back in.</li>
-    <li>Blame your internet.</li>
-    <li>Ask Alan (🤣) what to do.</li>
-  </ul>
-
-  <p>
-    Still stuck? Fine.
-    <a
-      href="https://wa.me/971529012505"
-      target="_blank"
-      class="support-whatsapp-link"
-      >WhatsApp me</a
-    >.
-  </p>
+    <a href="https://wa.me/971529012505" target="_blank" class="sp-btn sp-btn-primary sp-btn-block" style="margin-top:24px">
+      <i class="bi bi-whatsapp"></i> WhatsApp me
+    </a>
+  </div>
 </div>
-
 {% endblock %}

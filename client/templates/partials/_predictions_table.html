@@ -1,160 +1,79 @@
-<div class="table-responsive">
-  <table class="table table-bordered table-hover align-middle schedule-table">
-    <thead class="table-dark text-center">
+<div class="pred-wrap">
+  <table class="pred-table">
+    <thead>
       <tr>
-        <th style="width: 20%">User</th>
-        <th style="width: 40%">Game</th>
-        <th class="d-none d-sm-table-cell" style="width: 10%">Prediction</th>
-        <th class="d-none d-sm-table-cell" style="width: 10%">Final Score</th>
-        <th style="width: 10%">Points</th>
+        <th class="user">User</th>
+        <th>Game</th>
+        <th>Prediction</th>
+        <th>Final Score</th>
+        <th>Points</th>
       </tr>
     </thead>
     <tbody>
-      {% if predictions.items %} {% for prediction in predictions.items %}
-      <tr class="text-center">
-        <td>
-          {% if prediction.user.display_name %} {{ prediction.user.display_name
-          }} {% else %} {{ prediction.user.first_name }} {{
-          prediction.user.last_name }} {% endif %}
-        </td>
-        <td>
-          {{ prediction.game.home_team }} vs {{ prediction.game.away_team }}
-        </td>
-        <td class="d-none d-sm-table-cell">
-          {{ prediction.home_score_prediction }} - {{
-          prediction.away_score_prediction }}
-        </td>
-        <td class="d-none d-sm-table-cell">
-          {% if prediction.game.is_completed %} {{
-          prediction.game.home_team_score }} - {{
-          prediction.game.away_team_score }} {% else %} - {% endif %}
-        </td>
-        <td>
-          {% set tooltip = "" %} {% if prediction.points_earned == 4 %} {% set
-          tooltip = "Perfect prediction" %} {% elif prediction.points_earned ==
-          2 %} {% set tooltip = "Correct winner + one correct score" %} {% elif
-          prediction.points_earned == 1 %} {% set tooltip = "Partial match:
-          correct winner only OR one correct score OR both draws" %} {% elif
-          prediction.points_earned == 0 %} {% if
-          prediction.home_score_prediction is none or
-          prediction.away_score_prediction is none %} {% set tooltip = "No
-          prediction submitted" %} {% elif (prediction.home_score_prediction,
-          prediction.away_score_prediction) in [(1, 0), (0, 1)] and
-          prediction.game.is_completed %} {% set tooltip = "1-0 or 0-1 predicted
-          but not exact → invalid" %} {% else %} {% set tooltip = "Completely
-          incorrect prediction" %} {% endif %} {% endif %}
-          <span
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            title="{{ tooltip }}"
-          >
-            {{ prediction.points_earned }}
-          </span>
-        </td>
-      </tr>
-      {% endfor %} {% else %}
-      <tr>
-        <td colspan="5">
-          <div class="no-predictions-message text-center text-muted">
-            No predictions available. Try adjusting your filters or check back
-            after games have started.
-          </div>
-        </td>
-      </tr>
+      {% if predictions.items %}
+        {% for prediction in predictions.items %}
+        <tr>
+          <td>
+            <span class="u-name">
+              {% if prediction.user.display_name %}{{ prediction.user.display_name }}{% else %}{{ prediction.user.first_name }} {{ prediction.user.last_name }}{% endif %}
+            </span>
+          </td>
+          <td>
+            <span class="g-teams">{{ prediction.game.home_team }}<span class="vs">VS</span>{{ prediction.game.away_team }}</span>
+          </td>
+          <td>
+            <span class="score-cell">{{ prediction.home_score_prediction }} – {{ prediction.away_score_prediction }}</span>
+          </td>
+          <td>
+            {% if prediction.game.is_completed %}
+            <span class="score-cell">{{ prediction.game.home_team_score }} – {{ prediction.game.away_team_score }}</span>
+            {% else %}
+            <span class="score-cell muted">–</span>
+            {% endif %}
+          </td>
+          <td>
+            {% set tooltip = "" %}
+            {% if prediction.points_earned == 4 %}{% set tooltip = "Perfect prediction" %}
+            {% elif prediction.points_earned == 2 %}{% set tooltip = "Correct winner + one correct score" %}
+            {% elif prediction.points_earned == 1 %}{% set tooltip = "Partial match: correct winner only OR one correct score OR both draws" %}
+            {% elif prediction.points_earned == 0 %}
+              {% if prediction.home_score_prediction is none or prediction.away_score_prediction is none %}{% set tooltip = "No prediction submitted" %}
+              {% elif (prediction.home_score_prediction, prediction.away_score_prediction) in [(1, 0), (0, 1)] and prediction.game.is_completed %}{% set tooltip = "1-0 or 0-1 predicted but not exact → invalid" %}
+              {% else %}{% set tooltip = "Completely incorrect prediction" %}{% endif %}
+            {% endif %}
+            <span class="pts p{{ prediction.points_earned }}" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ tooltip }}">{{ prediction.points_earned }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="5">
+            <div class="no-rows">No predictions available. Try adjusting your filters or check back after games have started.</div>
+          </td>
+        </tr>
       {% endif %}
     </tbody>
   </table>
 </div>
 
 {% if predictions.pages > 1 %}
-<nav aria-label="Prediction pagination">
-  <ul class="pagination justify-content-center mt-3">
-    {% if predictions.has_prev %}
-    <li class="page-item">
-      <a
-        class="page-link pagination-link"
-        href="#"
-        onclick="changePage({{ predictions.prev_num }}); return false;"
-      >
-        Previous
-      </a>
-    </li>
+<nav class="pager" aria-label="Prediction pagination">
+  {% if predictions.has_prev %}
+  <a href="#" onclick="changePage({{ predictions.prev_num }}); return false;"><i class="bi bi-chevron-left"></i></a>
+  {% else %}
+  <span class="pg disabled"><i class="bi bi-chevron-left"></i></span>
+  {% endif %}
+  {% for page_num in range(1, predictions.pages + 1) %}
+    {% if page_num == predictions.page %}
+    <span class="pg active">{{ page_num }}</span>
     {% else %}
-    <li class="page-item disabled"><span class="page-link">Previous</span></li>
-    {% endif %} {% for page_num in range(1, predictions.pages + 1) %}
-    <li
-      class="page-item {% if page_num == predictions.page %}active{% endif %}"
-    >
-      <a
-        class="page-link pagination-link"
-        href="#"
-        onclick="changePage({{ page_num }}); return false;"
-      >
-        {{ page_num }}
-      </a>
-    </li>
-    {% endfor %} {% if predictions.has_next %}
-    <li class="page-item">
-      <a
-        class="page-link pagination-link"
-        href="#"
-        onclick="changePage({{ predictions.next_num }}); return false;"
-      >
-        Next
-      </a>
-    </li>
-    {% else %}
-    <li class="page-item disabled"><span class="page-link">Next</span></li>
+    <a href="#" onclick="changePage({{ page_num }}); return false;">{{ page_num }}</a>
     {% endif %}
-  </ul>
+  {% endfor %}
+  {% if predictions.has_next %}
+  <a href="#" onclick="changePage({{ predictions.next_num }}); return false;"><i class="bi bi-chevron-right"></i></a>
+  {% else %}
+  <span class="pg disabled"><i class="bi bi-chevron-right"></i></span>
+  {% endif %}
 </nav>
 {% endif %}
-
-<style>
-  @media (max-width: 576px) {
-    .schedule-table th:nth-child(3),
-    .schedule-table td:nth-child(3),
-    .schedule-table th:nth-child(4),
-    .schedule-table td:nth-child(4) {
-      display: none !important;
-    }
-
-    .schedule-table th:nth-child(5),
-    .schedule-table td:nth-child(5) {
-      width: 50px;
-      white-space: nowrap;
-    }
-
-    .schedule-table th:nth-child(2),
-    .schedule-table td:nth-child(2) {
-      width: 60%;
-    }
-
-    .schedule-table td,
-    .schedule-table th {
-      font-size: 12px;
-      padding: 0.25rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .no-predictions-message {
-      white-space: normal !important;
-      word-break: break-word;
-      overflow-wrap: break-word;
-      padding: 0 !important;
-      font-size: 0.75rem !important;
-      margin: 0 !important;
-      line-height: 1.4;
-    }
-  }
-
-  .no-predictions-message {
-    white-space: normal;
-    word-break: break-word;
-    overflow-wrap: break-word;
-    padding: 1rem;
-    font-size: 1rem;
-  }
-</style>

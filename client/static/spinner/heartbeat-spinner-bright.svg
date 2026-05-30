@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="60" viewBox="0 0 240 60" fill="none" role="img" aria-label="loading">
+  
+  <path class="track" pathLength="100" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30"></path>
+  <path class="runner" pathLength="100" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30"></path>
+</svg>

@@ -1,8 +1,11 @@
+<!-- 401.html -->
 {% extends "base.html" %}
+{% block title %}Unauthorized — SuperPredicto{% endblock %}
 {% block content %}
-<div class="text-center mt-5">
-  <h1 class="display-4 text-warning">401 Unauthorized</h1>
-  <p>You are not authorized to view this page. Please log in with appropriate credentials.</p>
-  <a href="{{ url_for('main.login') }}" class="btn btn-primary mt-3">Go to Login</a>
+<div class="auth-wrap" style="text-align:center; padding-top:64px">
+  <div style="font-family:'Saira Condensed',sans-serif; font-weight:900; font-size:clamp(72px,14vw,120px); line-height:.9; letter-spacing:-.02em; color:var(--gold)">401</div>
+  <h1 class="auth-title" style="margin-top:10px">Not <span>Authorized</span></h1>
+  <p class="auth-sub" style="margin:12px auto 22px">You need to log in with the right credentials to view this page.</p>
+  <a href="{{ url_for('main.login') }}" class="sp-btn sp-btn-primary">Go to log in →</a>
 </div>
 {% endblock %}

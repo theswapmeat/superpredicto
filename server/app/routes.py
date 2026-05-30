@@ -12,7 +12,7 @@ from flask import (
 )
 from datetime import datetime, timedelta
 from pytz import timezone
-from .models import db, User, Game, UserPrediction
+from .models import db, User, Game, UserPrediction, Tournament, Participant
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import joinedload
@@ -23,6 +23,7 @@ from .utils import (
     confirm_reset_token,
     send_password_reset_email,
     send_invite_email,
+    send_tournament_invite_email,
     verify_paypal_payment,
     send_payment_receipt_email,
 )
@@ -31,14 +32,85 @@ import os
 main = Blueprint("main", __name__)
 
 
+def assign_leaderboard_ranks(entries):
+    """Sort leaderboard entries by the ranking cascade and assign competition ranks.
+
+    Cascade: total points desc -> perfect picks desc -> picks scoring 2 desc ->
+    picks scoring 1 desc -> invalid picks ASC (fewer is better).
+
+    Ties on every criterion share a rank (competition ranking: 1, 2, 2, 4).
+    Players with 0 points are unranked (rank = None, shown as "-"). Mutates and
+    returns `entries`.
+    """
+    entries.sort(
+        key=lambda d: (
+            -d["points"],
+            -d["perfect_picks"],
+            -d["picks_scoring_two"],
+            -d["picks_scoring_one"],
+            d["invalid_picks"],
+        )
+    )
+    prev_key = None
+    rank = 0
+    for i, d in enumerate(entries, start=1):
+        if d["points"] <= 0:
+            d["rank"] = None
+            continue
+        key = (
+            d["points"],
+            d["perfect_picks"],
+            d["picks_scoring_two"],
+            d["picks_scoring_one"],
+            d["invalid_picks"],
+        )
+        if key != prev_key:
+            rank = i
+            prev_key = key
+        d["rank"] = rank
+    return entries
+
+
+def _user_initials(u):
+    fn = (u.first_name or "").strip()
+    ln = (u.last_name or "").strip()
+    if fn and ln:
+        return (fn[0] + ln[0]).upper()
+    base = (u.display_name or fn or u.email or "?").strip()
+    return base[:2].upper()
+
+
+def earliest_open_game(tournament_id):
+    """The earliest game of a tournament whose kickoff is still in the future."""
+    now_utc = datetime.now(timezone("UTC"))
+    games = (
+        Game.query.filter_by(tournament_id=tournament_id)
+        .order_by(Game.date_of_game, Game.time_of_game)
+        .all()
+    )
+    for g in games:
+        if g.kickoff_utc() > now_utc:
+            return g
+    return None
+
+
+@main.app_context_processor
+def inject_nav_context():
+    """Expose the current user to every template for the shared dark navbar."""
+    uid = session.get("user_id")
+    nav_user = User.query.get(uid) if uid else None
+    return {
+        "current_user": nav_user,
+        "is_admin_user": session.get("user_email") == "admin@superpredicto.com",
+        "current_initials": _user_initials(nav_user) if nav_user else "",
+    }
+
+
 # --- Home Page ---
 @main.route("/")
 def index():
-    from sqlalchemy import or_
-
     user = None
     needs_profile = False
-    completed_games_count = Game.query.filter_by(is_completed=True).count()
 
     user_id = session.get("user_id")
     if user_id:
@@ -49,55 +121,100 @@ def index():
         else:
             needs_profile = not user.first_name or not user.last_name
 
-    # Fetch all relevant users
-    raw_users = (
-        User.query.filter(User.email != "admin@superpredicto.com")
-        .filter(User.first_name.isnot(None), User.first_name != "")
-        .filter(User.last_name.isnot(None), User.last_name != "")
-        .filter(User.display_name.isnot(None), User.display_name != "")
-        .all()
-    )
+    # Leaderboard view: defaults to the active tournament, but a season switcher
+    # lets anyone view a past tournament's final leaderboard (read-only — inactive
+    # seasons expose ONLY the leaderboard, no schedule/picks/predictions).
+    tournaments = Tournament.query.order_by(Tournament.year.desc()).all()
+    selected = None
+    sel_id = request.args.get("tournament_id", type=int)
+    if sel_id:
+        selected = Tournament.query.get(sel_id)
+    if not selected:
+        selected = active_tournament() or (tournaments[0] if tournaments else None)
 
-    # Build leaderboard dicts with calculated points
     leaderboard_dicts = []
-    for u in raw_users:
-        perfect = u.perfect_picks or 0
-        two = u.picks_scoring_two or 0
-        one = u.picks_scoring_one or 0
+    if selected:
+        participants = (
+            Participant.query.filter_by(tournament_id=selected.id, is_active=True)
+            .join(Participant.user)
+            .filter(
+                User.email != "admin@superpredicto.com",
+                User.first_name.isnot(None),
+                User.first_name != "",
+                User.last_name.isnot(None),
+                User.last_name != "",
+                User.display_name.isnot(None),
+                User.display_name != "",
+            )
+            .all()
+        )
 
-        points = perfect * 4 + two * 2 + one * 1
-
-        leaderboard_dicts.append(
+        leaderboard_dicts = [
             {
-                "name": u.display_name
-                or f"{u.first_name or ''} {u.last_name or ''}".strip()
+                "name": p.user.display_name
+                or f"{p.user.first_name or ''} {p.user.last_name or ''}".strip()
                 or "-",
-                "points": points,
-                "perfect_picks": perfect,
-                "picks_scoring_two": two,
-                "picks_scoring_one": one,
-                "picks_scoring_zero": u.picks_scoring_zero or 0,
-                "invalid_picks": u.invalid_picks or 0,
+                "initials": _user_initials(p.user),
+                "is_you": p.user_id == user_id,
+                "points": (p.perfect_picks or 0) * 4
+                + (p.picks_scoring_two or 0) * 2
+                + (p.picks_scoring_one or 0) * 1,
+                "perfect_picks": p.perfect_picks or 0,
+                "picks_scoring_two": p.picks_scoring_two or 0,
+                "picks_scoring_one": p.picks_scoring_one or 0,
+                "picks_scoring_zero": p.picks_scoring_zero or 0,
+                "invalid_picks": p.invalid_picks or 0,
             }
-        )
+            for p in participants
+        ]
 
-    # Sort by ranking logic
-    leaderboard_dicts.sort(
-        key=lambda x: (
-            -x["points"],
-            -x["perfect_picks"],
-            -x["picks_scoring_two"],
-            -x["picks_scoring_one"],
-        )
+        assign_leaderboard_ranks(leaderboard_dicts)
+
+    # Hero + live pick card only for the active tournament; archived tournaments
+    # are leaderboard-only.
+    show_hero = bool(selected and selected.is_active)
+    open_game = None
+    user_pick = None
+    is_eligible = False
+    match_count = (
+        Game.query.filter_by(tournament_id=selected.id).count() if selected else 0
     )
+    if show_hero:
+        open_game = earliest_open_game(selected.id)
+        if user_id:
+            part = Participant.query.filter_by(
+                user_id=user_id, tournament_id=selected.id
+            ).first()
+            is_eligible = bool(part and part.is_active and part.is_paid)
+            if open_game:
+                user_pick = UserPrediction.query.filter_by(
+                    user_id=user_id, game_id=open_game.id
+                ).first()
 
     return render_template(
         "index.html",
         user=user,
+        logged_in=bool(user),
+        user_initials=_user_initials(user) if user else "",
         needs_profile=needs_profile,
         leaderboard=leaderboard_dicts,
-        completed_games_count=completed_games_count,
+        tournament=selected,
+        tournaments=tournaments,
+        show_hero=show_hero,
+        open_game=open_game,
+        user_pick=user_pick,
+        is_eligible=is_eligible,
+        match_count=match_count,
+        team_count=48,
+        perfect_pts=4,
     )
+
+
+# --- Tournaments (card grid) ---
+@main.route("/tournaments")
+def tournaments():
+    all_tournaments = Tournament.query.order_by(Tournament.year.desc()).all()
+    return render_template("tournaments.html", tournaments=all_tournaments)
 
 
 # --- Keep Alive Route ---
@@ -233,12 +350,6 @@ def reset_password_token(token):
 
 
 # --- Submit Picks (Protected) ---
-# @main.route("/submit-picks", methods=["GET", "POST"])
-# @login_required
-# def submit_picks():
-#     return render_template("maintenance.html", message="This page is under maintenance. Please check back in a few hours.")
-
-
 @main.route("/submit-picks", methods=["GET", "POST"])
 @login_required
 def submit_picks():
@@ -249,29 +360,59 @@ def submit_picks():
         flash("Please complete your profile before submitting picks.", "warning")
         return redirect(url_for("main.profile"))
 
-    if not user.is_paid:
+    active = active_tournament()
+    if not active:
+        flash("There is no active tournament right now.", "warning")
+        return redirect(url_for("main.index"))
+
+    part = Participant.query.filter_by(
+        user_id=user_id, tournament_id=active.id
+    ).first()
+    if not part or not part.is_active:
+        flash(
+            f"You're not enrolled in {active.name}. Please contact the admin to join.",
+            "warning",
+        )
+        return redirect(url_for("main.index"))
+
+    if not part.is_paid:
         flash("Please complete payment to submit picks.", "warning")
         return redirect(url_for("main.payment"))
 
-    games = Game.query.order_by(Game.date_of_game, Game.time_of_game).all()
+    games = (
+        Game.query.filter_by(tournament_id=active.id)
+        .order_by(Game.date_of_game, Game.time_of_game)
+        .all()
+    )
     uae = timezone("Asia/Dubai")
 
-    existing_predictions = {
-        pred.game_id: pred
-        for pred in UserPrediction.query.filter_by(user_id=user_id).all()
-    }
+    game_ids = [g.id for g in games]
+    existing_predictions = (
+        {
+            pred.game_id: pred
+            for pred in UserPrediction.query.filter(
+                UserPrediction.user_id == user_id,
+                UserPrediction.game_id.in_(game_ids),
+            ).all()
+        }
+        if game_ids
+        else {}
+    )
 
     if request.method == "POST":
         now_uae = datetime.now(uae)
         error_found = False
         form_data = request.form
         changes_made = False
-        deletion_attempted = False
 
         for game in games:
+            # Locked games (already kicked off) are never modified — their saved
+            # pick stays exactly as it is.
             game_datetime_local = uae.localize(
                 datetime.combine(game.date_of_game, game.time_of_game)
             )
+            if game_datetime_local <= now_uae:
+                continue
 
             home_key = f"home_score_{game.id}"
             away_key = f"away_score_{game.id}"
@@ -281,14 +422,10 @@ def submit_picks():
 
             existing = existing_predictions.get(game.id)
 
-            # Skip empty inputs, but do NOT delete existing predictions
+            # Skip empty inputs — but do NOT delete an existing prediction. Once a
+            # pick has been made it can only be amended, never removed (upstream fix
+            # for "scores being deleted").
             if not home_val and not away_val:
-                # if existing:
-                #     flash(
-                #         f"Once predictions have been made, deletion is not allowed. You can amend them.",
-                #         "warning",
-                #     )
-                #     deletion_attempted = True
                 continue
 
             # Handle incomplete input
@@ -304,15 +441,6 @@ def submit_picks():
             if not home_val.isdigit() or not away_val.isdigit():
                 flash(
                     f"Scores for Game #{game.game_number} must be whole numbers.",
-                    "danger",
-                )
-                error_found = True
-                continue
-
-            # Reject picks if game has already started
-            if game_datetime_local <= now_uae:
-                flash(
-                    f"Game #{game.game_number} has already started. Picks not accepted.",
                     "danger",
                 )
                 error_found = True
@@ -349,10 +477,7 @@ def submit_picks():
             )
 
         if not changes_made:
-            flash(
-                "No changes made to your picks. Reminder - you cannot delete predictions once they have been made.",
-                "info",
-            )
+            flash("No changes made to your picks.", "info")
             return redirect(url_for("main.submit_picks"))
 
         db.session.commit()
@@ -381,12 +506,19 @@ def predictions():
     uae = timezone("Asia/Dubai")
     now_uae = datetime.now(uae)
 
-    query = UserPrediction.query.join(UserPrediction.user).join(UserPrediction.game)
+    active = active_tournament()
+    if not active:
+        flash("There is no active tournament right now.", "warning")
+        return redirect(url_for("main.index"))
 
-    query = query.filter(User.email != "admin@superpredicto.com")
-
-    # ✅ Only include predictions for games that have already started
-    query = query.filter((Game.date_of_game + Game.time_of_game) <= now_uae)
+    query = (
+        UserPrediction.query.join(UserPrediction.user)
+        .join(UserPrediction.game)
+        .filter(User.email != "admin@superpredicto.com")
+        .filter(Game.tournament_id == active.id)
+        # Only predictions for games that have already started
+        .filter((Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae)
+    )
 
     if user_id:
         query = query.filter(UserPrediction.user_id == user_id)
@@ -397,45 +529,43 @@ def predictions():
 
     paginated_preds = query.paginate(page=page, per_page=per_page)
 
-    # User & game filter dropdowns
+    # Dropdowns: participants of the active tournament + its started games
     all_users = (
-        User.query.filter(
+        User.query.join(Participant, Participant.user_id == User.id)
+        .filter(
+            Participant.tournament_id == active.id,
+            Participant.is_active == True,
             User.email != "admin@superpredicto.com",
-            User.is_paid == True,
-            User.is_active == True,
             User.first_name.isnot(None),
-            User.last_name.isnot(None),
-            User.display_name.isnot(None),
             User.first_name != "",
+            User.last_name.isnot(None),
             User.last_name != "",
+            User.display_name.isnot(None),
             User.display_name != "",
         )
-        .order_by(User.display_name)
+        .order_by(User.first_name, User.last_name)
         .all()
     )
 
-    all_games = Game.query.order_by(Game.date_of_game, Game.time_of_game).all()
-
-    # Only keep games that are completed or already started
-    visible_games = [
-        g
-        for g in all_games
-        if g.is_completed
-        or uae.localize(datetime.combine(g.date_of_game, g.time_of_game)) <= now_uae
-    ]
+    all_games = (
+        Game.query.filter(
+            Game.tournament_id == active.id,
+            (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae,
+        )
+        .order_by(Game.date_of_game, Game.time_of_game)
+        .all()
+    )
 
     return render_template(
         "predictions.html",
         predictions=paginated_preds,
         users=all_users,
-        games=visible_games,
+        games=all_games,
         per_page=per_page,
     )
 
 
 # --- Predictions Filter ---
-
-
 @main.route("/predictions/filter")
 @login_required
 def predictions_filter():
@@ -447,61 +577,35 @@ def predictions_filter():
     uae = timezone("Asia/Dubai")
     now_uae = datetime.now(uae)
 
-    # Load all predictions with joins
-    all_predictions = (
+    active = active_tournament()
+    active_id = active.id if active else -1
+
+    query = (
         UserPrediction.query.options(
             joinedload(UserPrediction.user), joinedload(UserPrediction.game)
         )
         .join(UserPrediction.user)
         .join(UserPrediction.game)
         .filter(User.email != "admin@superpredicto.com")
-        .all()
+        .filter(Game.tournament_id == active_id)
     )
 
-    # Filter in Python: only include predictions for games that are completed or already started
-    filtered_preds = [
-        p
-        for p in all_predictions
-        if p.game
-        and (
-            p.game.is_completed
-            or uae.localize(datetime.combine(p.game.date_of_game, p.game.time_of_game))
-            <= now_uae
-        )
-        and (not user_id or p.user_id == user_id)
-        and (not game_id or p.game_id == game_id)
-    ]
-
-    filtered_preds.sort(
-        key=lambda p: (
-            p.game.game_number if p.game and p.game.game_number is not None else 0
+    # Only predictions for games that have started or completed
+    query = query.filter(
+        or_(
+            Game.is_completed == True,
+            (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae,
         )
     )
 
-    # Manual pagination
-    start = (page - 1) * per_page
-    end = start + per_page
-    paginated_preds = filtered_preds[start:end]
+    if user_id:
+        query = query.filter(UserPrediction.user_id == user_id)
+    if game_id:
+        query = query.filter(UserPrediction.game_id == game_id)
 
-    class SimplePagination:
-        def __init__(self, items, total, page, per_page):
-            self.items = items
-            self.total = total
-            self.page = page
-            self.per_page = per_page
-            self.pages = (total + per_page - 1) // per_page  # total pages
-            self.has_prev = page > 1
-            self.has_next = page < self.pages
-            self.prev_num = page - 1 if self.has_prev else None
-            self.next_num = page + 1 if self.has_next else None
-
-    print(f"[DEBUG] {len(filtered_preds)} predictions returned to template.")
-    return render_template(
-        "partials/_predictions_table.html",
-        predictions=SimplePagination(
-            paginated_preds, len(filtered_preds), page, per_page
-        ),
-    )
+    query = query.order_by(Game.game_number.asc())
+    predictions = query.paginate(page=page, per_page=per_page)
+    return render_template("partials/_predictions_table.html", predictions=predictions)
 
 
 # --- Scoring Guidelines ---
@@ -510,32 +614,171 @@ def guidelines():
     return render_template("guidelines.html")
 
 
+# --- Lock a single pick from the landing page ---
+@main.route("/lock-pick", methods=["POST"])
+@login_required
+def lock_pick():
+    user_id = session["user_id"]
+    active = active_tournament()
+    if not active:
+        flash("There is no active tournament right now.", "warning")
+        return redirect(url_for("main.index"))
+
+    # Must be a paid, active participant of the current tournament.
+    part = Participant.query.filter_by(
+        user_id=user_id, tournament_id=active.id
+    ).first()
+    if not part or not part.is_active:
+        flash(f"You're not enrolled in {active.name}.", "warning")
+        return redirect(url_for("main.index"))
+    if not part.is_paid:
+        flash("Please complete payment to submit picks.", "warning")
+        return redirect(url_for("main.payment"))
+
+    game = Game.query.filter_by(
+        id=request.form.get("game_id", type=int), tournament_id=active.id
+    ).first()
+    if not game:
+        flash("That match is no longer available.", "danger")
+        return redirect(url_for("main.index"))
+
+    # Reject if the game has already kicked off.
+    if game.kickoff_utc() <= datetime.now(timezone("UTC")):
+        flash(f"Game #{game.game_number} has already started.", "danger")
+        return redirect(url_for("main.index"))
+
+    home_val = (request.form.get("home_score") or "").strip()
+    away_val = (request.form.get("away_score") or "").strip()
+    if not home_val.isdigit() or not away_val.isdigit():
+        flash("Scores must be whole numbers.", "danger")
+        return redirect(url_for("main.index"))
+
+    home_score, away_score = int(home_val), int(away_val)
+    existing = UserPrediction.query.filter_by(
+        user_id=user_id, game_id=game.id
+    ).first()
+    if existing:
+        existing.home_score_prediction = home_score
+        existing.away_score_prediction = away_score
+    else:
+        db.session.add(
+            UserPrediction(
+                user_id=user_id,
+                game_id=game.id,
+                home_score_prediction=home_score,
+                away_score_prediction=away_score,
+            )
+        )
+    db.session.commit()
+    flash("Pick saved.", "success")
+    return redirect(url_for("main.submit_picks", focus=game.id))
+
+
+# --- Admin helpers ---
+ADMIN_EMAIL = "admin@superpredicto.com"
+
+
+def is_admin():
+    return session.get("user_email") == ADMIN_EMAIL
+
+
+def get_selected_tournament():
+    """Resolve which tournament the admin is managing.
+
+    Prefers ?tournament_id= / form tournament_id, then the active tournament,
+    then the most recent one.
+    """
+    tid = request.values.get("tournament_id", type=int)
+    if tid:
+        t = Tournament.query.get(tid)
+        if t:
+            return t
+    return (
+        Tournament.query.filter_by(is_active=True).first()
+        or Tournament.query.order_by(Tournament.year.desc()).first()
+    )
+
+
+def active_tournament():
+    """The current/active tournament shown to players (the public-facing one)."""
+    return Tournament.query.filter_by(is_active=True).first()
+
+
 # --- Dashboard (Admin Only) ---
 @main.route("/dashboard")
 @login_required
 def dashboard():
-    if session.get("user_email") != "admin@superpredicto.com":
+    if not is_admin():
         flash("Access denied.", "danger")
         return redirect(url_for("main.index"))
 
-    users = User.query.filter(User.email != "admin@superpredicto.com").all()
-    games = Game.query.order_by(Game.game_number).all()
-    return render_template("dashboard.html", users=users, games=games)
+    tournaments = Tournament.query.order_by(Tournament.year.desc()).all()
+    selected = get_selected_tournament()
+
+    participants = (
+        Participant.query.filter_by(tournament_id=selected.id)
+        .join(Participant.user)
+        .order_by(User.display_name, User.first_name)
+        .all()
+    )
+    enrolled_ids = {p.user_id for p in participants}
+
+    addable_q = User.query.filter(User.email != ADMIN_EMAIL)
+    if enrolled_ids:
+        addable_q = addable_q.filter(~User.id.in_(enrolled_ids))
+    addable_users = addable_q.order_by(User.display_name, User.first_name).all()
+
+    return render_template(
+        "dashboard.html",
+        tournaments=tournaments,
+        selected_tournament=selected,
+        participants=participants,
+        addable_users=addable_users,
+        invite_feedback=session.pop("invite_feedback", None),
+    )
+
+
+# --- Match Scores (Admin Only) — enter results / knockout teams ---
+@main.route("/scores")
+@login_required
+def match_scores():
+    if not is_admin():
+        flash("Access denied.", "danger")
+        return redirect(url_for("main.index"))
+
+    tournaments = Tournament.query.order_by(Tournament.year.desc()).all()
+    selected = get_selected_tournament()
+    games = (
+        Game.query.filter_by(tournament_id=selected.id)
+        .order_by(Game.game_number)
+        .all()
+    )
+    return render_template(
+        "match_scores.html",
+        tournaments=tournaments,
+        selected_tournament=selected,
+        games=games,
+    )
 
 
 # --- Dashboard (Admin Only / Update Games) ---
 @main.route("/dashboard/update-games", methods=["POST"])
 @login_required
 def update_games():
-    if session.get("user_email") != "admin@superpredicto.com":
+    if not is_admin():
         flash("Access denied.", "danger")
         return redirect(url_for("main.index"))
 
-    games = Game.query.order_by(Game.game_number).all()
+    selected = get_selected_tournament()
+    games = (
+        Game.query.filter_by(tournament_id=selected.id)
+        .order_by(Game.game_number)
+        .all()
+    )
 
     for game in games:
-        # ✅ Update team names (for games 49–63)
-        if game.game_number >= 49:
+        # Update team names only for knockout games (teams are TBD placeholders).
+        if game.stage == "knockout":
             home_team = request.form.get(f"home_team_{game.id}")
             away_team = request.form.get(f"away_team_{game.id}")
             if home_team is not None:
@@ -569,78 +812,195 @@ def update_games():
             game.is_completed = False
 
     db.session.commit()
-    flash("Games updated successfully.", "success")
-    return redirect(url_for("main.dashboard"))
+    flash("Match results saved.", "success")
+    return redirect(url_for("main.match_scores", tournament_id=selected.id))
 
 
-# --- Invite User (Admin Only) ---
+# --- Invite User / Enroll in Tournament (Admin Only) ---
 @main.route("/invite-user", methods=["POST"])
 @login_required
 def invite_user():
-    if session.get("user_email") != "admin@superpredicto.com":
+    if not is_admin():
         flash("Access denied.", "danger")
         return redirect(url_for("main.index"))
 
-    email = request.form["invite_email"].strip().lower()
+    selected = get_selected_tournament()
+    email = request.form.get("invite_email", "").strip().lower()
+
+    # Feedback for the invite form is shown inline (under the field), not as a
+    # top-of-page flash. Stash {category, message} in the session for the next
+    # dashboard render to pick up.
+    def _invite_feedback(category, message):
+        session["invite_feedback"] = {"category": category, "message": message}
+        return redirect(url_for("main.dashboard", tournament_id=selected.id))
+
+    if not email:
+        return _invite_feedback("err", "Please enter an email address.")
+
     existing_user = User.query.filter_by(email=email).first()
 
     if existing_user:
-        flash("This email is already registered.", "warning")
-        return redirect(url_for("main.dashboard"))
+        # Account already exists — just enroll them in this tournament.
+        already = Participant.query.filter_by(
+            user_id=existing_user.id, tournament_id=selected.id
+        ).first()
+        if already:
+            message, category = f"{email} is already in {selected.year}.", "info"
+        else:
+            db.session.add(
+                Participant(user_id=existing_user.id, tournament_id=selected.id)
+            )
+            db.session.commit()
+            message, category = f"{email} enrolled in {selected.year}.", "ok"
 
-    # Create user with must_change_password=True
+        # If they never finished signup, re-send the invite link.
+        if not existing_user.password_hash:
+            token = generate_reset_token(email)
+            reset_url = url_for(
+                "main.reset_password_token", token=token, mode="invite", _external=True
+            )
+            try:
+                send_invite_email(email, reset_url)
+                message += f" Invite link re-sent to {email}."
+            except Exception as e:
+                message += f" Enrolled, but invite email failed: {str(e)}"
+                category = "warn"
+        return _invite_feedback(category, message)
+
+    # New account: create, enroll, and invite.
     new_user = User(email=email, must_change_password=True)
     db.session.add(new_user)
+    db.session.flush()  # assign new_user.id before creating the Participant
+    db.session.add(Participant(user_id=new_user.id, tournament_id=selected.id))
     db.session.commit()
 
-    # Generate and send invite email
     token = generate_reset_token(email)
     reset_url = url_for(
         "main.reset_password_token", token=token, mode="invite", _external=True
     )
-
     try:
         send_invite_email(email, reset_url)
-        flash(f"Invitation sent to {email}.", "success")
+        return _invite_feedback(
+            "ok", f"Invitation sent to {email} and enrolled in {selected.year}."
+        )
     except Exception as e:
-        flash(f"User created, but email failed: {str(e)}", "danger")
+        return _invite_feedback(
+            "err", f"User created & enrolled, but email failed: {str(e)}"
+        )
 
-    return redirect(url_for("main.dashboard"))
 
-
-# --- Update User Payment Status (Admin Only) ---
-@main.route("/admin/update-payments", methods=["POST"])
+# --- Add Existing Users to a Tournament (Admin Only) ---
+@main.route("/dashboard/add-participants", methods=["POST"])
 @login_required
-def update_payments():
-    if session.get("user_email") != "admin@superpredicto.com":
+def add_participants():
+    if not is_admin():
+        flash("Access denied.", "danger")
+        return redirect(url_for("main.index"))
+
+    selected = get_selected_tournament()
+    user_ids = request.form.getlist("add_user_ids", type=int)
+    if not user_ids:
+        flash("No users selected.", "info")
+        return redirect(url_for("main.dashboard", tournament_id=selected.id))
+
+    already_in = {
+        p.user_id
+        for p in Participant.query.filter_by(tournament_id=selected.id)
+        .filter(Participant.user_id.in_(user_ids))
+        .all()
+    }
+    added = 0
+    emailed = 0
+    email_failed = []
+    for uid in user_ids:
+        if uid in already_in:
+            continue
+        user = User.query.get(uid)
+        if not user or user.email == ADMIN_EMAIL:
+            continue
+        db.session.add(Participant(user_id=uid, tournament_id=selected.id))
+        added += 1
+
+        # Email them a one-time "set your password" link. We discard their old
+        # password ONLY if the email actually sends, so a send failure never
+        # locks them out. With password_hash = None they must use the link
+        # (login is blocked until they set a new password).
+        token = generate_reset_token(user.email)
+        set_url = url_for(
+            "main.reset_password_token", token=token, mode="invite", _external=True
+        )
+        try:
+            send_tournament_invite_email(user.email, set_url, selected.year)
+            user.password_hash = None
+            user.must_change_password = True
+            emailed += 1
+        except Exception:
+            email_failed.append(user.email)
+
+    if added:
+        db.session.commit()
+        msg = f"Added {added} player(s) to {selected.year}; emailed {emailed} a set-password link."
+        if email_failed:
+            flash(msg + f" Email failed for: {', '.join(email_failed)}.", "warning")
+        else:
+            flash(msg, "success")
+    else:
+        flash("No new players added.", "info")
+    return redirect(url_for("main.dashboard", tournament_id=selected.id))
+
+
+# --- Update Participant Paid/Active Status (Admin Only) ---
+@main.route("/dashboard/update-participants", methods=["POST"])
+@login_required
+def update_participants():
+    if not is_admin():
         flash("Unauthorized access.", "danger")
         return redirect(url_for("main.index"))
 
-    users = User.query.filter(User.email != "admin@superpredicto.com").all()
+    selected = get_selected_tournament()
+    participants = Participant.query.filter_by(tournament_id=selected.id).all()
     changes_made = False
 
-    for user in users:
-        paid_checkbox = f"paid_{user.id}"
-        active_checkbox = f"active_{user.id}"
+    for p in participants:
+        is_paid_checked = f"paid_{p.id}" in request.form
+        is_active_checked = f"active_{p.id}" in request.form
 
-        is_paid_checked = paid_checkbox in request.form
-        is_active_checked = active_checkbox in request.form
-
-        if user.is_paid != is_paid_checked:
-            user.is_paid = is_paid_checked
+        if p.is_paid != is_paid_checked:
+            p.is_paid = is_paid_checked
             changes_made = True
-
-        if user.is_active != is_active_checked:
-            user.is_active = is_active_checked
+        if p.is_active != is_active_checked:
+            p.is_active = is_active_checked
             changes_made = True
 
     if changes_made:
         db.session.commit()
-        flash("User statuses updated successfully.", "success")
+        flash("Participant statuses updated.", "success")
     else:
         flash("No changes detected.", "info")
+    return redirect(url_for("main.dashboard", tournament_id=selected.id))
 
-    return redirect(url_for("main.dashboard"))
+
+# --- Remove a Participant from a Tournament (Admin Only) ---
+@main.route("/dashboard/remove-participant", methods=["POST"])
+@login_required
+def remove_participant():
+    if not is_admin():
+        flash("Access denied.", "danger")
+        return redirect(url_for("main.index"))
+
+    selected = get_selected_tournament()
+    participant_id = request.form.get("participant_id", type=int)
+    p = Participant.query.filter_by(
+        id=participant_id, tournament_id=selected.id
+    ).first()
+    if p:
+        name = p.user.display_name or p.user.email
+        db.session.delete(p)
+        db.session.commit()
+        flash(f"Removed {name} from {selected.year}.", "success")
+    else:
+        flash("Participant not found.", "warning")
+    return redirect(url_for("main.dashboard", tournament_id=selected.id))
 
 
 # --- Test User Creation ---
@@ -736,13 +1096,28 @@ def payment():
         flash("Please complete your profile before making a payment.", "warning")
         return redirect(url_for("main.profile"))
 
-    if user.is_paid:
+    active = active_tournament()
+    if not active:
+        flash("There is no active tournament right now.", "warning")
+        return redirect(url_for("main.index"))
+
+    part = Participant.query.filter_by(
+        user_id=user.id, tournament_id=active.id
+    ).first()
+    if not part or not part.is_active:
+        flash(
+            f"You're not enrolled in {active.name}. Please contact the admin to join.",
+            "warning",
+        )
+        return redirect(url_for("main.index"))
+
+    if part.is_paid:
         flash("You're already paid up!", "info")
         return redirect(url_for("main.index"))
 
     if request.method == "POST":
         # Simulate successful payment
-        user.is_paid = True
+        part.is_paid = True
         db.session.commit()
         flash("Payment successful! You can now submit your picks.", "success")
         return redirect(url_for("main.submit_picks"))
@@ -774,8 +1149,16 @@ def payment_success():
             if order_info.get("status") != "COMPLETED":
                 return jsonify({"error": "Payment not confirmed by PayPal"}), 400
 
-            if not user.is_paid:
-                user.is_paid = True
+            active = active_tournament()
+            part = (
+                Participant.query.filter_by(
+                    user_id=user_id, tournament_id=active.id
+                ).first()
+                if active
+                else None
+            )
+            if part and not part.is_paid:
+                part.is_paid = True
                 db.session.commit()
                 send_payment_receipt_email(
                     user.email, order_info["purchase_units"][0]["amount"]["value"]
@@ -802,8 +1185,56 @@ def payment_success():
 # --- Schedule ---
 @main.route("/schedule")
 def schedule():
-    games = Game.query.order_by(Game.game_number).all()
-    return render_template("schedule.html", games=games)
+    active = active_tournament()
+    games = (
+        Game.query.filter_by(tournament_id=active.id)
+        .order_by(Game.game_number)
+        .all()
+        if active
+        else []
+    )
+    return render_template("schedule.html", games=games, tournament=active)
+
+
+# --- Email previews (DEV ONLY) ---
+# Renders the outgoing emails in the browser without sending anything.
+# Disabled in production (APP_ENV=prod) so it never becomes a public surface.
+@main.route("/dev/email-preview")
+@main.route("/dev/email-preview/<kind>")
+def email_preview(kind=None):
+    if os.getenv("APP_ENV", "dev") == "prod":
+        abort(404)
+
+    from .utils import (
+        build_invite_email,
+        build_password_reset_email,
+        build_tournament_invite_email,
+    )
+
+    sample_url = url_for(
+        "main.reset_password_token", token="SAMPLE-TOKEN-1234", mode="invite", _external=True
+    )
+    builders = {
+        "invite": lambda: build_invite_email(sample_url),
+        "reset": lambda: build_password_reset_email(sample_url),
+        "tournament": lambda: build_tournament_invite_email(sample_url, 2026),
+    }
+
+    if kind in builders:
+        subject, html = builders[kind]()
+        return html
+
+    # index of available previews
+    items = "".join(
+        f'<li style="margin:6px 0"><a href="/dev/email-preview/{k}">{k}</a> '
+        f'<span style="color:#888">— {builders[k]()[0]}</span></li>'
+        for k in builders
+    )
+    return (
+        "<div style='font-family:system-ui;padding:30px;max-width:640px'>"
+        "<h2>Email previews <span style='color:#888;font-size:14px'>(dev only)</span></h2>"
+        f"<ul>{items}</ul></div>"
+    )
 
 
 from tasks.scoring import run_prediction_scoring
@@ -813,11 +1244,12 @@ from tasks.scoring import run_prediction_scoring
 @main.route("/admin/run-scoring")
 @login_required
 def admin_run_scoring():
-    if session.get("user_email") != "admin@superpredicto.com":
+    if not is_admin():
         abort(403)
-    run_prediction_scoring()
-    flash("Scoring successfully run.", "success")
-    return redirect(url_for("main.dashboard"))
+    selected = get_selected_tournament()
+    run_prediction_scoring(selected.id)
+    flash(f"Scoring run for {selected.name} ({selected.year}).", "success")
+    return redirect(url_for("main.dashboard", tournament_id=selected.id))
 
 
 # --- Support ---
