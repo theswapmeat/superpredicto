@@ -6,7 +6,11 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.getenv("SUPABASE_URL", "sqlite:///superpredicto.db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECURITY_PASSWORD_SALT = os.getenv("SECURITY_PASSWORD_SALT", "another-secret")
-    RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+    # Email (Maileroo). MAILEROO_API_KEY is a per-domain "Sending Key" from the
+    # Maileroo dashboard; the from-address domain must be verified in Maileroo.
+    MAILEROO_API_KEY = os.getenv("MAILEROO_API_KEY")
+    MAIL_FROM_ADDRESS = os.getenv("MAIL_FROM_ADDRESS", "no-reply@superpredicto.com")
+    MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME", "SuperPredicto")
     PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID")
     PAYPAL_CLIENT_SECRET = os.getenv("PAYPAL_CLIENT_SECRET")
     PERMANENT_SESSION_LIFETIME = timedelta(days=14)

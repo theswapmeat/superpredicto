@@ -183,24 +183,35 @@ def verify_paypal_payment(order_id):
 
 # --- Core Email Sender ---
 def _send_email(to_email, subject, html):
-    api_key = current_app.config['RESEND_API_KEY']
-    sender = "SuperPredicto <no-reply@superpredicto.com>"
+    api_key = current_app.config["MAILEROO_API_KEY"]
 
     payload = {
-        "from": sender,
-        "to": [to_email],
+        "from": {
+            "address": current_app.config["MAIL_FROM_ADDRESS"],
+            "display_name": current_app.config["MAIL_FROM_NAME"],
+        },
+        "to": {"address": to_email},
         "subject": subject,
-        "html": html
+        "html": html,
     }
 
     headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
+        "X-Api-Key": api_key,
+        "Content-Type": "application/json",
     }
 
-    response = requests.post("https://api.resend.com/emails", json=payload, headers=headers)
+    response = requests.post(
+        "https://smtp.maileroo.com/api/v2/emails", json=payload, headers=headers
+    )
 
+    # Maileroo returns HTTP 200 with {"success": true, ...} on success.
     if response.status_code != 200:
+        raise Exception(f"Email send failed ({response.status_code}): {response.text}")
+    try:
+        ok = response.json().get("success", False)
+    except ValueError:
+        ok = False
+    if not ok:
         raise Exception(f"Email send failed: {response.text}")
 
 # --- Payment Confirmation Email ---
