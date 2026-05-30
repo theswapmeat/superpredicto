@@ -34,9 +34,9 @@
   .selctl { font-family:"Saira Condensed",sans-serif; font-weight:600; font-size:14px; color:var(--text); background:var(--ink-2); border:1px solid var(--line); border-radius:10px; padding:9px 34px 9px 13px; cursor:pointer; appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238E97B2' viewBox='0 0 16 16'%3E%3Cpath d='M3.2 5.6 8 10.4l4.8-4.8' stroke='%238E97B2' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; transition:border-color .15s ease; }
   .selctl:hover { border-color:var(--line-strong); }
   .selctl:focus { outline:none; border-color:var(--em); box-shadow:0 0 0 3px var(--em-dim); }
-  /* width:auto -> the control sizes to its widest <option>, and the native
-     popup inherits that width (so the widest result is never truncated). */
-  .selctl.userf, .selctl.gamef { width:auto; min-width:160px; max-width:100%; }
+  /* Fixed control width; no max-width cap so the native popover can size itself
+     to the widest <option> (Chrome/Edge) — full result text, no clipping. */
+  .selctl.userf, .selctl.gamef { min-width:200px; }
 
   /* segmented control (matches /submit-picks filters) */
   .filterseg { display:flex; gap:4px; background:var(--ink-2); border:1px solid var(--line); border-radius:11px; padding:4px; }
@@ -95,6 +95,7 @@
 <section class="page-head">
   <div class="pwrap ph-inner">
     <div class="ph-left">
+      {% if tournament %}<span class="tournament-pill"><span class="dot"></span> {{ tournament.name }}</span>{% endif %}
       <span class="kicker">
         <svg class="hb" viewBox="0 0 240 60" fill="none"><path pathLength="100" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30" /></svg>
         League Predictions
@@ -186,15 +187,21 @@
     params.append("per_page", perPage);
 
     const target = document.getElementById("predictionsTable");
-    target.innerHTML = buildSkeleton(parseInt(perPage, 10) > 10 ? 10 : 8);
+    // Only show the skeleton if the fetch is actually slow (>180ms). On a fast
+    // response the current table is replaced directly — no skeleton flash.
+    const skeletonTimer = setTimeout(() => {
+      target.innerHTML = buildSkeleton(parseInt(perPage, 10) > 10 ? 10 : 8);
+    }, 180);
 
     fetch(`/predictions/filter?${params.toString()}`)
       .then((response) => { if (!response.ok) throw new Error(response.status); return response.text(); })
       .then((html) => {
+        clearTimeout(skeletonTimer);
         target.innerHTML = html;
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => new bootstrap.Tooltip(el));
       })
       .catch(() => {
+        clearTimeout(skeletonTimer);
         target.innerHTML =
           '<div class="no-rows">Couldn\'t load predictions. ' +
           '<a href="#" onclick="updatePredictions(' + page + '); return false;" style="color:var(--emb)">Retry</a></div>';
@@ -224,6 +231,12 @@
       const banner = document.getElementById("predictionsIntroBanner");
       if (banner) banner.style.display = "none";
     }
+    // Honour deep-links like /predictions?user_id=5 (e.g. from the leaderboard):
+    // pre-select the dropdowns before the first fetch.
+    const qp = new URLSearchParams(window.location.search);
+    const uid = qp.get("user_id"), gid = qp.get("game_id");
+    if (uid) { const el = document.getElementById("userFilter"); if (el) el.value = uid; }
+    if (gid) { const el = document.getElementById("gameFilter"); if (el) el.value = gid; }
     updatePredictions();
   });
 </script>

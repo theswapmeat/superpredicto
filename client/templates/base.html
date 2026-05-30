@@ -68,6 +68,7 @@
       .sp-btn { font-family:"Saira Condensed",sans-serif; font-weight:700; letter-spacing:.04em; text-transform:uppercase; font-size:14px; line-height:1; display:inline-flex; align-items:center; justify-content:center; gap:9px; padding:12px 20px; border-radius:9px; cursor:pointer; border:1px solid transparent; transition:transform .12s ease, background .15s ease; }
       .sp-btn-primary { background:var(--em); color:#06210F; box-shadow:0 0 0 1px rgba(29,239,147,.25), 0 8px 24px -8px rgba(0,209,122,.55); }
       .sp-btn-primary:hover { background:var(--emb); transform:translateY(-1px); color:#06210F; }
+      .sp-btn:disabled { opacity:.45; cursor:not-allowed; box-shadow:none; transform:none; pointer-events:none; }
       .avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#22305c,#0E1530); border:1.5px solid var(--line-strong); display:grid; place-items:center; font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:15px; color:var(--emb); flex:0 0 auto; position:relative; cursor:pointer; }
       .avatar::after { content:""; position:absolute; right:-1px; bottom:-1px; width:11px; height:11px; border-radius:50%; background:var(--em); border:2px solid var(--ink); }
 
@@ -120,6 +121,10 @@
       .sp-note.err i { color:#FF6B7D; }
       .sp-note b { color:var(--text); font-weight:600; }
 
+      /* "which tournament am I working on" badge for picks/predictions/schedule headers */
+      .tournament-pill { display:inline-flex; align-items:center; gap:8px; align-self:flex-start; font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--emb); padding:5px 12px; border-radius:100px; background:var(--em-dim); border:1px solid rgba(0,209,122,.28); }
+      .tournament-pill .dot { width:6px; height:6px; border-radius:50%; background:var(--em); box-shadow:0 0 0 3px rgba(0,209,122,.2); }
+
       /* ---------- footer ---------- */
       footer.site { border-top:1px solid var(--line); padding:30px 0; flex-shrink:0; }
       .foot-inner { display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap; max-width:1240px; margin:0 auto; padding:0 32px; }
@@ -134,8 +139,11 @@
       .hb-overlay.show { display:flex; }
       .hb-loader { width:150px; height:auto; }
       .hb-loader .track { stroke:rgba(29,239,147,.2); }
-      .hb-loader .runner { stroke:var(--emb); stroke-dasharray:30 100; animation:sweep 1.4s linear infinite; }
-      @keyframes sweep { from { stroke-dashoffset:130; } to { stroke-dashoffset:-30; } }
+      .hb-loader .runner { stroke:var(--emb); stroke-dasharray:34 120; animation:sweep 1.6s linear infinite; }
+      /* Travel == one dash period (pulse 34 + gap 120 = 154), with LITERAL numbers so
+         the browser can interpolate it. Equal travel/period makes every pulse sweep the
+         whole line and the loop seamless (per the heartbeat-spinner design). */
+      @keyframes sweep { from { stroke-dashoffset:154; } to { stroke-dashoffset:0; } }
 
       /* ---------- reusable skeleton (shimmer placeholder) ---------- */
       .skeleton { display:inline-block; vertical-align:middle; position:relative; overflow:hidden; background:rgba(255,255,255,.04); border-radius:7px; }
@@ -146,7 +154,7 @@
       @keyframes skShimmer { 100% { transform:translateX(100%); } }
       @media (prefers-reduced-motion:reduce) {
         .skeleton::after { animation:none; }
-        .hb-loader .runner { animation:none; }
+        .hb-loader .runner, .hb-mini .run { animation:none; }
         ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation:none !important; }
       }
 
@@ -196,6 +204,7 @@
             <a href="/scores" class="{{ 'active' if request.path.startswith('/scores') }}">Match Scores</a>
             {% else %}
             <a href="/tournaments" class="{{ 'active' if request.path.startswith('/tournaments') }}">Tournaments</a>
+            <a href="/leaderboard" class="{{ 'active' if request.path.startswith('/leaderboard') }}">Leaderboard</a>
             <a href="/submit-picks" class="{{ 'active' if request.path.startswith('/submit-picks') }}">Submit / Edit Picks</a>
             <a href="/predictions" class="{{ 'active' if request.path.startswith('/predictions') }}">All Predictions</a>
             <a href="/schedule" class="{{ 'active' if request.path.startswith('/schedule') }}">Schedule</a>

@@ -101,6 +101,7 @@
 <section class="page-head">
   <div class="pwrap ph-inner">
     <div class="ph-left">
+      {% if tournament %}<span class="tournament-pill"><span class="dot"></span> {{ tournament.name }}</span>{% endif %}
       <span class="kicker">
         <svg class="hb" viewBox="0 0 240 60" fill="none"><path pathLength="100" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30" /></svg>
         Fixtures

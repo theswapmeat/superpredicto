@@ -94,6 +94,50 @@ def earliest_open_game(tournament_id):
     return None
 
 
+def build_leaderboard(tournament, current_user_id=None):
+    """Ranked leaderboard entries for one tournament (active, named participants).
+
+    Each entry carries user_id so rows can link to that user's predictions.
+    """
+    if not tournament:
+        return []
+    participants = (
+        Participant.query.filter_by(tournament_id=tournament.id, is_active=True)
+        .join(Participant.user)
+        .filter(
+            User.email != "admin@superpredicto.com",
+            User.first_name.isnot(None),
+            User.first_name != "",
+            User.last_name.isnot(None),
+            User.last_name != "",
+            User.display_name.isnot(None),
+            User.display_name != "",
+        )
+        .all()
+    )
+    entries = [
+        {
+            "user_id": p.user_id,
+            "name": p.user.display_name
+            or f"{p.user.first_name or ''} {p.user.last_name or ''}".strip()
+            or "-",
+            "initials": _user_initials(p.user),
+            "is_you": p.user_id == current_user_id,
+            "points": (p.perfect_picks or 0) * 4
+            + (p.picks_scoring_two or 0) * 2
+            + (p.picks_scoring_one or 0) * 1,
+            "perfect_picks": p.perfect_picks or 0,
+            "picks_scoring_two": p.picks_scoring_two or 0,
+            "picks_scoring_one": p.picks_scoring_one or 0,
+            "picks_scoring_zero": p.picks_scoring_zero or 0,
+            "invalid_picks": p.invalid_picks or 0,
+        }
+        for p in participants
+    ]
+    assign_leaderboard_ranks(entries)
+    return entries
+
+
 @main.app_context_processor
 def inject_nav_context():
     """Expose the current user to every template for the shared dark navbar."""
@@ -132,43 +176,12 @@ def index():
     if not selected:
         selected = active_tournament() or (tournaments[0] if tournaments else None)
 
-    leaderboard_dicts = []
-    if selected:
-        participants = (
-            Participant.query.filter_by(tournament_id=selected.id, is_active=True)
-            .join(Participant.user)
-            .filter(
-                User.email != "admin@superpredicto.com",
-                User.first_name.isnot(None),
-                User.first_name != "",
-                User.last_name.isnot(None),
-                User.last_name != "",
-                User.display_name.isnot(None),
-                User.display_name != "",
-            )
-            .all()
-        )
-
-        leaderboard_dicts = [
-            {
-                "name": p.user.display_name
-                or f"{p.user.first_name or ''} {p.user.last_name or ''}".strip()
-                or "-",
-                "initials": _user_initials(p.user),
-                "is_you": p.user_id == user_id,
-                "points": (p.perfect_picks or 0) * 4
-                + (p.picks_scoring_two or 0) * 2
-                + (p.picks_scoring_one or 0) * 1,
-                "perfect_picks": p.perfect_picks or 0,
-                "picks_scoring_two": p.picks_scoring_two or 0,
-                "picks_scoring_one": p.picks_scoring_one or 0,
-                "picks_scoring_zero": p.picks_scoring_zero or 0,
-                "invalid_picks": p.invalid_picks or 0,
-            }
-            for p in participants
-        ]
-
-        assign_leaderboard_ranks(leaderboard_dicts)
+    # Homepage shows only the top 3 (ranks 1-3, ties included); the full table
+    # lives on /leaderboard.
+    all_entries = build_leaderboard(selected, user_id)
+    leaderboard_dicts = [
+        e for e in all_entries if e["rank"] is not None and e["rank"] <= 3
+    ]
 
     # Hero + live pick card only for the active tournament; archived tournaments
     # are leaderboard-only.
@@ -404,14 +417,25 @@ def submit_picks():
         error_found = False
         form_data = request.form
         changes_made = False
+        locked_attempts = []  # game numbers the user tried to change after kickoff
 
         for game in games:
             # Locked games (already kicked off) are never modified — their saved
-            # pick stays exactly as it is.
+            # pick stays exactly as it is. But if the user actually tried to change
+            # one (submitted a complete score that differs from the saved pick),
+            # record it so we can tell them clearly that the change was rejected.
             game_datetime_local = uae.localize(
                 datetime.combine(game.date_of_game, game.time_of_game)
             )
             if game_datetime_local <= now_uae:
+                hv = form_data.get(f"home_score_{game.id}", "").strip()
+                av = form_data.get(f"away_score_{game.id}", "").strip()
+                if hv.isdigit() and av.isdigit():
+                    ex = existing_predictions.get(game.id)
+                    ex_h = ex.home_score_prediction if ex else None
+                    ex_a = ex.away_score_prediction if ex else None
+                    if int(hv) != ex_h or int(av) != ex_a:
+                        locked_attempts.append(game.game_number)
                 continue
 
             home_key = f"home_score_{game.id}"
@@ -474,14 +498,29 @@ def submit_picks():
                 pred_dict=existing_predictions,
                 uae_now=now_uae,
                 form_data=form_data,
+                tournament=active,
             )
 
-        if not changes_made:
-            flash("No changes made to your picks.", "info")
-            return redirect(url_for("main.submit_picks"))
+        if locked_attempts:
+            if len(locked_attempts) == 1:
+                flash(
+                    f"Game #{locked_attempts[0]} had already kicked off, so your change "
+                    "to it was NOT saved — predictions lock the moment a match starts.",
+                    "warning",
+                )
+            else:
+                nums = ", ".join(f"#{n}" for n in locked_attempts)
+                flash(
+                    f"Games {nums} had already kicked off, so your changes to them were "
+                    "NOT saved — predictions lock the moment a match starts.",
+                    "warning",
+                )
 
-        db.session.commit()
-        flash("Your picks have been saved.", "success")
+        if changes_made:
+            db.session.commit()
+            flash("Your picks have been saved.", "success")
+        elif not locked_attempts:
+            flash("No changes made to your picks.", "info")
         return redirect(url_for("main.submit_picks"))
 
     now_uae = datetime.now(uae)
@@ -491,6 +530,7 @@ def submit_picks():
         pred_dict=existing_predictions,
         uae_now=now_uae,
         form_data={},
+        tournament=active,
     )
 
 
@@ -562,6 +602,7 @@ def predictions():
         users=all_users,
         games=all_games,
         per_page=per_page,
+        tournament=active,
     )
 
 
@@ -612,6 +653,24 @@ def predictions_filter():
 @main.route("/guidelines")
 def guidelines():
     return render_template("guidelines.html")
+
+
+# --- Full Leaderboard ---
+@main.route("/leaderboard")
+@login_required
+def leaderboard():
+    tournaments = Tournament.query.order_by(Tournament.year.desc()).all()
+    selected = None
+    sel_id = request.args.get("tournament_id", type=int)
+    if sel_id:
+        selected = Tournament.query.get(sel_id)
+    if not selected:
+        selected = active_tournament() or (tournaments[0] if tournaments else None)
+
+    entries = build_leaderboard(selected, session.get("user_id"))
+    return render_template(
+        "leaderboard.html", leaderboard=entries, tournament=selected
+    )
 
 
 # --- Lock a single pick from the landing page ---
@@ -704,6 +763,11 @@ def active_tournament():
     return Tournament.query.filter_by(is_active=True).first()
 
 
+def is_archived(tournament):
+    """Archived (non-active) tournaments are read-only — no scoring or edits."""
+    return bool(tournament) and not tournament.is_active
+
+
 # --- Dashboard (Admin Only) ---
 @main.route("/dashboard")
 @login_required
@@ -770,6 +834,10 @@ def update_games():
         return redirect(url_for("main.index"))
 
     selected = get_selected_tournament()
+    if is_archived(selected):
+        flash("This tournament is archived and can't be modified.", "warning")
+        return redirect(url_for("main.match_scores", tournament_id=selected.id))
+
     games = (
         Game.query.filter_by(tournament_id=selected.id)
         .order_by(Game.game_number)
@@ -825,6 +893,10 @@ def invite_user():
         return redirect(url_for("main.index"))
 
     selected = get_selected_tournament()
+    if is_archived(selected):
+        flash("This tournament is archived and can't be modified.", "warning")
+        return redirect(url_for("main.dashboard", tournament_id=selected.id))
+
     email = request.form.get("invite_email", "").strip().lower()
 
     # Feedback for the invite form is shown inline (under the field), not as a
@@ -898,6 +970,10 @@ def add_participants():
         return redirect(url_for("main.index"))
 
     selected = get_selected_tournament()
+    if is_archived(selected):
+        flash("This tournament is archived and can't be modified.", "warning")
+        return redirect(url_for("main.dashboard", tournament_id=selected.id))
+
     user_ids = request.form.getlist("add_user_ids", type=int)
     if not user_ids:
         flash("No users selected.", "info")
@@ -958,6 +1034,10 @@ def update_participants():
         return redirect(url_for("main.index"))
 
     selected = get_selected_tournament()
+    if is_archived(selected):
+        flash("This tournament is archived and can't be modified.", "warning")
+        return redirect(url_for("main.dashboard", tournament_id=selected.id))
+
     participants = Participant.query.filter_by(tournament_id=selected.id).all()
     changes_made = False
 
@@ -989,6 +1069,10 @@ def remove_participant():
         return redirect(url_for("main.index"))
 
     selected = get_selected_tournament()
+    if is_archived(selected):
+        flash("This tournament is archived and can't be modified.", "warning")
+        return redirect(url_for("main.dashboard", tournament_id=selected.id))
+
     participant_id = request.form.get("participant_id", type=int)
     p = Participant.query.filter_by(
         id=participant_id, tournament_id=selected.id
@@ -1247,6 +1331,10 @@ def admin_run_scoring():
     if not is_admin():
         abort(403)
     selected = get_selected_tournament()
+    if is_archived(selected):
+        flash("This tournament is archived and can't be modified.", "warning")
+        return redirect(url_for("main.dashboard", tournament_id=selected.id))
+
     run_prediction_scoring(selected.id)
     flash(f"Scoring run for {selected.name} ({selected.year}).", "success")
     return redirect(url_for("main.dashboard", tournament_id=selected.id))

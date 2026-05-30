@@ -113,6 +113,12 @@
   .bar > i { display:block; height:100%; width:1%; border-radius:100px; background:linear-gradient(90deg,var(--em),var(--emb)); transition:width .5s cubic-bezier(.2,.7,.2,1); }
   .savebtn { font-family:"Saira Condensed",sans-serif; font-weight:800; letter-spacing:.05em; text-transform:uppercase; font-size:15px; padding:15px 28px; border-radius:11px; border:none; cursor:pointer; white-space:nowrap; background:var(--em); color:#06210F; box-shadow:0 0 0 1px rgba(29,239,147,.25), 0 10px 26px -10px rgba(0,209,122,.6); transition:background .15s ease, transform .12s ease; }
   .savebtn:hover { background:var(--emb); transform:translateY(-1px); }
+  /* read-only (archived) disabled states */
+  .savebtn:disabled { opacity:.45; cursor:not-allowed; box-shadow:none; transform:none; pointer-events:none; }
+  .score-in:disabled, .team-in:disabled { opacity:.6; cursor:not-allowed; }
+  .done-toggle.ro { cursor:not-allowed; }
+  .done-toggle.ro:hover .pill { color:var(--muted); border-color:var(--line-strong); }
+  .done-toggle .done-chk:disabled + .pill { opacity:.6; }
 
   @media (max-width:720px) {
     .pwrap, .savebar-inner { padding-left:18px; padding-right:18px; }
@@ -131,6 +137,7 @@
 {% endblock %}
 
 {% block body %}
+{% set ro = not selected_tournament.is_active %}
 <section class="page-head">
   <div class="pwrap ph-inner">
     <div class="ph-left">
@@ -162,6 +169,15 @@
   </div>
 </section>
 
+{% if ro %}
+<div class="pwrap" style="margin-bottom:6px;">
+  <div class="sp-note warn">
+    <i class="bi bi-archive-fill"></i>
+    <div>This tournament is <b>archived</b> — scores are read-only. You can browse and filter, but not edit or save.</div>
+  </div>
+</div>
+{% endif %}
+
 <div class="pwrap toolbar">
   <div class="filterseg">
     <button type="button" class="on" data-filter="all">All games</button>
@@ -188,7 +204,7 @@
         <div class="g-match">
           <div class="side home">
             {% if game.stage == 'knockout' %}
-            <input type="text" class="team-in" name="home_team_{{ game.id }}" value="{{ game.home_team }}" aria-label="home team name" />
+            <input type="text" class="team-in" name="home_team_{{ game.id }}" value="{{ game.home_team }}" aria-label="home team name" {% if ro %}disabled{% endif %} />
             {% else %}
             <span class="tname">{{ game.home_team }}</span>
             <span class="tbadge home">{{ game.home_team[:3]|upper }}</span>
@@ -197,7 +213,7 @@
           <span class="vsv">VS</span>
           <div class="side away">
             {% if game.stage == 'knockout' %}
-            <input type="text" class="team-in" name="away_team_{{ game.id }}" value="{{ game.away_team }}" aria-label="away team name" />
+            <input type="text" class="team-in" name="away_team_{{ game.id }}" value="{{ game.away_team }}" aria-label="away team name" {% if ro %}disabled{% endif %} />
             {% else %}
             <span class="tbadge away">{{ game.away_team[:3]|upper }}</span>
             <span class="tname">{{ game.away_team }}</span>
@@ -205,11 +221,11 @@
           </div>
         </div>
         <div class="g-score">
-          <input type="number" class="score-in hs" name="home_{{ game.id }}" min="0" max="99" value="{{ game.home_team_score if game.home_team_score is not none else '' }}" aria-label="home score" />
+          <input type="number" class="score-in hs" name="home_{{ game.id }}" min="0" max="99" value="{{ game.home_team_score if game.home_team_score is not none else '' }}" aria-label="home score" {% if ro %}disabled{% endif %} />
           <span class="dash">–</span>
-          <input type="number" class="score-in as" name="away_{{ game.id }}" min="0" max="99" value="{{ game.away_team_score if game.away_team_score is not none else '' }}" aria-label="away score" />
-          <label class="done-toggle" title="Mark game complete">
-            <input type="checkbox" class="done-chk" name="completed_{{ game.id }}" {% if game.is_completed %}checked{% endif %} />
+          <input type="number" class="score-in as" name="away_{{ game.id }}" min="0" max="99" value="{{ game.away_team_score if game.away_team_score is not none else '' }}" aria-label="away score" {% if ro %}disabled{% endif %} />
+          <label class="done-toggle{% if ro %} ro{% endif %}" title="Mark game complete">
+            <input type="checkbox" class="done-chk" name="completed_{{ game.id }}" {% if game.is_completed %}checked{% endif %} {% if ro %}disabled{% endif %} />
             <span class="pill"><i class="bi bi-check-lg"></i> Completed</span>
           </label>
         </div>
@@ -230,7 +246,7 @@
       </div>
       <div class="bar"><i id="sbBar"></i></div>
     </div>
-    <button class="savebtn" id="saveBtn" type="submit" form="scores-form">Save Results</button>
+    <button class="savebtn" id="saveBtn" type="submit" form="scores-form" {% if ro %}disabled{% endif %}>Save Results</button>
   </div>
 </div>
 {% endblock %}

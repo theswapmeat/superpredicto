@@ -55,6 +55,10 @@
   .rm-btn:hover { background:rgba(255,107,125,.2); border-color:rgba(255,107,125,.7); }
   .sp-btn-danger { background:rgba(255,107,125,.14); color:#FF6B7D; border:1px solid rgba(255,107,125,.4); }
   .sp-btn-danger:hover { background:rgba(255,107,125,.22); color:#FF8A95; transform:translateY(-1px); }
+  /* read-only (archived) disabled states */
+  .rm-btn:disabled { opacity:.4; cursor:not-allowed; pointer-events:none; }
+  .adm-chk:disabled { opacity:.45; cursor:not-allowed; }
+  .multi-select:disabled { opacity:.5; cursor:not-allowed; }
 
   @media (max-width:760px) {
     .pwrap { padding-left:18px; padding-right:18px; }
@@ -83,6 +87,14 @@
 
   {% if session.get('user_email') == 'admin@superpredicto.com' %}
 
+  {% set ro = not selected_tournament.is_active %}
+  {% if ro %}
+  <div class="sp-note warn" style="margin:6px 0 20px;">
+    <i class="bi bi-archive-fill"></i>
+    <div>This tournament is <b>archived</b> — it's read-only. Switch to the active tournament to make changes. You can still open <b>Match Scores</b> to view results.</div>
+  </div>
+  {% endif %}
+
   <!-- Tournament selector + scoring -->
   <div class="adm-toolbar">
     <form method="get" action="{{ url_for('main.dashboard') }}" class="adm-field" id="tourForm">
@@ -103,7 +115,7 @@
       </div>
     </form>
     <form action="{{ url_for('main.admin_run_scoring') }}" method="get">
-      <button type="submit" class="sp-btn sp-btn-danger">Run scoring now</button>
+      <button type="submit" class="sp-btn sp-btn-danger" {% if ro %}disabled{% endif %}>Run scoring now</button>
     </form>
   </div>
 
@@ -134,10 +146,10 @@
               <td>{{ p.user.first_name or '' }} {{ p.user.last_name or '' }}</td>
               <td class="adm-muted">{{ p.user.display_name or '-' }}</td>
               <td class="adm-muted">{{ p.user.email }}</td>
-              <td><input type="checkbox" class="adm-chk" name="paid_{{ p.id }}" {% if p.is_paid %}checked{% endif %} /></td>
-              <td><input type="checkbox" class="adm-chk" name="active_{{ p.id }}" {% if p.is_active %}checked{% endif %} /></td>
+              <td><input type="checkbox" class="adm-chk" name="paid_{{ p.id }}" {% if p.is_paid %}checked{% endif %} {% if ro %}disabled{% endif %} /></td>
+              <td><input type="checkbox" class="adm-chk" name="active_{{ p.id }}" {% if p.is_active %}checked{% endif %} {% if ro %}disabled{% endif %} /></td>
               <td>
-                <button type="submit" form="remove-{{ p.id }}" class="rm-btn"
+                <button type="submit" form="remove-{{ p.id }}" class="rm-btn" {% if ro %}disabled{% endif %}
                   onclick="return confirm('Remove {{ (p.user.display_name or p.user.email)|e }} from {{ selected_tournament.year }}? This only un-enrolls them; their account and past picks are kept.');">
                   &times;
                 </button>
@@ -150,7 +162,7 @@
         </table>
       </div>
       {% if participants %}
-      <button type="submit" class="sp-btn sp-btn-primary" style="margin-top:14px">Save paid / active</button>
+      <button type="submit" class="sp-btn sp-btn-primary" style="margin-top:14px" {% if ro %}disabled{% endif %}>Save paid / active</button>
       {% endif %}
     </form>
 
@@ -172,13 +184,13 @@
       <input type="hidden" name="tournament_id" value="{{ selected_tournament.id }}" />
       <div class="adm-sub-h">Add existing users (returning players)</div>
       {% if addable_users %}
-      <select id="add_user_ids" name="add_user_ids" class="multi-select" multiple size="6">
+      <select id="add_user_ids" name="add_user_ids" class="multi-select" multiple size="6" {% if ro %}disabled{% endif %}>
         {% for u in addable_users %}
         <option value="{{ u.id }}">{{ u.display_name or '(no username)' }} — {{ u.email }}</option>
         {% endfor %}
       </select>
       <div class="sp-help">Hold Ctrl (Cmd on Mac) to select multiple.</div>
-      <button type="submit" class="sp-btn sp-btn-primary" style="margin-top:12px">Add selected</button>
+      <button type="submit" class="sp-btn sp-btn-primary" style="margin-top:12px" {% if ro %}disabled{% endif %}>Add selected</button>
       {% else %}
       <p class="adm-muted" style="margin:0">Every existing user is already in this tournament.</p>
       {% endif %}
@@ -189,8 +201,8 @@
       <input type="hidden" name="tournament_id" value="{{ selected_tournament.id }}" />
       <div class="adm-sub-h">Invite a new player by email</div>
       <div style="display:flex; gap:10px; flex-wrap:wrap; max-width:520px">
-        <input type="email" class="sp-input {% if invite_feedback and invite_feedback.category in ['err','warn'] %}invalid{% endif %}" id="invite_email" name="invite_email" required placeholder="name@example.com" style="flex:1; min-width:200px" />
-        <button type="submit" class="sp-btn sp-btn-primary">Send invite &amp; enroll</button>
+        <input type="email" class="sp-input {% if invite_feedback and invite_feedback.category in ['err','warn'] %}invalid{% endif %}" id="invite_email" name="invite_email" {% if not ro %}required{% endif %} placeholder="name@example.com" style="flex:1; min-width:200px" {% if ro %}disabled{% endif %} />
+        <button type="submit" class="sp-btn sp-btn-primary" {% if ro %}disabled{% endif %}>Send invite &amp; enroll</button>
       </div>
       {% if invite_feedback %}
       <div class="sp-note {{ invite_feedback.category }}" style="max-width:520px; margin-top:10px">
