@@ -1,0 +1,20 @@
+/* Leaderboard page. Shared bits (tokens, livepulse keyframe, reduced-motion) live
+   in tokens.css / components.css. The page-head + table styles here are still
+   page-local; they get promoted to components.css in the shared-component pass. */
+.pwrap { max-width:1040px; margin:0 auto; padding:0 32px; }
+
+/* PAGE HEADER (shared pattern) */
+.page-head { position:relative; padding:40px 0 20px; }
+.ph-note { font-size:14px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+.livepill { display:inline-flex; align-items:center; gap:6px; margin-left:4px; padding:3px 10px; border-radius:999px; background:rgba(255,100,114,.12); color:#ff6472; font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+.table-card tbody tr.clickable { cursor:pointer; }
+.pname .chev { color:var(--muted-2); font-size:13px; opacity:0; transition:opacity .14s ease, color .14s ease; }
+.table-card tbody tr:hover .pname .chev { opacity:1; color:var(--emb); }
+.youchip { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--emb); background:var(--em-dim); border:1px solid rgba(0,209,122,.3); padding:2px 7px; border-radius:5px; }
+.emptyrow td { padding:40px 18px; color:var(--muted); text-align:center; }
+
+@media (max-width:768px) {
+  .pwrap { padding-left:18px; padding-right:18px; }
+  .ph-inner { align-items:flex-start; }
+  .table-card table { min-width:760px; }
+}

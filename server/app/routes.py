@@ -15,7 +15,7 @@ from pytz import timezone
 from .models import db, User, Game, UserPrediction, Tournament, Participant
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, contains_eager
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func, desc, cast, String, Interval, or_
 from .utils import (
@@ -120,6 +120,7 @@ def build_leaderboard(tournament, current_user_id=None):
     participants = (
         Participant.query.filter_by(tournament_id=tournament.id, is_active=True)
         .join(Participant.user)
+        .options(contains_eager(Participant.user))  # populate p.user from the join (no N+1)
         .filter(
             User.email != "admin@superpredicto.com",
             User.first_name.isnot(None),

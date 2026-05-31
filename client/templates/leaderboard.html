@@ -1,67 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Leaderboard — SuperPredicto{% endblock %}
 
-{% block extra_head %}
-<style>
-  .pwrap { max-width:1040px; margin:0 auto; padding:0 32px; }
-
-  /* PAGE HEADER (shared pattern) */
-  .page-head { position:relative; padding:40px 0 20px; }
-  .page-head::before { content:""; position:absolute; inset:0; z-index:0; pointer-events:none; background:radial-gradient(720px 360px at 80% -20%, rgba(0,209,122,.12), transparent 60%); }
-  .ph-inner { position:relative; z-index:1; display:flex; align-items:flex-end; justify-content:space-between; gap:30px; flex-wrap:wrap; }
-  .ph-left { display:flex; flex-direction:column; gap:10px; }
-  .kicker { display:inline-flex; align-items:center; gap:9px; font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
-  .kicker .hb { width:40px; height:12px; }
-  .kicker .hb path { stroke:var(--em); }
-  h1.page-title { font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:clamp(28px,3.4vw,44px); line-height:1; letter-spacing:-.01em; text-transform:uppercase; }
-  h1.page-title span { color:var(--emb); }
-  .ph-note { font-size:14px; color:var(--muted); display:flex; align-items:center; gap:8px; }
-  .ph-note i { color:var(--muted-2); }
-  .livepill { display:inline-flex; align-items:center; gap:6px; margin-left:4px; padding:3px 10px; border-radius:999px; background:rgba(255,100,114,.12); color:#ff6472; font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
-  .livepill .dot { width:8px; height:8px; border-radius:50%; background:#ff6472; box-shadow:0 0 0 0 rgba(255,100,114,.6); animation:livepulse 1.5s ease-out infinite; }
-  @keyframes livepulse { 0% { box-shadow:0 0 0 0 rgba(255,100,114,.55); } 70% { box-shadow:0 0 0 10px rgba(255,100,114,0); } 100% { box-shadow:0 0 0 0 rgba(255,100,114,0); } }
-  @media (prefers-reduced-motion: reduce) { .livepill .dot { animation:none; } }
-
-  /* LEADERBOARD TABLE (shared with the homepage) */
-  .table-card { background:linear-gradient(180deg,var(--ink-2),#0A0F22); border:1px solid var(--line); border-radius:18px; overflow:hidden; box-shadow:0 40px 90px -50px rgba(0,0,0,.9); }
-  .table-scroll { overflow-x:auto; }
-  .table-card table { width:100%; border-collapse:collapse; }
-  .table-card thead .grouprow th { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted-2); padding:16px 18px 6px; text-align:center; }
-  .table-card thead .grouprow th.spanhead { border-bottom:1px solid var(--line); color:var(--muted); }
-  .table-card thead .colrow th { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); padding:14px 18px; text-align:center; white-space:nowrap; border-bottom:1px solid var(--line-strong); background:rgba(255,255,255,.015); }
-  .table-card thead .colrow th.lft { text-align:left; }
-  .table-card th.divider, .table-card td.divider { border-left:1px solid var(--line); }
-  .table-card tbody td { padding:16px 18px; text-align:center; font-size:15.5px; color:var(--text); border-bottom:1px solid rgba(255,255,255,.05); }
-  .table-card tbody tr:last-child td { border-bottom:none; }
-  .table-card tbody tr { transition:background .14s ease; }
-  .table-card tbody tr:hover { background:rgba(0,209,122,.045); }
-  .table-card tbody tr.clickable { cursor:pointer; }
-  td.rank { width:84px; }
-  .rankwrap { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:11px; font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:18px; background:rgba(255,255,255,.04); border:1px solid var(--line); color:var(--muted); }
-  tr.r1 .rankwrap { background:rgba(244,199,82,.14); border-color:rgba(244,199,82,.5); color:var(--gold); }
-  tr.r2 .rankwrap { background:rgba(201,210,228,.12); border-color:rgba(201,210,228,.42); color:var(--silver); }
-  tr.r3 .rankwrap { background:rgba(216,150,90,.14); border-color:rgba(216,150,90,.46); color:var(--bronze); }
-  td.player { text-align:left; }
-  .playercell { display:flex; align-items:center; gap:14px; }
-  .pavatar { width:40px; height:40px; border-radius:11px; flex:0 0 auto; display:grid; place-items:center; font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:16px; background:linear-gradient(150deg,#23305c,#111a37); border:1px solid var(--line-strong); color:var(--emb); }
-  .playercell .pname { display:flex; align-items:center; gap:9px; font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:17px; letter-spacing:.02em; line-height:1; color:var(--text); }
-  .pname .chev { color:var(--muted-2); font-size:13px; opacity:0; transition:opacity .14s ease, color .14s ease; }
-  .table-card tbody tr:hover .pname .chev { opacity:1; color:var(--emb); }
-  .youchip { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--emb); background:var(--em-dim); border:1px solid rgba(0,209,122,.3); padding:2px 7px; border-radius:5px; }
-  td.points .pts { font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:26px; color:var(--text); line-height:1; }
-  td.points .ptslbl { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted-2); }
-  .cell-num { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:18px; color:var(--text); }
-  .cell-num.zero { color:var(--muted-2); font-weight:600; }
-  td.perfect .cell-num:not(.zero) { color:var(--emb); }
-  td.invalid .cell-num:not(.zero) { color:#FF6B7D; }
-  .emptyrow td { padding:40px 18px; color:var(--muted); text-align:center; }
-
-  @media (max-width:768px) {
-    .pwrap { padding-left:18px; padding-right:18px; }
-    .ph-inner { align-items:flex-start; }
-    .table-card table { min-width:760px; }
-  }
-</style>
+{% block page_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/leaderboard.css') }}?v={{ config.ASSET_VERSION }}" />
 {% endblock %}
 
 {% block body %}
