@@ -113,6 +113,9 @@ class Game(db.Model):
     game_number = db.Column(db.Integer, nullable=False)
     # "group" or "knockout" — replaces the brittle game_number >= 49 hardcode.
     stage = db.Column(db.String, nullable=True)
+    # Raw football-data.org status: SCHEDULED / TIMED / IN_PLAY / PAUSED /
+    # FINISHED / SUSPENDED / POSTPONED ... Drives the "LIVE" pulse (see is_live).
+    status = db.Column(db.String, nullable=True)
     # Raw group code from football-data.org for group games, e.g. "GROUP_A"
     # (None for knockout games). Surfaced via the group_label property.
     group_name = db.Column(db.String, nullable=True)
@@ -148,6 +151,11 @@ class Game(db.Model):
             datetime.combine(self.date_of_game, self.time_of_game)
         )
         return local.astimezone(pytz.utc)
+
+    @property
+    def is_live(self):
+        """True while the match is being played (incl. half-time)."""
+        return self.status in ("IN_PLAY", "PAUSED")
 
     @property
     def stage_label(self):

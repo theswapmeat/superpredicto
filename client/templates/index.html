@@ -31,6 +31,10 @@
   .pc-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:10px; }
   .pc-tag { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:12.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
   .live { display:inline-flex; align-items:center; gap:7px; font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--emb); }
+  .live.livenow { color:#ff6472; }
+  .livenow .dot { width:9px; height:9px; border-radius:50%; background:#ff6472; box-shadow:0 0 0 0 rgba(255,100,114,.6); animation:livepulse 1.5s ease-out infinite; }
+  @keyframes livepulse { 0% { box-shadow:0 0 0 0 rgba(255,100,114,.55); } 70% { box-shadow:0 0 0 11px rgba(255,100,114,0); } 100% { box-shadow:0 0 0 0 rgba(255,100,114,0); } }
+  @media (prefers-reduced-motion: reduce) { .livenow .dot { animation:none; } }
   .live .hb-mini { width:46px; height:16px; display:block; }
   .hb-mini .trk { stroke:rgba(29,239,147,.22); }
   .hb-mini .run { stroke:var(--emb); stroke-dasharray:34 120; animation:sweep 1.6s linear infinite; }
@@ -41,6 +45,8 @@
   .badge.away { background:linear-gradient(160deg,#7a1530,#3d0f1c); color:#ffd4dd; }
   .team .nm { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:14.5px; letter-spacing:.03em; text-transform:uppercase; color:var(--text); text-align:center; max-width:120px; }
   .score { display:flex; align-items:center; justify-content:center; gap:8px; }
+  .livescore { gap:14px; }
+  .livescore .dash { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:30px; color:var(--muted-2); }
   .stepper { display:flex; flex-direction:column; align-items:center; gap:6px; }
   .stepbtn { width:30px; height:24px; border-radius:7px; border:1px solid var(--line-strong); background:rgba(255,255,255,.03); color:var(--muted); cursor:pointer; display:grid; place-items:center; font-size:13px; line-height:1; transition:all .12s ease; }
   .stepbtn:hover { border-color:var(--em); color:var(--emb); background:var(--em-dim); }
@@ -68,6 +74,9 @@
   .kicker .hb-rule path { stroke:var(--em); }
   .board-head h2 { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:clamp(28px,3.6vw,46px); line-height:1; letter-spacing:-.005em; text-transform:uppercase; }
   .board-head h2 span { color:var(--emb); }
+  .board-note { margin-top:10px; font-size:13px; color:var(--muted); max-width:560px; }
+  .livepill { display:inline-flex; align-items:center; gap:6px; margin-left:9px; padding:3px 10px; border-radius:999px; background:rgba(255,100,114,.12); color:#ff6472; font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; vertical-align:middle; }
+  .livepill .dot { width:8px; height:8px; border-radius:50%; background:#ff6472; box-shadow:0 0 0 0 rgba(255,100,114,.6); animation:livepulse 1.5s ease-out infinite; }
   .seg { display:flex; gap:4px; background:var(--ink-2); border:1px solid var(--line); border-radius:11px; padding:4px; flex-wrap:wrap; }
   .seg button { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:13px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); padding:9px 16px; border-radius:8px; border:none; background:transparent; cursor:pointer; transition:all .15s ease; display:inline-flex; align-items:center; }
   .seg button.on { background:var(--em); color:#06210F; }
@@ -164,7 +173,31 @@
     </div>
 
     <div class="pickcard">
-      {% if open_game %}
+      {% if live_game %}
+      <div class="pc-head">
+        <span class="pc-tag">Game {{ live_game.game_number }} · {{ live_game.stage_label }}</span>
+        <span class="live livenow"><span class="dot"></span>{% if live_game.status == 'PAUSED' %}Half-time{% else %}Live now{% endif %}</span>
+      </div>
+      <div class="matchup">
+        <div class="team">
+          <div class="badge home">{{ live_game.home_team_code or live_game.home_team[:3]|upper }}</div>
+          <div class="nm">{{ live_game.home_team }}</div>
+        </div>
+        <div class="score livescore">
+          <div class="scoreval">{{ live_game.home_team_score if live_game.home_team_score is not none else 0 }}</div>
+          <span class="dash">–</span>
+          <div class="scoreval">{{ live_game.away_team_score if live_game.away_team_score is not none else 0 }}</div>
+        </div>
+        <div class="team">
+          <div class="badge away">{{ live_game.away_team_code or live_game.away_team[:3]|upper }}</div>
+          <div class="nm">{{ live_game.away_team }}</div>
+        </div>
+      </div>
+      <div class="pc-foot">
+        <span class="pc-kick">Kicked off <b class="kick-time" data-utc="{{ live_game.kickoff_utc().isoformat() }}">{{ live_game.date_of_game.strftime('%b %d') }} · {{ live_game.time_of_game.strftime('%I:%M %p') }}</b></span>
+        <a class="lockbtn" href="{% if logged_in %}{{ url_for('main.leaderboard') }}{% else %}{{ url_for('main.login') }}{% endif %}">View standings →</a>
+      </div>
+      {% elif open_game %}
       {% set ih = user_pick.home_score_prediction if user_pick else 0 %}
       {% set ia = user_pick.away_score_prediction if user_pick else 0 %}
       <div class="pc-head">
@@ -241,12 +274,16 @@
         <span class="kicker">
           <svg class="hb-rule" viewBox="0 0 240 60" fill="none"><path pathLength="100" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30" /></svg>
           {% if tournament and not tournament.is_active %}Final Standings{% else %}Live Standings{% endif %}
+          {% if any_live %}<span class="livepill"><span class="dot"></span>Live</span>{% endif %}
         </span>
         <h2>
           {% if not tournament %}The Podium
           {% elif tournament.is_active %}The Podium — <span>{{ tournament.name }}</span>
           {% else %}The Podium — <span>{{ tournament.year }} {{ tournament.name }}</span>{% endif %}
         </h2>
+        {% if tournament and tournament.is_active %}
+        <p class="board-note">Standings update every 5 minutes and include live matches — points can move until full-time.</p>
+        {% endif %}
       </div>
     </div>
 

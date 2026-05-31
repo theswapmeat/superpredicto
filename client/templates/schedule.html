@@ -74,6 +74,11 @@
   .tag.ft { background:var(--em-dim); color:var(--emb); border:1px solid rgba(0,209,122,.4); }
   .tag.live { background:rgba(244,199,82,.14); color:var(--gold); border:1px solid rgba(244,199,82,.4); }
   .tag.soon { background:rgba(255,255,255,.05); color:var(--muted); border:1px solid var(--line); }
+  .tag.livenow { display:inline-flex; align-items:center; gap:6px; background:rgba(255,100,114,.14); color:#ff6472; border:1px solid rgba(255,100,114,.45); }
+  .tag.livenow .dot { width:7px; height:7px; border-radius:50%; background:#ff6472; box-shadow:0 0 0 0 rgba(255,100,114,.6); animation:livepulse 1.5s ease-out infinite; }
+  .game.live .sbox { border-color:rgba(255,100,114,.5); }
+  @keyframes livepulse { 0% { box-shadow:0 0 0 0 rgba(255,100,114,.55); } 70% { box-shadow:0 0 0 9px rgba(255,100,114,0); } 100% { box-shadow:0 0 0 0 rgba(255,100,114,0); } }
+  @media (prefers-reduced-motion: reduce) { .tag.livenow .dot { animation:none; } }
 
   #sched-main { padding-bottom:60px; }
   .empty-note { text-align:center; color:var(--muted); padding:50px 0; }
@@ -134,10 +139,11 @@
 <main class="pwrap" id="sched-main">
   <div id="sched-list">
     {% for game in games %}
-    {% set completed = game.home_team_score is not none and game.away_team_score is not none %}
-    <div class="game-item game{% if completed %} completed{% endif %}"
+    {% set completed = game.is_completed %}
+    {% set live = game.is_live %}
+    <div class="game-item game{% if completed %} completed{% endif %}{% if live %} live{% endif %}"
          id="game-{{ game.id }}" data-utc="{{ game.kickoff_utc().isoformat() }}"
-         data-completed="{{ 1 if completed else 0 }}">
+         data-completed="{{ 1 if completed else 0 }}" data-live="{{ 1 if live else 0 }}">
       <div class="g-meta">
         <span class="g-no">Game {{ game.game_number }}</span>
         <span class="g-time"><i class="bi bi-clock"></i><span class="gt" data-utc="{{ game.kickoff_utc().isoformat() }}">{{ game.time_of_game.strftime('%I:%M %p') }}</span></span>
@@ -159,6 +165,11 @@
         <span class="dash">–</span>
         <span class="sbox">{{ game.away_team_score }}</span>
         <span class="tag ft">FT</span>
+        {% elif live %}
+        <span class="sbox">{{ game.home_team_score if game.home_team_score is not none else 0 }}</span>
+        <span class="dash">–</span>
+        <span class="sbox">{{ game.away_team_score if game.away_team_score is not none else 0 }}</span>
+        <span class="tag livenow"><span class="dot"></span>{% if game.status == 'PAUSED' %}HT{% else %}LIVE{% endif %}</span>
         {% else %}
         <span class="tag soon" data-soon>Upcoming</span>
         {% endif %}

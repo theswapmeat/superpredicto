@@ -1,0 +1,5 @@
+# Repo-root shim for the DigitalOcean App Platform Python buildpack.
+# The app builds from the repo root (so the sibling client/ templates+static ship
+# alongside server/), so the buildpack needs a requirements.txt here. The real
+# dependency list lives in server/requirements.txt.
+-r server/requirements.txt

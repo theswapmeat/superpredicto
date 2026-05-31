@@ -1,0 +1,32 @@
+# DigitalOcean Functions project: scheduled live-score sync.
+#
+# Deploys a single serverless function (sync/poll) plus a SCHEDULED trigger that
+# fires every 5 minutes and POSTs to the app's token-guarded /internal/sync-scores
+# endpoint (which pulls live scores from football-data.org and reruns scoring).
+#
+# ${APP_URL} and ${SYNC_TOKEN} are substituted at deploy time from a local .env
+# file in this directory (gitignored) or your shell environment. See README.md.
+parameters: {}
+environment: {}
+packages:
+  - name: sync
+    parameters: {}
+    environment: {}
+    functions:
+      - name: poll
+        binary: false
+        main: ''
+        runtime: 'python:default'
+        web: false           # not publicly invokable; only the trigger calls it
+        parameters: {}
+        environment:
+          APP_URL: ${APP_URL}
+          SYNC_TOKEN: ${SYNC_TOKEN}
+        limits:
+          timeout: 60000     # ms — the endpoint also talks to football-data.org
+        triggers:
+          - name: poll-5min
+            sourceType: scheduler
+            sourceDetails:
+              cron: '*/5 * * * *'   # every 5 minutes (UTC)
+              withBody: {}

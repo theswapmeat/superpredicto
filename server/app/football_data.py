@@ -90,7 +90,8 @@ def sync_fixtures(api_key, tournament_id, *, create_missing=True, write_scores=T
         group = (m.get("group") or "").strip() or None  # "GROUP_A".. or None (knockout)
         ft = (m.get("score") or {}).get("fullTime") or {}
         h_score, a_score = ft.get("home"), ft.get("away")
-        finished = m.get("status") == "FINISHED"
+        status = m.get("status")
+        finished = status == "FINISHED"
 
         g = by_ext.get(ext)
         if g is None:
@@ -103,6 +104,7 @@ def sync_fixtures(api_key, tournament_id, *, create_missing=True, write_scores=T
                 time_of_game=t,
                 game_number=i,
                 stage=stage,
+                status=status,
                 group_name=group,
                 home_team=home,
                 away_team=away,
@@ -119,6 +121,7 @@ def sync_fixtures(api_key, tournament_id, *, create_missing=True, write_scores=T
         else:
             g.date_of_game, g.time_of_game = d, t
             g.game_number, g.stage, g.group_name = i, stage, group
+            g.status = status
             # fill in real team names (knockout slots resolving) — never blank them
             if home != "TBD" and g.home_team != home:
                 g.home_team = home

@@ -94,6 +94,22 @@ def earliest_open_game(tournament_id):
     return None
 
 
+def earliest_live_game(tournament_id):
+    """The in-play game with the earliest kickoff (i.e. closest to finishing).
+
+    Several group-stage games can be live at once; the homepage card features
+    just one, so we pick the one that started first.
+    """
+    return (
+        Game.query.filter(
+            Game.tournament_id == tournament_id,
+            Game.status.in_(("IN_PLAY", "PAUSED")),
+        )
+        .order_by(Game.date_of_game, Game.time_of_game)
+        .first()
+    )
+
+
 def build_leaderboard(tournament, current_user_id=None):
     """Ranked leaderboard entries for one tournament (active, named participants).
 
@@ -187,12 +203,15 @@ def index():
     # are leaderboard-only.
     show_hero = bool(selected and selected.is_active)
     open_game = None
+    live_game = None
     user_pick = None
     is_eligible = False
     match_count = (
         Game.query.filter_by(tournament_id=selected.id).count() if selected else 0
     )
     if show_hero:
+        # A live game takes over the hero card; otherwise show the next pickable one.
+        live_game = earliest_live_game(selected.id)
         open_game = earliest_open_game(selected.id)
         if user_id:
             part = Participant.query.filter_by(
@@ -215,6 +234,8 @@ def index():
         tournaments=tournaments,
         show_hero=show_hero,
         open_game=open_game,
+        live_game=live_game,
+        any_live=bool(live_game),
         user_pick=user_pick,
         is_eligible=is_eligible,
         match_count=match_count,
@@ -668,8 +689,19 @@ def leaderboard():
         selected = active_tournament() or (tournaments[0] if tournaments else None)
 
     entries = build_leaderboard(selected, session.get("user_id"))
+    any_live = bool(
+        selected
+        and selected.is_active
+        and Game.query.filter(
+            Game.tournament_id == selected.id,
+            Game.status.in_(("IN_PLAY", "PAUSED")),
+        ).first()
+    )
     return render_template(
-        "leaderboard.html", leaderboard=entries, tournament=selected
+        "leaderboard.html",
+        leaderboard=entries,
+        tournament=selected,
+        any_live=any_live,
     )
 
 

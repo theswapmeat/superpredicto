@@ -17,6 +17,10 @@
   h1.page-title span { color:var(--emb); }
   .ph-note { font-size:14px; color:var(--muted); display:flex; align-items:center; gap:8px; }
   .ph-note i { color:var(--muted-2); }
+  .livepill { display:inline-flex; align-items:center; gap:6px; margin-left:4px; padding:3px 10px; border-radius:999px; background:rgba(255,100,114,.12); color:#ff6472; font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+  .livepill .dot { width:8px; height:8px; border-radius:50%; background:#ff6472; box-shadow:0 0 0 0 rgba(255,100,114,.6); animation:livepulse 1.5s ease-out infinite; }
+  @keyframes livepulse { 0% { box-shadow:0 0 0 0 rgba(255,100,114,.55); } 70% { box-shadow:0 0 0 10px rgba(255,100,114,0); } 100% { box-shadow:0 0 0 0 rgba(255,100,114,0); } }
+  @media (prefers-reduced-motion: reduce) { .livepill .dot { animation:none; } }
 
   /* LEADERBOARD TABLE (shared with the homepage) */
   .table-card { background:linear-gradient(180deg,var(--ink-2),#0A0F22); border:1px solid var(--line); border-radius:18px; overflow:hidden; box-shadow:0 40px 90px -50px rgba(0,0,0,.9); }
@@ -68,9 +72,11 @@
       <span class="kicker">
         <svg class="hb" viewBox="0 0 240 60" fill="none"><path pathLength="100" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30" /></svg>
         {% if tournament and not tournament.is_active %}Final Standings{% else %}Live Standings{% endif %}
+        {% if any_live %}<span class="livepill"><span class="dot"></span>Live</span>{% endif %}
       </span>
       <h1 class="page-title">{% if tournament and not tournament.is_active %}Final <span>Leaderboard</span>{% else %}<span>Leaderboard</span>{% endif %}</h1>
       <p class="ph-note"><i class="bi bi-hand-index-thumb"></i> Click any player to see their predictions.</p>
+      {% if tournament and tournament.is_active %}<p class="ph-note"><i class="bi bi-arrow-repeat"></i> Standings update every 5 minutes and include live matches — points can move until full-time.</p>{% endif %}
     </div>
   </div>
 </section>

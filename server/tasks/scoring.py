@@ -5,7 +5,12 @@ from app.models import Participant, Game, UserPrediction
 
 
 def run_prediction_scoring(tournament_id):
-    """Score every participant of one tournament from that tournament's completed games.
+    """Score every participant of one tournament from that tournament's scored games.
+
+    Scores any game that has both final/current scores set — including in-play
+    matches — so the leaderboard updates live (provisionally) and settles at
+    full-time. Counters are reset and fully recomputed each run, so it is
+    idempotent and provisional points correct themselves as scores change.
 
     Writes the five counters onto each Participant row (per tournament) and sets
     points_earned on each prediction. Only participants of this tournament are
@@ -25,10 +30,13 @@ def run_prediction_scoring(tournament_id):
             p.picks_scoring_zero = 0
             p.invalid_picks = 0
 
-        completed_games = Game.query.filter_by(
-            tournament_id=tournament_id, is_completed=True
+        # Any game with both scores set — final OR in-play (provisional).
+        scored_games = Game.query.filter(
+            Game.tournament_id == tournament_id,
+            Game.home_team_score.isnot(None),
+            Game.away_team_score.isnot(None),
         ).all()
-        game_ids = [g.id for g in completed_games]
+        game_ids = [g.id for g in scored_games]
         predictions = (
             UserPrediction.query.filter(UserPrediction.game_id.in_(game_ids)).all()
             if game_ids
@@ -39,7 +47,7 @@ def run_prediction_scoring(tournament_id):
         for pr in predictions:
             pred_map.setdefault(pr.game_id, {})[pr.user_id] = pr
 
-        for game in completed_games:
+        for game in scored_games:
             final_home = game.home_team_score
             final_away = game.away_team_score
             if final_home is None or final_away is None:
