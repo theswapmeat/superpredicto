@@ -59,7 +59,7 @@
   .side { display:flex; align-items:center; gap:12px; min-width:0; }
   .side.home { justify-content:flex-end; }
   .side.away { justify-content:flex-start; }
-  .tbadge { width:42px; height:42px; border-radius:11px; flex:0 0 auto; display:grid; place-items:center; font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:14px; letter-spacing:.02em; border:1px solid var(--line-strong); }
+  .tbadge { width:42px; height:42px; border-radius:11px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; text-align:center; font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:14px; border:1px solid var(--line-strong); }
   .tbadge.home { background:linear-gradient(160deg,#1b2a57,#101938); color:#dfe8ff; }
   .tbadge.away { background:linear-gradient(160deg,#5a1730,#330f1d); color:#ffd6df; }
   .tname { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:16px; letter-spacing:.01em; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; max-width:150px; }
@@ -145,11 +145,11 @@
       <div class="g-match">
         <div class="side home">
           <span class="tname">{{ game.home_team }}</span>
-          <span class="tbadge home">{{ game.home_team[:3]|upper }}</span>
+          <span class="tbadge home">{{ game.home_team_code or game.home_team[:3]|upper }}</span>
         </div>
         <span class="vsv">VS</span>
         <div class="side away">
-          <span class="tbadge away">{{ game.away_team[:3]|upper }}</span>
+          <span class="tbadge away">{{ game.away_team_code or game.away_team[:3]|upper }}</span>
           <span class="tname">{{ game.away_team }}</span>
         </div>
       </div>

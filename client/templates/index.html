@@ -36,7 +36,7 @@
   .hb-mini .run { stroke:var(--emb); stroke-dasharray:34 120; animation:sweep 1.6s linear infinite; }
   .matchup { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px; padding:8px 0 18px; }
   .team { display:flex; flex-direction:column; align-items:center; gap:12px; min-width:0; }
-  .badge { width:60px; height:60px; border-radius:16px; display:grid; place-items:center; font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:22px; letter-spacing:.02em; border:1px solid var(--line-strong); }
+  .badge { width:60px; height:60px; border-radius:16px; display:flex; align-items:center; justify-content:center; text-align:center; font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:22px; border:1px solid var(--line-strong); }
   .badge.home { background:linear-gradient(160deg,#1d3a8a,#0f1f4d); color:#cfe0ff; }
   .badge.away { background:linear-gradient(160deg,#7a1530,#3d0f1c); color:#ffd4dd; }
   .team .nm { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:14.5px; letter-spacing:.03em; text-transform:uppercase; color:var(--text); text-align:center; max-width:120px; }
@@ -150,7 +150,7 @@
       <p class="hero-sub">Lock in your scoreline before kickoff, bank points for every correct call, and climb a leaderboard that updates the moment the final whistle blows. {{ match_count }} matches. One champion of predictions.</p>
       <div class="hero-cta">
         <a class="sp-btn sp-btn-primary sp-btn-lg" href="{% if logged_in %}{{ url_for('main.submit_picks') }}{% else %}{{ url_for('main.login') }}{% endif %}">Submit your picks →</a>
-        <a class="sp-btn sp-btn-ghost sp-btn-lg" href="#board">View the leaderboard</a>
+        <a class="sp-btn sp-btn-ghost sp-btn-lg" href="{% if logged_in %}{{ url_for('main.leaderboard') }}{% else %}{{ url_for('main.login') }}{% endif %}">View the leaderboard</a>
       </div>
       <div class="hero-meta">
         <div class="stat"><span class="num">{{ match_count }}</span><span class="lbl">Matches</span></div>
@@ -168,7 +168,7 @@
       {% set ih = user_pick.home_score_prediction if user_pick else 0 %}
       {% set ia = user_pick.away_score_prediction if user_pick else 0 %}
       <div class="pc-head">
-        <span class="pc-tag">Game {{ open_game.game_number }} · {{ 'Group' if open_game.stage == 'group' else 'Knockout' }}</span>
+        <span class="pc-tag">Game {{ open_game.game_number }} · {{ open_game.stage_label }}</span>
         <span class="live">
           <svg class="hb-mini" viewBox="0 0 240 60" fill="none">
             <path class="trk" pathLength="100" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30" />
@@ -183,7 +183,7 @@
         <input type="hidden" name="away_score" id="awayScore" value="{{ ia }}" />
         <div class="matchup">
           <div class="team">
-            <div class="badge home">{{ open_game.home_team[:3]|upper }}</div>
+            <div class="badge home">{{ open_game.home_team_code or open_game.home_team[:3]|upper }}</div>
             <div class="nm">{{ open_game.home_team }}</div>
           </div>
           <div class="score">
@@ -204,7 +204,7 @@
             {% endif %}
           </div>
           <div class="team">
-            <div class="badge away">{{ open_game.away_team[:3]|upper }}</div>
+            <div class="badge away">{{ open_game.away_team_code or open_game.away_team[:3]|upper }}</div>
             <div class="nm">{{ open_game.away_team }}</div>
           </div>
         </div>
@@ -243,9 +243,9 @@
           {% if tournament and not tournament.is_active %}Final Standings{% else %}Live Standings{% endif %}
         </span>
         <h2>
-          {% if not tournament %}Leaderboard
-          {% elif tournament.is_active %}Leaderboard — <span>{{ tournament.name }}</span>
-          {% else %}Final Leaderboard — <span>{{ tournament.year }} {{ tournament.name }}</span>{% endif %}
+          {% if not tournament %}The Podium
+          {% elif tournament.is_active %}The Podium — <span>{{ tournament.name }}</span>
+          {% else %}The Podium — <span>{{ tournament.year }} {{ tournament.name }}</span>{% endif %}
         </h2>
       </div>
     </div>

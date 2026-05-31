@@ -101,12 +101,25 @@ class Game(db.Model):
     time_of_game = db.Column(db.Time(timezone=False), nullable=False)
     home_team = db.Column(db.String, nullable=False)
     away_team = db.Column(db.String, nullable=False)
+    # Official 3-letter codes (football-data.org `tla`, e.g. "RSA") + crest URLs.
+    # None until the API resolves the team (knockout TBD slots).
+    home_team_code = db.Column(db.String, nullable=True)
+    away_team_code = db.Column(db.String, nullable=True)
+    home_team_crest = db.Column(db.String, nullable=True)
+    away_team_crest = db.Column(db.String, nullable=True)
     home_team_score = db.Column(db.Integer, nullable=True)
     away_team_score = db.Column(db.Integer, nullable=True)
     is_completed = db.Column(db.Boolean, default=False)
     game_number = db.Column(db.Integer, nullable=False)
     # "group" or "knockout" — replaces the brittle game_number >= 49 hardcode.
     stage = db.Column(db.String, nullable=True)
+    # Raw group code from football-data.org for group games, e.g. "GROUP_A"
+    # (None for knockout games). Surfaced via the group_label property.
+    group_name = db.Column(db.String, nullable=True)
+    # football-data.org match id — links a Game to its live fixture for auto-sync.
+    external_id = db.Column(db.Integer, unique=True, nullable=True)
+    # Set True once an admin hand-edits the score, so the auto-sync won't overwrite it.
+    manual_override = db.Column(db.Boolean, default=False, nullable=False)
 
     tournament_id = db.Column(
         db.Integer,
@@ -135,6 +148,13 @@ class Game(db.Model):
             datetime.combine(self.date_of_game, self.time_of_game)
         )
         return local.astimezone(pytz.utc)
+
+    @property
+    def stage_label(self):
+        """Human label for the pickcard tag, e.g. 'Group A' or 'Knockout'."""
+        if self.stage == "group" and self.group_name:
+            return self.group_name.replace("GROUP_", "Group ")  # "GROUP_A" -> "Group A"
+        return "Group" if self.stage == "group" else "Knockout"
 
     def __repr__(self):
         return f"<Game {self.game_number}: {self.home_team} vs {self.away_team}>"

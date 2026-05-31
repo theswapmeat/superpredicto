@@ -858,12 +858,17 @@ def update_games():
         home_score = request.form.get(f"home_{game.id}")
         away_score = request.form.get(f"away_{game.id}")
 
+        old_h, old_a = game.home_team_score, game.away_team_score
         try:
             game.home_team_score = int(home_score) if home_score != "" else None
             game.away_team_score = int(away_score) if away_score != "" else None
         except ValueError:
             flash(f"Invalid score entered for Game #{game.game_number}.", "danger")
             continue
+
+        # An admin hand-edit pins the score: the live-score auto-sync won't overwrite it.
+        if (game.home_team_score, game.away_team_score) != (old_h, old_a):
+            game.manual_override = True
 
         # ✅ Determine whether to mark as completed
         checkbox_checked = request.form.get(f"completed_{game.id}") == "on"
@@ -1338,6 +1343,39 @@ def admin_run_scoring():
     run_prediction_scoring(selected.id)
     flash(f"Scoring run for {selected.name} ({selected.year}).", "success")
     return redirect(url_for("main.dashboard", tournament_id=selected.id))
+
+
+# --- Live-score sync (cron-triggered) ---
+# Pulls live World Cup scores from football-data.org into the active tournament's
+# games, then re-runs scoring. Guarded by INTERNAL_SYNC_TOKEN (not a logged-in user),
+# so an external scheduler (DO Function / GitHub Actions) can call it.
+@main.route("/internal/sync-scores", methods=["GET", "POST"])
+def internal_sync_scores():
+    expected = current_app.config.get("INTERNAL_SYNC_TOKEN")
+    token = request.headers.get("X-Sync-Token") or request.args.get("token")
+    if not expected or token != expected:
+        abort(403)
+
+    active = active_tournament()
+    if not active or not active.is_active:
+        return jsonify({"ok": False, "error": "no active tournament"}), 400
+
+    api_key = current_app.config.get("FOOTBALL_DATA_API_KEY")
+    if not api_key:
+        return jsonify({"ok": False, "error": "FOOTBALL_DATA_API_KEY not set"}), 500
+
+    from .football_data import sync_fixtures
+
+    try:
+        summary = sync_fixtures(
+            api_key, active.id, create_missing=True, write_scores=True
+        )
+        run_prediction_scoring(active.id)
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": str(e)}), 502
+
+    return jsonify({"ok": True, "tournament": active.year, "sync": summary})
 
 
 # --- Support ---
