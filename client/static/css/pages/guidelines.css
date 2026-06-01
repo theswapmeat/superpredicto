@@ -61,5 +61,17 @@
   .pwrap { padding-left:18px; padding-right:18px; }
   .ph-inner { align-items:flex-start; }
   .rule { gap:14px; padding:14px 16px; }
-  .ex-table thead th:nth-child(1), .ex-table tbody td:nth-child(1) { display:none; }
+  /* Examples: stack each row into a card so all four columns (incl. Actual Score)
+     stay visible — the old layout hid Actual Score, which broke the examples. */
+  .ex-wrap { overflow-x:visible; }
+  .ex-table thead { display:none; }
+  .ex-table, .ex-table tbody { display:block; }
+  .ex-table tbody tr { display:grid; grid-template-columns:1fr 1fr auto; align-items:center; gap:6px 12px; padding:12px 14px; margin-bottom:10px; border:1px solid var(--line); border-radius:13px; }
+  .ex-table tbody td { display:flex; flex-direction:column; align-items:center; gap:4px; padding:0; border:none !important; border-radius:0 !important; text-align:center; }
+  .ex-table tbody td::before { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-2); }
+  .ex-table tbody td:nth-child(1)::before { content:"Actual"; }
+  .ex-table tbody td:nth-child(2)::before { content:"Your pick"; }
+  .ex-table tbody td:nth-child(3)::before { content:"Points"; }
+  .ex-table tbody td:nth-child(4) { grid-column:1 / -1; align-items:flex-start; text-align:left; margin-top:6px; padding-top:10px; border-top:1px solid var(--line) !important; }
+  .ex-table tbody td:nth-child(4)::before { display:none; }
 }
