@@ -18,7 +18,7 @@
 # Secrets: set the REAL values in the dashboard (App -> Settings -> Environment
 # Variables) or via doctl. NEVER commit real secret values to this file.
 name: superpredicto
-region: nyc   # TODO: set to the region closest to your Supabase project (lowest DB latency)
+region: blr   # Bangalore — closest to Supabase ap-south-1 (Mumbai), lowest DB latency
 
 # App-level envs propagate to every component (web service + migrate job).
 envs:
