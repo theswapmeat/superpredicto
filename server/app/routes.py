@@ -1461,6 +1461,18 @@ def _kickoff_dubai_str(game):
     return dub.strftime("%a %d %b, %H:%M (Dubai)")
 
 
+# Stop nudging a participant once they've ignored this many consecutive locked
+# games (no pick) since they joined. Picking any game resets the streak.
+PICK_REMINDER_MISS_CAP = 5
+
+
+def _aware_utc(dt):
+    """Coerce a possibly-naive datetime to UTC-aware so it compares with kickoff_utc()."""
+    if dt is not None and dt.tzinfo is None:
+        return timezone("UTC").localize(dt)
+    return dt
+
+
 # --- Reminder: finish signing up (one-shot, ~24h before first kickoff) ---
 # Token-guarded like the score sync. Sends ONE email to each invited-but-never-
 # activated participant of the active tournament, only inside the 24h pre-kickoff
@@ -1510,11 +1522,12 @@ def internal_remind_signups():
         try:
             send_signup_reminder_email(user.email, set_url, hours_left)
             user.signup_reminder_sent = True
+            db.session.commit()  # persist the flag per-user so a later error can't re-send
             sent += 1
         except Exception as e:
+            db.session.rollback()
             current_app.logger.warning("signup reminder failed for %s: %s", user.email, e)
             failed.append(user.email)
-    db.session.commit()
     return jsonify({"ok": True, "sent": sent, "failed": failed, "hours_left": hours_left})
 
 
@@ -1535,14 +1548,26 @@ def internal_remind_picks():
 
     now = datetime.now(timezone("UTC"))
     horizon = now + timedelta(hours=2)
-    soon_games = [
-        g
-        for g in Game.query.filter_by(tournament_id=active.id).all()
-        if now < g.kickoff_utc() <= horizon
-    ]
+    all_games = Game.query.filter_by(tournament_id=active.id).all()
+    soon_games = [g for g in all_games if now < g.kickoff_utc() <= horizon]
     if not soon_games:
         return jsonify({"ok": True, "emails_sent": 0, "note": "no games in the next 2h"})
     soon_ids = [g.id for g in soon_games]
+
+    # Locked games (kickoff passed), newest first — used for the disengagement cap.
+    locked_games = sorted(
+        (g for g in all_games if g.kickoff_utc() <= now),
+        key=lambda g: g.kickoff_utc(),
+        reverse=True,
+    )
+    locked_predicted = {
+        (p.user_id, p.game_id)
+        for p in UserPrediction.query.filter(
+            UserPrediction.game_id.in_([g.id for g in locked_games]),
+            UserPrediction.home_score_prediction.isnot(None),
+            UserPrediction.away_score_prediction.isnot(None),
+        ).all()
+    } if locked_games else set()
 
     participants = (
         Participant.query.filter_by(tournament_id=active.id, is_active=True, is_paid=True)
@@ -1565,7 +1590,21 @@ def internal_remind_picks():
     }
 
     picks_url = url_for("main.submit_picks", _external=True)
-    sent, failed, recorded = 0, [], 0
+
+    def _miss_streak(part):
+        """Consecutive most-recent locked games (since they joined) with no pick.
+        Stops at the first picked game (re-engagement resets the streak)."""
+        join_cut = _aware_utc(part.joined_at)
+        streak = 0
+        for g in locked_games:  # newest first
+            if join_cut is not None and g.kickoff_utc() <= join_cut:
+                break  # older than this participant's join — don't count
+            if (part.user_id, g.id) in locked_predicted:
+                break  # most-recent picked game — streak ends
+            streak += 1
+        return streak
+
+    sent, failed, recorded, capped = 0, [], 0, 0
     for part in participants:
         uid = part.user_id
         missing = [
@@ -1575,6 +1614,10 @@ def internal_remind_picks():
         ]
         if not missing:
             continue
+        # Disengagement cap: stop nudging after N consecutive ignored games.
+        if _miss_streak(part) >= PICK_REMINDER_MISS_CAP:
+            capped += 1
+            continue
         games_info = [
             {"label": f"{g.home_team} vs {g.away_team}", "kickoff": _kickoff_dubai_str(g)}
             for g in sorted(missing, key=lambda g: g.kickoff_utc())
@@ -1583,14 +1626,21 @@ def internal_remind_picks():
             send_pick_reminder_email(part.user.email, games_info, picks_url)
             for g in missing:
                 db.session.add(PickReminder(user_id=uid, game_id=g.id))
-                recorded += 1
+            db.session.commit()  # persist this user's reminder records before moving on
+            recorded += len(missing)
             sent += 1
         except Exception as e:
+            db.session.rollback()
             current_app.logger.warning("pick reminder failed for %s: %s", part.user.email, e)
             failed.append(part.user.email)
-    db.session.commit()
     return jsonify(
-        {"ok": True, "emails_sent": sent, "reminders_recorded": recorded, "failed": failed}
+        {
+            "ok": True,
+            "emails_sent": sent,
+            "reminders_recorded": recorded,
+            "capped": capped,
+            "failed": failed,
+        }
     )
 
 
