@@ -161,13 +161,14 @@
           </thead>
           <tbody>
             {% for entry in leaderboard %}
-            <tr class="{% if entry.rank == 1 %}r1{% elif entry.rank == 2 %}r2{% elif entry.rank == 3 %}r3{% endif %}">
+            <tr class="lb-row {% if entry.rank == 1 %}r1{% elif entry.rank == 2 %}r2{% elif entry.rank == 3 %}r3{% endif %}{% if logged_in %} clickable{% endif %}"
+                {% if logged_in %}data-href="{{ url_for('main.predictions', user_id=entry.user_id) }}"{% endif %}>
               <td class="rank"><span class="rankwrap">{{ entry.rank if entry.rank is not none else '—' }}</span></td>
               <td class="player">
                 <div class="playercell">
                   <div class="pavatar">{{ entry.initials }}</div>
                   <div class="pmeta">
-                    <span class="pname {% if not logged_in %}blurname{% endif %}">{{ entry.name }}{% if entry.is_you %}<span class="youchip">You</span>{% endif %}</span>
+                    <span class="pname {% if not logged_in %}blurname{% endif %}">{{ entry.name }}{% if entry.is_you %}<span class="youchip">You</span>{% endif %}<i class="bi bi-chevron-right chev"></i></span>
                   </div>
                 </div>
               </td>
@@ -177,6 +178,19 @@
               <td><span class="cell-num {% if entry.picks_scoring_one == 0 %}zero{% endif %}">{{ entry.picks_scoring_one }}</span></td>
               <td><span class="cell-num {% if entry.picks_scoring_zero == 0 %}zero{% endif %}">{{ entry.picks_scoring_zero }}</span></td>
               <td class="invalid"><span class="cell-num {% if entry.invalid_picks == 0 %}zero{% endif %}">{{ entry.invalid_picks }}</span></td>
+            </tr>
+            <!-- mobile-only expandable breakdown (the columns hidden on small screens) -->
+            <tr class="lb-detail">
+              <td colspan="3">
+                <div class="lb-detail-grid">
+                  <div class="lbd"><span class="lbd-lbl">Perfect picks</span><span class="lbd-val {% if entry.perfect_picks == 0 %}zero{% else %}good{% endif %}">{{ entry.perfect_picks }}</span></div>
+                  <div class="lbd"><span class="lbd-lbl">Picks scoring 2</span><span class="lbd-val {% if entry.picks_scoring_two == 0 %}zero{% endif %}">{{ entry.picks_scoring_two }}</span></div>
+                  <div class="lbd"><span class="lbd-lbl">Picks scoring 1</span><span class="lbd-val {% if entry.picks_scoring_one == 0 %}zero{% endif %}">{{ entry.picks_scoring_one }}</span></div>
+                  <div class="lbd"><span class="lbd-lbl">Picks scoring 0</span><span class="lbd-val {% if entry.picks_scoring_zero == 0 %}zero{% endif %}">{{ entry.picks_scoring_zero }}</span></div>
+                  <div class="lbd"><span class="lbd-lbl">Invalid picks</span><span class="lbd-val {% if entry.invalid_picks == 0 %}zero{% else %}bad{% endif %}">{{ entry.invalid_picks }}</span></div>
+                  {% if logged_in %}<a class="lbd-link" href="{{ url_for('main.predictions', user_id=entry.user_id) }}">View all picks →</a>{% endif %}
+                </div>
+              </td>
             </tr>
             {% else %}
             <tr class="emptyrow"><td colspan="8">No standings yet — be the first to get your picks in.</td></tr>
@@ -202,6 +216,24 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script>
+  // Podium rows: tap on mobile expands the hidden stats; click on desktop opens that player's picks.
+  (function () {
+    var mq = window.matchMedia("(max-width: 768px)");
+    document.querySelectorAll(".board .lb-row").forEach(function (row) {
+      row.addEventListener("click", function () {
+        if (mq.matches) {
+          var detail = row.nextElementSibling;
+          if (detail && detail.classList.contains("lb-detail")) {
+            row.classList.toggle("expanded", detail.classList.toggle("open"));
+          }
+        } else if (row.dataset.href) {
+          location.href = row.dataset.href;
+        }
+      });
+    });
+  })();
+</script>
 <script>
   // Localize the kickoff time to the viewer's zone
   document.querySelectorAll(".kick-time[data-utc]").forEach(function (el) {

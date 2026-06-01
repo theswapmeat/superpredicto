@@ -95,7 +95,7 @@ h1.hero-title em { color:var(--emb); font-style:normal; display:block; transform
   .wrap { padding:0 20px; }
   .hero-meta { gap:18px; }
   .hero-meta .num { font-size:24px; }
-  .table-card table { min-width:720px; }
+  /* podium drops its stat columns on mobile (see components.css), so no min-width / scroll */
   .board { padding:18px 0 64px; }
 }
 @media (max-width:560px) {

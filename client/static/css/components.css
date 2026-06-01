@@ -201,6 +201,30 @@ td.points .ptslbl { font-size:11px; letter-spacing:.1em; text-transform:uppercas
 .cell-num.zero { color:var(--muted-2); font-weight:600; }
 td.perfect .cell-num:not(.zero) { color:var(--emb); }
 td.invalid .cell-num:not(.zero) { color:#FF6B7D; }
+/* clickable rows + mobile tap-to-expand breakdown (shared by /leaderboard + index podium) */
+.table-card tbody tr.clickable { cursor:pointer; }
+.pname .chev { color:var(--muted-2); font-size:13px; opacity:0; transition:opacity .14s ease, color .14s ease; }
+.table-card tbody tr:hover .pname .chev { opacity:1; color:var(--emb); }
+.lb-detail { display:none; }
+.lb-detail > td { background:rgba(255,255,255,.02); padding:0 16px 16px; border-top:none; }
+.lb-detail-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px 14px; padding-top:4px; }
+.lbd { display:flex; flex-direction:column; gap:3px; }
+.lbd-lbl { font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-2); }
+.lbd-val { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:20px; line-height:1; color:var(--text); }
+.lbd-val.zero { color:var(--muted-2); font-weight:700; }
+.lbd-val.good { color:var(--emb); }
+.lbd-val.bad { color:#FF6B7D; }
+.lbd-link { grid-column:1/-1; margin-top:2px; color:var(--emb); font-weight:600; font-size:13.5px; }
+@media (max-width:768px) {
+  /* show only Rank / Player / Points — drop the stat columns + their group header */
+  .table-card thead .grouprow { display:none; }
+  .table-card .colrow th:nth-child(n+4),
+  .table-card tbody tr.lb-row td:nth-child(n+4) { display:none; }
+  /* reveal the breakdown when a row is tapped */
+  .lb-detail.open { display:table-row; }
+  .lb-row .pname .chev { opacity:1; transition:transform .18s ease, color .18s ease; }
+  .lb-row.expanded .pname .chev { transform:rotate(90deg); color:var(--emb); }
+}
 .filterseg { display:flex; gap:4px; background:var(--ink-2); border:1px solid var(--line); border-radius:11px; padding:4px; }
 .filterseg button { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:13px; letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; color:var(--muted); padding:9px 15px; border-radius:8px; border:none; background:transparent; cursor:pointer; transition:all .15s ease; }
 .filterseg button.on { background:var(--em); color:#06210F; }
