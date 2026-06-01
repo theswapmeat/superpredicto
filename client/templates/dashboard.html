@@ -67,7 +67,7 @@
               <th>Email</th>
               <th>Has Paid</th>
               <th>Is Active</th>
-              <th>Remove</th>
+              <th>Account</th>
             </tr>
           </thead>
           <tbody>
@@ -79,10 +79,9 @@
               <td><input type="checkbox" class="adm-chk" name="paid_{{ p.id }}" {% if p.is_paid %}checked{% endif %} {% if ro %}disabled{% endif %} /></td>
               <td><input type="checkbox" class="adm-chk" name="active_{{ p.id }}" {% if p.is_active %}checked{% endif %} {% if ro %}disabled{% endif %} /></td>
               <td>
-                <button type="submit" form="remove-{{ p.id }}" class="rm-btn" {% if ro %}disabled{% endif %}
-                  onclick="return confirm('Remove {{ (p.user.display_name or p.user.email)|e }} from {{ selected_tournament.year }}? This only un-enrolls them; their account and past picks are kept.');">
-                  &times;
-                </button>
+                {% if not p.is_active and p.user_id not in users_with_preds %}
+                <button type="button" class="del-acct-btn" {% if ro %}disabled{% endif %} title="Permanently delete this mis-added account" onclick="spDeleteAccount('{{ p.id }}', '{{ p.user.email|e }}')"><i class="bi bi-trash3"></i> Delete</button>
+                {% endif %}
               </td>
             </tr>
             {% else %}
@@ -96,12 +95,14 @@
       {% endif %}
     </form>
 
-    <!-- Hidden remove forms (kept outside the main form to avoid nested forms) -->
+    <!-- Hidden delete-account forms (outside the main form; only for purgeable mis-adds) -->
     {% for p in participants %}
-    <form id="remove-{{ p.id }}" method="post" action="{{ url_for('main.remove_participant') }}" class="d-none">
-      <input type="hidden" name="tournament_id" value="{{ selected_tournament.id }}" />
-      <input type="hidden" name="participant_id" value="{{ p.id }}" />
+    {% if not p.is_active and p.user_id not in users_with_preds %}
+    <form id="del-{{ p.id }}" method="post" action="{{ url_for('main.delete_user') }}" class="d-none">
+      <input type="hidden" name="user_id" value="{{ p.user_id }}" />
+      <input type="hidden" name="confirm_email" value="" />
     </form>
+    {% endif %}
     {% endfor %}
   </div>
 
@@ -160,6 +161,23 @@
 
 {% block extra_scripts %}
 <script>
+  // Permanent account delete — type-the-email confirmation. The server also
+  // re-validates the email + the no-predictions gate; this is the speed bump.
+  function spDeleteAccount(pid, email) {
+    var typed = prompt(
+      "PERMANENTLY delete " + email + " and all their data?\n" +
+      "This cannot be undone.\n\nType their email to confirm:"
+    );
+    if (typed === null) return;
+    if (typed.trim().toLowerCase() !== email.toLowerCase()) {
+      alert("That email didn't match — deletion cancelled.");
+      return;
+    }
+    var f = document.getElementById("del-" + pid);
+    f.confirm_email.value = typed.trim();
+    f.submit();
+  }
+
   (function () {
     var dd = document.getElementById("tourDD");
     if (!dd) return;

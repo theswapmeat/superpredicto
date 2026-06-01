@@ -133,9 +133,9 @@
           {% if any_live %}<span class="livepill"><span class="dot"></span>Live</span>{% endif %}
         </span>
         <h2>
-          {% if not tournament %}The Podium
-          {% elif tournament.is_active %}The Podium — <span>{{ tournament.name }}</span>
-          {% else %}The Podium — <span>{{ tournament.year }} {{ tournament.name }}</span>{% endif %}
+          {% if not tournament %}Current Leaderboard
+          {% elif tournament.is_active %}Current Leaderboard — <span>{{ tournament.name }}</span>
+          {% else %}Final Leaderboard — <span>{{ tournament.year }} {{ tournament.name }}</span>{% endif %}
         </h2>
         {% if tournament and tournament.is_active %}
         <p class="board-note">Standings update every 5 minutes and include live matches — points can move until full-time.</p>
@@ -189,8 +189,8 @@
         <span class="note">Final standings for the {{ tournament.year }} season.</span>
         {% else %}
         <span class="note">Points populate as matches are scored. <b>Get your picks in</b> to climb the board.</span>
-        {% endif %}
         <a class="ghost-link" href="/leaderboard">View full leaderboard →</a>
+        {% endif %}
       </div>
     </div>
 

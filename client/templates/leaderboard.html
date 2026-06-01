@@ -41,8 +41,8 @@
         </thead>
         <tbody>
           {% for entry in leaderboard %}
-          <tr class="clickable {% if entry.rank == 1 %}r1{% elif entry.rank == 2 %}r2{% elif entry.rank == 3 %}r3{% endif %}"
-              onclick="location.href='{{ url_for('main.predictions', user_id=entry.user_id) }}'">
+          <tr class="lb-row clickable {% if entry.rank == 1 %}r1{% elif entry.rank == 2 %}r2{% elif entry.rank == 3 %}r3{% endif %}"
+              data-href="{{ url_for('main.predictions', user_id=entry.user_id) }}">
             <td class="rank"><span class="rankwrap">{{ entry.rank if entry.rank is not none else '—' }}</span></td>
             <td class="player">
               <div class="playercell">
@@ -57,6 +57,19 @@
             <td><span class="cell-num {% if entry.picks_scoring_zero == 0 %}zero{% endif %}">{{ entry.picks_scoring_zero }}</span></td>
             <td class="invalid"><span class="cell-num {% if entry.invalid_picks == 0 %}zero{% endif %}">{{ entry.invalid_picks }}</span></td>
           </tr>
+          <!-- mobile-only expandable breakdown (the columns hidden on small screens) -->
+          <tr class="lb-detail">
+            <td colspan="3">
+              <div class="lb-detail-grid">
+                <div class="lbd"><span class="lbd-lbl">Perfect picks</span><span class="lbd-val {% if entry.perfect_picks == 0 %}zero{% else %}good{% endif %}">{{ entry.perfect_picks }}</span></div>
+                <div class="lbd"><span class="lbd-lbl">Picks scoring 2</span><span class="lbd-val {% if entry.picks_scoring_two == 0 %}zero{% endif %}">{{ entry.picks_scoring_two }}</span></div>
+                <div class="lbd"><span class="lbd-lbl">Picks scoring 1</span><span class="lbd-val {% if entry.picks_scoring_one == 0 %}zero{% endif %}">{{ entry.picks_scoring_one }}</span></div>
+                <div class="lbd"><span class="lbd-lbl">Picks scoring 0</span><span class="lbd-val {% if entry.picks_scoring_zero == 0 %}zero{% endif %}">{{ entry.picks_scoring_zero }}</span></div>
+                <div class="lbd"><span class="lbd-lbl">Invalid picks</span><span class="lbd-val {% if entry.invalid_picks == 0 %}zero{% else %}bad{% endif %}">{{ entry.invalid_picks }}</span></div>
+                <a class="lbd-link" href="{{ url_for('main.predictions', user_id=entry.user_id) }}">View all picks →</a>
+              </div>
+            </td>
+          </tr>
           {% else %}
           <tr class="emptyrow"><td colspan="8">No standings yet — points populate as matches are scored.</td></tr>
           {% endfor %}
@@ -65,4 +78,25 @@
     </div>
   </div>
 </main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (function () {
+    // Mobile: tap a row to expand its hidden stats. Desktop: tap navigates to picks.
+    var mq = window.matchMedia("(max-width: 768px)");
+    document.querySelectorAll(".lb-row").forEach(function (row) {
+      row.addEventListener("click", function () {
+        if (mq.matches) {
+          var detail = row.nextElementSibling;
+          if (detail && detail.classList.contains("lb-detail")) {
+            row.classList.toggle("expanded", detail.classList.toggle("open"));
+          }
+        } else if (row.dataset.href) {
+          location.href = row.dataset.href;
+        }
+      });
+    });
+  })();
+</script>
 {% endblock %}

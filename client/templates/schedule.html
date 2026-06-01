@@ -68,6 +68,7 @@
         <span class="dash">–</span>
         <span class="sbox">{{ game.away_team_score }}</span>
         <span class="tag ft">FT</span>
+        {% if game.pens_label %}<span class="tag pens">{{ game.pens_label }}</span>{% endif %}
         {% elif live %}
         <span class="sbox">{{ game.home_team_score if game.home_team_score is not none else 0 }}</span>
         <span class="dash">–</span>

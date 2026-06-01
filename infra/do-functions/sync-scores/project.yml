@@ -4,6 +4,10 @@
 # fires every 5 minutes and POSTs to the app's token-guarded /internal/sync-scores
 # endpoint (which pulls live scores from football-data.org and reruns scoring).
 #
+# The trigger runs year-round (5-field cron has no year field); the poll function
+# hard-codes the active polling window ([first kickoff, one week after the last
+# game], UTC) and no-ops outside it. See packages/sync/poll/__main__.py.
+#
 # ${APP_URL} and ${SYNC_TOKEN} are substituted at deploy time from a local .env
 # file in this directory (gitignored) or your shell environment. See README.md.
 parameters: {}

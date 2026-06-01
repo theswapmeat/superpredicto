@@ -1,4 +1,4 @@
-.pwrap { max-width:1040px; margin:0 auto; padding:0 32px; }
+.pwrap { max-width:1140px; margin:0 auto; padding:0 32px; }
 
 /* PAGE HEADER (shared across pages) */
 .page-head { position:relative; padding:40px 0 18px; }
@@ -7,6 +7,16 @@
 /* SECTION HEADING */
 .sec-head { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted-2); margin:30px 0 14px; display:flex; align-items:center; gap:12px; }
 .sec-head::after { content:""; flex:1; height:1px; background:var(--line); }
+
+/* TWO-COLUMN LAYOUT — Rules of play (left) | Scoring (right) */
+.guide-grid { display:grid; grid-template-columns:minmax(0,0.82fr) minmax(0,1.18fr); gap:40px; align-items:start; }
+.guide-col { min-width:0; }
+.col-head { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:21px; letter-spacing:.02em; text-transform:uppercase; color:var(--text); margin:0; padding-bottom:11px; border-bottom:1px solid var(--line-strong); }
+.guide-col > .sec-head:first-of-type { margin-top:18px; }
+@media (max-width:880px) {
+  .guide-grid { grid-template-columns:1fr; gap:6px; }
+  .guide-col + .guide-col { margin-top:26px; }
+}
 
 /* POINT pill (shared with /predictions) */
 .pts { display:inline-grid; place-items:center; min-width:58px; height:40px; padding:0 12px; border-radius:10px; font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:16px; letter-spacing:.02em; border:1px solid var(--line-strong); flex:0 0 auto; }
@@ -25,6 +35,8 @@
 .rule p .muted { color:var(--muted); }
 .rule p b { color:var(--emb); font-weight:700; }
 .rule p .warn { color:#F87171; font-weight:700; }
+.rule .ico { display:inline-grid; place-items:center; width:40px; height:40px; border-radius:10px; flex:0 0 auto; background:rgba(255,255,255,.04); border:1px solid var(--line-strong); color:var(--emb); font-size:18px; }
+.rule.r0 .ico { color:#F87171; border-color:rgba(248,113,113,.35); background:rgba(248,113,113,.1); }
 
 /* EXAMPLES table (matches /predictions) */
 .ex-wrap { overflow-x:auto; padding-bottom:6px; }

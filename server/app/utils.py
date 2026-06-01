@@ -114,7 +114,7 @@ def build_invite_email(reset_url):
             ),
             cta_text="Set your password →",
             cta_url=reset_url,
-            footer_note="This link expires in 24 hours. If you weren't expecting this invite, you can safely ignore this email.",
+            footer_note="This link expires in 7 days. If you weren't expecting this invite, you can safely ignore this email.",
         ),
     )
 
@@ -132,7 +132,7 @@ def build_tournament_invite_email(set_password_url, year=2026):
             ),
             cta_text="Set your password →",
             cta_url=set_password_url,
-            footer_note="This link expires in 24 hours. If you'd rather sit this one out, just ignore this email.",
+            footer_note="This link expires in 7 days. If you'd rather sit this one out, just ignore this email.",
         ),
     )
 

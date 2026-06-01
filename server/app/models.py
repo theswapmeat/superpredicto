@@ -109,6 +109,10 @@ class Game(db.Model):
     away_team_crest = db.Column(db.String, nullable=True)
     home_team_score = db.Column(db.Integer, nullable=True)
     away_team_score = db.Column(db.Integer, nullable=True)
+    # Penalty-shootout result (knockout only) — cosmetic, never scored. Set only
+    # when a tied knockout game is decided on penalties; surfaced via pens_label.
+    home_team_pens = db.Column(db.Integer, nullable=True)
+    away_team_pens = db.Column(db.Integer, nullable=True)
     is_completed = db.Column(db.Boolean, default=False)
     game_number = db.Column(db.Integer, nullable=False)
     # "group" or "knockout" — replaces the brittle game_number >= 49 hardcode.
@@ -156,6 +160,18 @@ class Game(db.Model):
     def is_live(self):
         """True while the match is being played (incl. half-time)."""
         return self.status in ("IN_PLAY", "PAUSED")
+
+    @property
+    def pens_label(self):
+        """Cosmetic shootout result, e.g. 'ARG won 4–2 on pens'. None if not a shootout."""
+        ph, pa = self.home_team_pens, self.away_team_pens
+        if ph is None or pa is None:
+            return None
+        if ph >= pa:
+            code = self.home_team_code or (self.home_team or "")[:3].upper()
+        else:
+            code = self.away_team_code or (self.away_team or "")[:3].upper()
+        return f"{code} won {max(ph, pa)}–{min(ph, pa)} on pens"
 
     @property
     def stage_label(self):

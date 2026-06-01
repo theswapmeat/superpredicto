@@ -1,4 +1,6 @@
-# === Python (server/) ===
+# === Python ===
+__pycache__/
+*.py[cod]
 server/__pycache__/
 server/**/*.py[cod]
 

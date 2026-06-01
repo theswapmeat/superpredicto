@@ -16,11 +16,12 @@
 .game:not(.completed) .g-no { color:var(--muted-2); }
 
 /* RESULT area (right) */
-.g-result { display:flex; align-items:center; gap:10px; flex:0 0 auto; min-width:130px; justify-content:flex-end; }
+.g-result { display:flex; align-items:center; gap:10px; flex:0 0 auto; min-width:130px; justify-content:flex-end; flex-wrap:wrap; }
 .sbox { width:48px; height:50px; border-radius:11px; background:#070B18; border:1.5px solid var(--line-strong); display:grid; place-items:center; font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:26px; color:var(--text); }
 .game.completed .sbox { border-color:rgba(0,209,122,.5); }
 .tag { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:11px; letter-spacing:.1em; text-transform:uppercase; padding:5px 10px; border-radius:7px; white-space:nowrap; }
 .tag.ft { background:var(--em-dim); color:var(--emb); border:1px solid rgba(0,209,122,.4); }
+.tag.pens { background:rgba(255,255,255,.04); color:var(--muted); border:1px solid var(--line); text-transform:none; letter-spacing:.02em; font-weight:700; }
 .tag.live { background:rgba(244,199,82,.14); color:var(--gold); border:1px solid rgba(244,199,82,.4); }
 .tag.soon { background:rgba(255,255,255,.05); color:var(--muted); border:1px solid var(--line); }
 .tag.livenow { display:inline-flex; align-items:center; gap:6px; background:rgba(255,100,114,.14); color:#ff6472; border:1px solid rgba(255,100,114,.45); }

@@ -193,12 +193,16 @@ def index():
     if not selected:
         selected = active_tournament() or (tournaments[0] if tournaments else None)
 
-    # Homepage shows only the top 3 (ranks 1-3, ties included); the full table
-    # lives on /leaderboard.
+    # For the active tournament the homepage shows only the top 3 (ranks 1-3,
+    # ties included) and the full table lives on /leaderboard. Archived seasons
+    # are leaderboard-only pages, so they show the entire final standings here.
     all_entries = build_leaderboard(selected, user_id)
-    leaderboard_dicts = [
-        e for e in all_entries if e["rank"] is not None and e["rank"] <= 3
-    ]
+    if selected and selected.is_active:
+        leaderboard_dicts = [
+            e for e in all_entries if e["rank"] is not None and e["rank"] <= 3
+        ]
+    else:
+        leaderboard_dicts = all_entries
 
     # Hero + live pick card only for the active tournament; archived tournaments
     # are leaderboard-only.
@@ -352,7 +356,9 @@ def forgot_password():
 @main.route("/reset-password/<token>", methods=["GET", "POST"])
 def reset_password_token(token):
     mode = request.args.get("mode", "reset")
-    email = confirm_reset_token(token)
+    # Invites get a 7-day activation window; password resets stay short (24h).
+    max_age = 7 * 24 * 3600 if mode == "invite" else 24 * 3600
+    email = confirm_reset_token(token, expiration=max_age)
     if not email:
         flash("Reset link is invalid or has expired.", "danger")
         return redirect(url_for("main.forgot_password"))
@@ -373,7 +379,7 @@ def reset_password_token(token):
 
         if new_password != confirm_password:
             flash("Passwords do not match.", "danger")
-            return render_template("reset_password.html")
+            return render_template("reset_password.html", mode=mode, email=email)
 
         user.password_hash = generate_password_hash(new_password)
         user.must_change_password = False
@@ -381,7 +387,7 @@ def reset_password_token(token):
         flash("Your password has been set. You may now log in.", "success")
         return redirect(url_for("main.login"))
 
-    return render_template("reset_password.html", mode=mode)
+    return render_template("reset_password.html", mode=mode, email=email)
 
 
 # --- Submit Picks (Protected) ---
@@ -825,12 +831,19 @@ def dashboard():
         addable_q = addable_q.filter(~User.id.in_(enrolled_ids))
     addable_users = addable_q.order_by(User.display_name, User.first_name).all()
 
+    # Users who have ever made a pick can NEVER be hard-deleted (history is sacred).
+    # Only no-prediction accounts are purgeable — see delete_user.
+    users_with_preds = {
+        uid for (uid,) in db.session.query(UserPrediction.user_id).distinct().all()
+    }
+
     return render_template(
         "dashboard.html",
         tournaments=tournaments,
         selected_tournament=selected,
         participants=participants,
         addable_users=addable_users,
+        users_with_preds=users_with_preds,
         invite_feedback=session.pop("invite_feedback", None),
     )
 
@@ -1098,31 +1111,57 @@ def update_participants():
     return redirect(url_for("main.dashboard", tournament_id=selected.id))
 
 
-# --- Remove a Participant from a Tournament (Admin Only) ---
-@main.route("/dashboard/remove-participant", methods=["POST"])
+# Taking someone OUT OF PLAY is a soft deactivate (un-tick "Is Active" via
+# update_participants) — it never deletes a row, so points/predictions are kept.
+#
+# The ONE hard delete in the app: purging a genuine mis-add (wrong email invited,
+# etc.). It is heavily gated — only a user with ZERO predictions can be deleted,
+# never the admin or yourself, and the admin must re-type the email to confirm.
+# A user who has ever made a pick can never be erased here; deactivate instead.
+@main.route("/dashboard/delete-user", methods=["POST"])
 @login_required
-def remove_participant():
+def delete_user():
     if not is_admin():
         flash("Access denied.", "danger")
         return redirect(url_for("main.index"))
 
     selected = get_selected_tournament()
-    if is_archived(selected):
-        flash("This tournament is archived and can't be modified.", "warning")
+    user_id = request.form.get("user_id", type=int)
+    confirm_email = (request.form.get("confirm_email") or "").strip().lower()
+    user = User.query.get(user_id)
+
+    def _back(msg, cat):
+        flash(msg, cat)
         return redirect(url_for("main.dashboard", tournament_id=selected.id))
 
-    participant_id = request.form.get("participant_id", type=int)
-    p = Participant.query.filter_by(
-        id=participant_id, tournament_id=selected.id
-    ).first()
-    if p:
-        name = p.user.display_name or p.user.email
-        db.session.delete(p)
-        db.session.commit()
-        flash(f"Removed {name} from {selected.year}.", "success")
-    else:
-        flash("Participant not found.", "warning")
-    return redirect(url_for("main.dashboard", tournament_id=selected.id))
+    if not user:
+        return _back("User not found.", "warning")
+    if user.email == ADMIN_EMAIL:
+        return _back("The admin account can't be deleted.", "danger")
+    if user.id == session.get("user_id"):
+        return _back("You can't delete your own account.", "danger")
+
+    pred_count = UserPrediction.query.filter_by(user_id=user.id).count()
+    if pred_count > 0:
+        return _back(
+            f"{user.email} has {pred_count} pick(s) on record and can't be deleted — "
+            "deactivate them instead.",
+            "warning",
+        )
+    if confirm_email != user.email.lower():
+        return _back("Deletion not confirmed — the typed email didn't match.", "warning")
+
+    email = user.email
+    # No predictions to remove (gate above); drop enrollments across all tournaments,
+    # then the account. FKs have no ON DELETE CASCADE, so this is explicit.
+    Participant.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+    db.session.delete(user)
+    db.session.commit()
+    current_app.logger.warning(
+        "[admin] hard-deleted user %s (id=%s) by %s",
+        email, user_id, session.get("user_email"),
+    )
+    return _back(f"Permanently deleted {email} and all their enrollments.", "success")
 
 
 # --- Test User Creation ---

@@ -13,8 +13,28 @@
 .youchip { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--emb); background:var(--em-dim); border:1px solid rgba(0,209,122,.3); padding:2px 7px; border-radius:5px; }
 .emptyrow td { padding:40px 18px; color:var(--muted); text-align:center; }
 
+/* expandable detail row — hidden on desktop, revealed on mobile tap */
+.lb-detail { display:none; }
+.lb-detail > td { background:rgba(255,255,255,.02); padding:0 16px 16px; border-top:none; }
+.lb-detail-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px 14px; padding-top:4px; }
+.lbd { display:flex; flex-direction:column; gap:3px; }
+.lbd-lbl { font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-2); }
+.lbd-val { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:20px; line-height:1; color:var(--text); }
+.lbd-val.zero { color:var(--muted-2); font-weight:700; }
+.lbd-val.good { color:var(--emb); }
+.lbd-val.bad { color:#FF6B7D; }
+.lbd-link { grid-column:1/-1; margin-top:2px; color:var(--emb); font-weight:600; font-size:13.5px; }
+
 @media (max-width:768px) {
   .pwrap { padding-left:18px; padding-right:18px; }
   .ph-inner { align-items:flex-start; }
-  .table-card table { min-width:760px; }
+  /* show only Rank / Player / Points — drop the stat columns + their group header */
+  .table-card thead .grouprow { display:none; }
+  .table-card .colrow th:nth-child(n+4),
+  .table-card tbody tr.lb-row td:nth-child(n+4) { display:none; }
+  /* reveal the breakdown when a row is tapped */
+  .lb-detail.open { display:table-row; }
+  /* chevron becomes the expand affordance */
+  .lb-row .pname .chev { opacity:1; transition:transform .18s ease, color .18s ease; }
+  .lb-row.expanded .pname .chev { transform:rotate(90deg); color:var(--emb); }
 }

@@ -33,13 +33,13 @@
 .multi-select { width:100%; max-width:520px; font-size:14px; color:var(--text); background:var(--ink-2); border:1px solid var(--line); border-radius:10px; padding:8px; }
 .multi-select option { padding:5px 6px; }
 
-.rm-btn { width:30px; height:30px; border-radius:8px; border:1px solid rgba(255,107,125,.4); background:rgba(255,107,125,.1); color:#FF6B7D; cursor:pointer; font-size:16px; line-height:1; display:inline-grid; place-items:center; transition:all .14s ease; }
-.rm-btn:hover { background:rgba(255,107,125,.2); border-color:rgba(255,107,125,.7); }
 .sp-btn-danger { background:rgba(255,107,125,.14); color:#FF6B7D; border:1px solid rgba(255,107,125,.4); }
 .sp-btn-danger:hover { background:rgba(255,107,125,.22); color:#FF8A95; transform:translateY(-1px); }
 /* read-only (archived) disabled states */
-.rm-btn:disabled { opacity:.4; cursor:not-allowed; pointer-events:none; }
 .adm-chk:disabled { opacity:.45; cursor:not-allowed; }
+.del-acct-btn { display:inline-flex; align-items:center; gap:6px; font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:12px; letter-spacing:.04em; text-transform:uppercase; padding:6px 11px; border-radius:8px; background:rgba(255,107,125,.1); color:#FF6B7D; border:1px solid rgba(255,107,125,.4); cursor:pointer; white-space:nowrap; transition:all .14s ease; }
+.del-acct-btn:hover { background:rgba(255,107,125,.2); border-color:rgba(255,107,125,.7); }
+.del-acct-btn:disabled { opacity:.4; cursor:not-allowed; pointer-events:none; }
 .multi-select:disabled { opacity:.5; cursor:not-allowed; }
 
 @media (max-width:760px) {

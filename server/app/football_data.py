@@ -88,8 +88,29 @@ def sync_fixtures(api_key, tournament_id, *, create_missing=True, write_scores=T
         home_crest, away_crest = _crest(home_obj), _crest(away_obj)
         stage = _stage(m.get("stage"))
         group = (m.get("group") or "").strip() or None  # "GROUP_A".. or None (knockout)
-        ft = (m.get("score") or {}).get("fullTime") or {}
-        h_score, a_score = ft.get("home"), ft.get("away")
+        score = m.get("score") or {}
+        ft = score.get("fullTime") or {}
+        pens = score.get("penalties") or {}
+        pens_home, pens_away = pens.get("home"), pens.get("away")
+        # Picks are scored on the post-extra-time result; penalties NEVER count.
+        # For a shootout, fullTime folds the penalties in (a 1-1 won 4-3 reports
+        # fullTime 5-4) — and a LIVE shootout would inflate it kick by kick — so
+        # derive the score from regulation + extra time, which is penalty-free by
+        # construction and stays stable across the whole shootout. fullTime is the
+        # correct live/final value for every other state (incl. live ET).
+        if score.get("duration") == "PENALTY_SHOOTOUT":
+            rt = score.get("regularTime") or {}
+            et = score.get("extraTime") or {}
+            if rt.get("home") is not None and rt.get("away") is not None:
+                h_score = rt["home"] + (et.get("home") or 0)
+                a_score = rt["away"] + (et.get("away") or 0)
+            else:  # defensive fallback: strip the shootout out of fullTime
+                h_score, a_score = ft.get("home"), ft.get("away")
+                if None not in (h_score, a_score, pens_home, pens_away):
+                    h_score -= pens_home
+                    a_score -= pens_away
+        else:
+            h_score, a_score = ft.get("home"), ft.get("away")
         status = m.get("status")
         finished = status == "FINISHED"
 
@@ -140,13 +161,16 @@ def sync_fixtures(api_key, tournament_id, *, create_missing=True, write_scores=T
                 g.away_team_crest = away_crest
 
         if write_scores and not g.manual_override:
-            if (g.home_team_score, g.away_team_score, g.is_completed) != (
-                h_score,
-                a_score,
-                finished,
-            ):
+            if (
+                g.home_team_score,
+                g.away_team_score,
+                g.is_completed,
+                g.home_team_pens,
+                g.away_team_pens,
+            ) != (h_score, a_score, finished, pens_home, pens_away):
                 g.home_team_score, g.away_team_score = h_score, a_score
                 g.is_completed = finished
+                g.home_team_pens, g.away_team_pens = pens_home, pens_away
                 scores_updated += 1
         elif g.manual_override:
             skipped_override += 1
