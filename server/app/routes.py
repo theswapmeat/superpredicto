@@ -1061,7 +1061,10 @@ def add_participants():
             user.password_hash = None
             user.must_change_password = True
             emailed += 1
-        except Exception:
+        except Exception as e:
+            current_app.logger.warning(
+                "tournament invite email failed for %s: %s", user.email, e
+            )
             email_failed.append(user.email)
 
     if added:
