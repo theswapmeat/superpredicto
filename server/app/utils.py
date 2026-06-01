@@ -137,6 +137,50 @@ def build_tournament_invite_email(set_password_url, year=2026):
     )
 
 
+def build_signup_reminder_email(set_password_url, hours=24):
+    return (
+        f"Kickoff in {hours} hours — finish signing up for World Cup 2026",
+        _email_layout(
+            heading=f"⚽ The World Cup kicks off in {hours} hours",
+            body_html=(
+                f"<p style='margin:0 0 12px;'>The <b>FIFA World Cup 2026</b> starts in about "
+                f"<b>{hours} hours</b> — and you haven't finished signing up yet.</p>"
+                "<p style='margin:0;'>Set your password below to activate your account. Make sure "
+                "your entry is paid (by bank transfer to the organiser) and you'll be all set to "
+                "make your first picks before kickoff.</p>"
+            ),
+            cta_text="Set your password →",
+            cta_url=set_password_url,
+            footer_note="This link expires in 7 days. If you weren't expecting this, you can safely ignore this email.",
+        ),
+    )
+
+
+def build_pick_reminder_email(games, picks_url):
+    """`games`: list of {"label": "Mexico vs South Africa", "kickoff": "Wed 11 Jun, 19:00 (Dubai)"}."""
+    rows = "".join(
+        f"<tr><td style='padding:8px 0;border-bottom:1px solid #eef1f6;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#0B1020;'>"
+        f"<b>{g['label']}</b><br><span style='font-size:13px;color:#8a94a6;'>Kicks off {g['kickoff']}</span></td></tr>"
+        for g in games
+    )
+    plural = "games" if len(games) != 1 else "game"
+    return (
+        "⏰ Kickoff soon — you haven't picked yet",
+        _email_layout(
+            heading="⏰ Your pick closes soon",
+            body_html=(
+                f"<p style='margin:0 0 12px;'>You haven't made a prediction for the following {plural}, "
+                "kicking off within the next couple of hours:</p>"
+                f"<table role='presentation' width='100%' cellpadding='0' cellspacing='0' style='margin:0 0 4px;'>{rows}</table>"
+                "<p style='margin:14px 0 0;'>Get your picks in before kickoff — picks lock the moment the match starts.</p>"
+            ),
+            cta_text="Make your pick →",
+            cta_url=picks_url,
+            footer_note="You're receiving this because you're a paid entrant in the FIFA World Cup 2026 league.",
+        ),
+    )
+
+
 # --- Senders ---------------------------------------------------------------
 def send_password_reset_email(to_email, reset_url):
     subject, html = build_password_reset_email(reset_url)
@@ -150,6 +194,16 @@ def send_invite_email(to_email, reset_url):
 
 def send_tournament_invite_email(to_email, set_password_url, year=2026):
     subject, html = build_tournament_invite_email(set_password_url, year)
+    _send_email(to_email, subject=subject, html=html)
+
+
+def send_signup_reminder_email(to_email, set_password_url, hours=24):
+    subject, html = build_signup_reminder_email(set_password_url, hours)
+    _send_email(to_email, subject=subject, html=html)
+
+
+def send_pick_reminder_email(to_email, games, picks_url):
+    subject, html = build_pick_reminder_email(games, picks_url)
     _send_email(to_email, subject=subject, html=html)
 
 # --- Verify Paypal ---

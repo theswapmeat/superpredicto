@@ -1,12 +1,12 @@
-# DigitalOcean Functions project: scheduled live-score sync.
+# DigitalOcean Functions project: scheduled jobs that poke the app's token-guarded
+# /internal/* endpoints. Three functions, each a tiny stdlib POST:
+#   sync/poll        every 5m  -> /internal/sync-scores   (live scores + rescoring)
+#   remind/signups   hourly    -> /internal/remind-signups (one-off 24h-to-kickoff nudge)
+#   remind/picks     every 10m -> /internal/remind-picks   (kickoff-in-2h pick nudge)
 #
-# Deploys a single serverless function (sync/poll) plus a SCHEDULED trigger that
-# fires every 5 minutes and POSTs to the app's token-guarded /internal/sync-scores
-# endpoint (which pulls live scores from football-data.org and reruns scoring).
-#
-# The trigger runs year-round (5-field cron has no year field); the poll function
-# hard-codes the active polling window ([first kickoff, one week after the last
-# game], UTC) and no-ops outside it. See packages/sync/poll/__main__.py.
+# Scheduler crons run year-round (5-field cron has no year field); each function
+# hard-codes a UTC window and no-ops outside it, and the app enforces the precise
+# timing/dedupe. See each packages/*/__main__.py.
 #
 # ${APP_URL} and ${SYNC_TOKEN} are substituted at deploy time from a local .env
 # file in this directory (gitignored) or your shell environment. See README.md.
@@ -33,4 +33,47 @@ packages:
             sourceType: scheduler
             sourceDetails:
               cron: '*/5 * * * *'   # every 5 minutes (UTC)
+              withBody: {}
+  - name: remind
+    parameters: {}
+    environment: {}
+    functions:
+      # "Finish signing up" — one-off email ~24h before first kickoff to invited
+      # but never-activated participants. Fires hourly; the function loosely gates
+      # to the pre-tournament days and the app enforces the exact 24h window + once-per-user.
+      - name: signups
+        binary: false
+        main: ''
+        runtime: 'python:default'
+        web: false
+        parameters: {}
+        environment:
+          APP_URL: ${APP_URL}
+          SYNC_TOKEN: ${SYNC_TOKEN}
+        limits:
+          timeout: 60000
+        triggers:
+          - name: signups-hourly
+            sourceType: scheduler
+            sourceDetails:
+              cron: '0 * * * *'    # hourly, on the hour (UTC)
+              withBody: {}
+      # "Make your pick" — emails paid+active participants who haven't predicted a
+      # game kicking off within the next 2h (once per user/game). Tournament-windowed.
+      - name: picks
+        binary: false
+        main: ''
+        runtime: 'python:default'
+        web: false
+        parameters: {}
+        environment:
+          APP_URL: ${APP_URL}
+          SYNC_TOKEN: ${SYNC_TOKEN}
+        limits:
+          timeout: 60000
+        triggers:
+          - name: picks-10min
+            sourceType: scheduler
+            sourceDetails:
+              cron: '*/10 * * * *'   # every 10 minutes (UTC)
               withBody: {}

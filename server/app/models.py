@@ -21,6 +21,9 @@ class User(db.Model):
     avatar = db.Column(db.String)
     password_hash = db.Column(db.String, nullable=True)
     must_change_password = db.Column(db.Boolean, default=True)
+    # One-shot flag: set True once the "24h to kickoff, finish signing up" blast
+    # has been emailed to this (still-unactivated) invitee, so it's sent only once.
+    signup_reminder_sent = db.Column(db.Boolean, default=False, nullable=False)
 
     perfect_picks = db.Column(db.Integer, nullable=True)
     picks_scoring_one = db.Column(db.Integer, nullable=True)
@@ -204,3 +207,23 @@ class UserPrediction(db.Model):
 
     def __repr__(self):
         return f"<Prediction User:{self.user_id} Game:{self.game_id}>"
+
+
+class PickReminder(db.Model):
+    """Idempotency record: one row per (user, game) we've sent a 'kickoff soon,
+    you haven't picked' reminder for, so each user is nudged at most once per game.
+    """
+
+    __tablename__ = "pick_reminders"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    game_id = db.Column(db.Integer, db.ForeignKey("games.id"), nullable=False)
+    sent_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "game_id", name="uq_pick_reminder_user_game"),
+    )
+
+    def __repr__(self):
+        return f"<PickReminder User:{self.user_id} Game:{self.game_id}>"

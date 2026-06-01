@@ -12,7 +12,7 @@ from flask import (
 )
 from datetime import datetime, timedelta
 from pytz import timezone
-from .models import db, User, Game, UserPrediction, Tournament, Participant
+from .models import db, User, Game, UserPrediction, Tournament, Participant, PickReminder
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import joinedload, contains_eager
@@ -24,6 +24,8 @@ from .utils import (
     send_password_reset_email,
     send_invite_email,
     send_tournament_invite_email,
+    send_signup_reminder_email,
+    send_pick_reminder_email,
     verify_paypal_payment,
     send_payment_receipt_email,
 )
@@ -1451,6 +1453,145 @@ def internal_sync_scores():
         return jsonify({"ok": False, "error": str(e)}), 502
 
     return jsonify({"ok": True, "tournament": active.year, "sync": summary})
+
+
+def _kickoff_dubai_str(game):
+    """Kickoff formatted in Asia/Dubai local time for emails (no client-side TZ in inboxes)."""
+    dub = game.kickoff_utc().astimezone(timezone("Asia/Dubai"))
+    return dub.strftime("%a %d %b, %H:%M (Dubai)")
+
+
+# --- Reminder: finish signing up (one-shot, ~24h before first kickoff) ---
+# Token-guarded like the score sync. Sends ONE email to each invited-but-never-
+# activated participant of the active tournament, only inside the 24h pre-kickoff
+# window, and flips users.signup_reminder_sent so it never repeats.
+@main.route("/internal/remind-signups", methods=["GET", "POST"])
+def internal_remind_signups():
+    expected = current_app.config.get("INTERNAL_SYNC_TOKEN")
+    token = request.headers.get("X-Sync-Token") or request.args.get("token")
+    if not expected or token != expected:
+        abort(403)
+
+    active = active_tournament()
+    if not active or not active.is_active:
+        return jsonify({"ok": False, "error": "no active tournament"}), 400
+
+    games = Game.query.filter_by(tournament_id=active.id).all()
+    kickoffs = [g.kickoff_utc() for g in games]
+    if not kickoffs:
+        return jsonify({"ok": True, "sent": 0, "note": "no games scheduled"})
+
+    first_kickoff = min(kickoffs)
+    now = datetime.now(timezone("UTC"))
+    window_open = first_kickoff - timedelta(hours=24)
+    if now < window_open or now >= first_kickoff:
+        return jsonify({"ok": True, "sent": 0, "note": "outside 24h pre-kickoff window"})
+
+    hours_left = max(1, round((first_kickoff - now).total_seconds() / 3600))
+
+    targets = (
+        User.query.join(Participant, Participant.user_id == User.id)
+        .filter(
+            Participant.tournament_id == active.id,
+            User.password_hash.is_(None),
+            User.signup_reminder_sent.is_(False),
+            User.email != ADMIN_EMAIL,
+        )
+        .distinct()
+        .all()
+    )
+
+    sent, failed = 0, []
+    for user in targets:
+        reset_token = generate_reset_token(user.email)
+        set_url = url_for(
+            "main.reset_password_token", token=reset_token, mode="invite", _external=True
+        )
+        try:
+            send_signup_reminder_email(user.email, set_url, hours_left)
+            user.signup_reminder_sent = True
+            sent += 1
+        except Exception as e:
+            current_app.logger.warning("signup reminder failed for %s: %s", user.email, e)
+            failed.append(user.email)
+    db.session.commit()
+    return jsonify({"ok": True, "sent": sent, "failed": failed, "hours_left": hours_left})
+
+
+# --- Reminder: make your pick (kickoff within 2h, no prediction yet) ---
+# Token-guarded. For each active-tournament game kicking off in the next 2h, emails
+# the paid+active participants with no complete prediction — at most once per
+# (user, game), tracked in pick_reminders. Batches a user's soon-games into one email.
+@main.route("/internal/remind-picks", methods=["GET", "POST"])
+def internal_remind_picks():
+    expected = current_app.config.get("INTERNAL_SYNC_TOKEN")
+    token = request.headers.get("X-Sync-Token") or request.args.get("token")
+    if not expected or token != expected:
+        abort(403)
+
+    active = active_tournament()
+    if not active or not active.is_active:
+        return jsonify({"ok": False, "error": "no active tournament"}), 400
+
+    now = datetime.now(timezone("UTC"))
+    horizon = now + timedelta(hours=2)
+    soon_games = [
+        g
+        for g in Game.query.filter_by(tournament_id=active.id).all()
+        if now < g.kickoff_utc() <= horizon
+    ]
+    if not soon_games:
+        return jsonify({"ok": True, "emails_sent": 0, "note": "no games in the next 2h"})
+    soon_ids = [g.id for g in soon_games]
+
+    participants = (
+        Participant.query.filter_by(tournament_id=active.id, is_active=True, is_paid=True)
+        .join(Participant.user)
+        .options(contains_eager(Participant.user))
+        .all()
+    )
+
+    predicted = {
+        (p.user_id, p.game_id)
+        for p in UserPrediction.query.filter(
+            UserPrediction.game_id.in_(soon_ids),
+            UserPrediction.home_score_prediction.isnot(None),
+            UserPrediction.away_score_prediction.isnot(None),
+        ).all()
+    }
+    already = {
+        (r.user_id, r.game_id)
+        for r in PickReminder.query.filter(PickReminder.game_id.in_(soon_ids)).all()
+    }
+
+    picks_url = url_for("main.submit_picks", _external=True)
+    sent, failed, recorded = 0, [], 0
+    for part in participants:
+        uid = part.user_id
+        missing = [
+            g
+            for g in soon_games
+            if (uid, g.id) not in predicted and (uid, g.id) not in already
+        ]
+        if not missing:
+            continue
+        games_info = [
+            {"label": f"{g.home_team} vs {g.away_team}", "kickoff": _kickoff_dubai_str(g)}
+            for g in sorted(missing, key=lambda g: g.kickoff_utc())
+        ]
+        try:
+            send_pick_reminder_email(part.user.email, games_info, picks_url)
+            for g in missing:
+                db.session.add(PickReminder(user_id=uid, game_id=g.id))
+                recorded += 1
+            sent += 1
+        except Exception as e:
+            current_app.logger.warning("pick reminder failed for %s: %s", part.user.email, e)
+            failed.append(part.user.email)
+    db.session.commit()
+    return jsonify(
+        {"ok": True, "emails_sent": sent, "reminders_recorded": recorded, "failed": failed}
+    )
 
 
 # --- Support ---
