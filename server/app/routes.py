@@ -1417,7 +1417,11 @@ def admin_run_scoring():
         flash("This tournament is archived and can't be modified.", "warning")
         return redirect(url_for("main.dashboard", tournament_id=selected.id))
 
-    run_prediction_scoring(selected.id)
+    try:
+        run_prediction_scoring(selected.id)
+    except Exception:
+        flash("Scoring failed — check the runtime logs.", "danger")
+        return redirect(url_for("main.dashboard", tournament_id=selected.id))
     flash(f"Scoring run for {selected.name} ({selected.year}).", "success")
     return redirect(url_for("main.dashboard", tournament_id=selected.id))
 

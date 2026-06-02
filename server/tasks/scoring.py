@@ -1,4 +1,4 @@
-from datetime import datetime
+from flask import current_app
 
 from app import db
 from app.models import Participant, Game, UserPrediction
@@ -16,10 +16,7 @@ def run_prediction_scoring(tournament_id):
     points_earned on each prediction. Only participants of this tournament are
     scored; predictions by non-participants are ignored.
     """
-    print(
-        f"[Scoring] tournament={tournament_id} started at "
-        f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-    )
+    current_app.logger.info("scoring tournament=%s started", tournament_id)
     try:
         participants = Participant.query.filter_by(tournament_id=tournament_id).all()
         part_by_user = {p.user_id: p for p in participants}
@@ -114,8 +111,13 @@ def run_prediction_scoring(tournament_id):
                     pred.points_earned = 0
 
         db.session.commit()
-        print("[Scoring] Run completed successfully.")
+        current_app.logger.info(
+            "scoring tournament=%s completed (%d games scored)",
+            tournament_id,
+            len(scored_games),
+        )
 
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        print(f"[Scoring] Error occurred: {str(e)}")
+        current_app.logger.exception("scoring failed for tournament=%s", tournament_id)
+        raise
