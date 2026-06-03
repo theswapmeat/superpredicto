@@ -32,16 +32,13 @@
             {% endif %}
           </td>
           <td>
-            {% set tooltip = "" %}
-            {% if prediction.points_earned == 4 %}{% set tooltip = "Perfect prediction" %}
-            {% elif prediction.points_earned == 2 %}{% set tooltip = "Correct winner + one correct score" %}
-            {% elif prediction.points_earned == 1 %}{% set tooltip = "Partial match: correct winner only OR one correct score OR both draws" %}
-            {% elif prediction.points_earned == 0 %}
-              {% if prediction.home_score_prediction is none or prediction.away_score_prediction is none %}{% set tooltip = "No prediction submitted" %}
-              {% elif (prediction.home_score_prediction, prediction.away_score_prediction) in [(1, 0), (0, 1)] and prediction.game.is_completed %}{% set tooltip = "1-0 or 0-1 predicted but not exact → invalid" %}
-              {% else %}{% set tooltip = "Completely incorrect prediction" %}{% endif %}
+            {% if prediction.game.home_team_score is not none and prediction.game.away_team_score is not none %}
+            <span class="pts p{{ prediction.points_earned }}">{{ prediction.points_earned }}</span>
+            {% set reason = pick_reason(prediction) %}
+            {% if reason %}<span class="pts-reason">{{ reason }}</span>{% endif %}
+            {% else %}
+            <span class="score-cell muted">–</span>
             {% endif %}
-            <span class="pts p{{ prediction.points_earned }}" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ tooltip }}">{{ prediction.points_earned }}</span>
           </td>
         </tr>
         {% endfor %}

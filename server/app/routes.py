@@ -13,6 +13,7 @@ from flask import (
 from datetime import datetime, timedelta
 from pytz import timezone
 from .models import db, User, Game, UserPrediction, Tournament, Participant, PickReminder
+from .pick_scoring import classify_pick
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import joinedload, contains_eager
@@ -167,6 +168,23 @@ def inject_nav_context():
         "is_admin_user": session.get("user_email") == "admin@superpredicto.com",
         "current_initials": _user_initials(nav_user) if nav_user else "",
     }
+
+
+@main.app_template_global()
+def pick_reason(prediction):
+    """Always-visible explanation of why a pick scored what it did, shown on
+    /predictions. Uses the same classify_pick as the scorer, so the reason can
+    never contradict the points. Empty string when there's nothing to explain yet.
+    """
+    ph = prediction.home_score_prediction
+    pa = prediction.away_score_prediction
+    game = prediction.game
+    if ph is None or pa is None:
+        return "No prediction submitted"
+    if game.home_team_score is None or game.away_team_score is None:
+        return ""  # not scored yet
+    _kind, _points, reason = classify_pick(ph, pa, game.home_team_score, game.away_team_score)
+    return reason if game.is_completed else "Provisional · " + reason
 
 
 # --- Home Page ---
