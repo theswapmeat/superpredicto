@@ -19,3 +19,14 @@ class Config:
     # Live scores (football-data.org) + the secret that guards the cron sync endpoint.
     FOOTBALL_DATA_API_KEY = os.getenv("FOOTBALL_DATA_API_KEY")
     INTERNAL_SYNC_TOKEN = os.getenv("INTERNAL_SYNC_TOKEN")
+    # Entry fee + bank-transfer details — single source of truth for BOTH the
+    # /payment page and the payment-reminder email. Change these in one place only.
+    ENTRY_FEE_LABEL = os.getenv("ENTRY_FEE_LABEL", "AED 275")
+    BANK_DETAILS = [
+        ("Name", "Anup Paul Chackunny"),
+        ("Bank", "Emirates NBD"),
+        ("Account", "1014040525401"),
+        ("IBAN", "AE270260001014040525401"),
+    ]
+    # WhatsApp contact — single source for the /support page and reminder emails.
+    SUPPORT_WHATSAPP_URL = os.getenv("SUPPORT_WHATSAPP_URL", "https://wa.me/971529012505")

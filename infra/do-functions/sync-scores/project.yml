@@ -1,8 +1,9 @@
 # DigitalOcean Functions project: scheduled jobs that poke the app's token-guarded
 # /internal/* endpoints. Three functions, each a tiny stdlib POST:
-#   sync/poll        every 5m  -> /internal/sync-scores   (live scores + rescoring)
-#   remind/signups   hourly    -> /internal/remind-signups (one-off 24h-to-kickoff nudge)
-#   remind/picks     every 10m -> /internal/remind-picks   (kickoff-in-2h pick nudge)
+#   sync/poll        every 5m  -> /internal/sync-scores    (live scores + rescoring)
+#   remind/signups   hourly    -> /internal/remind-signups  (one-off 24h-to-kickoff nudge)
+#   remind/payments  hourly    -> /internal/remind-payments (one-off 3-days-to-kickoff pay nudge)
+#   remind/picks     every 10m -> /internal/remind-picks    (kickoff-in-2h pick nudge)
 #
 # Scheduler crons run year-round (5-field cron has no year field); each function
 # hard-codes a UTC window and no-ops outside it, and the app enforces the precise
@@ -76,4 +77,24 @@ packages:
             sourceType: scheduler
             sourceDetails:
               cron: '*/10 * * * *'   # every 10 minutes (UTC)
+              withBody: {}
+      # "Pay your entry" — one-off email ~3 days before first kickoff to signed-up
+      # but unpaid participants. Fires hourly; the app enforces the exact 3-day
+      # window + once-per-participant.
+      - name: payments
+        binary: false
+        main: ''
+        runtime: 'python:default'
+        web: false
+        parameters: {}
+        environment:
+          APP_URL: ${APP_URL}
+          SYNC_TOKEN: ${SYNC_TOKEN}
+        limits:
+          timeout: 60000
+        triggers:
+          - name: payments-hourly
+            sourceType: scheduler
+            sourceDetails:
+              cron: '0 * * * *'    # hourly, on the hour (UTC)
               withBody: {}

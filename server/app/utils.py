@@ -181,6 +181,33 @@ def build_pick_reminder_email(games, picks_url):
     )
 
 
+def build_payment_reminder_email(entry_fee, bank_details, whatsapp_url):
+    """`bank_details`: list of (label, value) from config — the same source the
+    /payment page renders, so the email can never drift from the page."""
+    rows = "".join(
+        f"<tr><td style='padding:3px 16px 3px 0;color:#8a94a6;'>{label}</td>"
+        f"<td style='color:#0B1020;font-weight:600;'>{value}</td></tr>"
+        for label, value in bank_details
+    )
+    return (
+        f"Action needed — pay your {entry_fee} entry for World Cup 2026",
+        _email_layout(
+            heading="Your entry isn't paid yet",
+            body_html=(
+                f"<p style='margin:0 0 12px;'>You're signed up for the <b>FIFA World Cup 2026 "
+                f"Prediction League</b> — but we haven't received your <b>{entry_fee}</b> entry fee yet.</p>"
+                "<p style='margin:0 0 14px;'>Pay by bank transfer to the details below. Once it's received, "
+                "your account is activated and you can start making picks before kickoff.</p>"
+                "<table role='presentation' cellpadding='0' cellspacing='0' "
+                f"style='margin:4px 0 2px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;'>{rows}</table>"
+            ),
+            cta_text="Message us on WhatsApp →",
+            cta_url=whatsapp_url,
+            footer_note="Already paid? Thanks — you can ignore this; your account is activated once the transfer clears.",
+        ),
+    )
+
+
 # --- Senders ---------------------------------------------------------------
 def send_password_reset_email(to_email, reset_url):
     subject, html = build_password_reset_email(reset_url)
@@ -204,6 +231,11 @@ def send_signup_reminder_email(to_email, set_password_url, hours=24):
 
 def send_pick_reminder_email(to_email, games, picks_url):
     subject, html = build_pick_reminder_email(games, picks_url)
+    _send_email(to_email, subject=subject, html=html)
+
+
+def send_payment_reminder_email(to_email, entry_fee, bank_details, whatsapp_url):
+    subject, html = build_payment_reminder_email(entry_fee, bank_details, whatsapp_url)
     _send_email(to_email, subject=subject, html=html)
 
 # --- Verify Paypal ---

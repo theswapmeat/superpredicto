@@ -71,6 +71,8 @@ class Participant(db.Model):
     tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id"), nullable=False)
     is_paid = db.Column(db.Boolean, default=False, nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
+    # One-shot: set once the "signed up but unpaid" reminder has been emailed.
+    payment_reminder_sent = db.Column(db.Boolean, default=False, nullable=False)
     joined_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
     # Per-tournament scoring (populated by the scoring job). Replaces the old

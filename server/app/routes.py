@@ -27,6 +27,7 @@ from .utils import (
     send_tournament_invite_email,
     send_signup_reminder_email,
     send_pick_reminder_email,
+    send_payment_reminder_email,
     verify_paypal_payment,
     send_payment_receipt_email,
 )
@@ -1551,6 +1552,63 @@ def internal_remind_signups():
             current_app.logger.warning("signup reminder failed for %s: %s", user.email, e)
             failed.append(user.email)
     return jsonify({"ok": True, "sent": sent, "failed": failed, "hours_left": hours_left})
+
+
+# --- Reminder: pay your entry (one-shot, ~3 days before first kickoff) ---
+# Token-guarded. Emails activated-but-unpaid participants the bank-transfer
+# details (from config, same source as /payment) — once each, only inside the
+# 3-day pre-kickoff window, flipping participants.payment_reminder_sent.
+@main.route("/internal/remind-payments", methods=["GET", "POST"])
+def internal_remind_payments():
+    expected = current_app.config.get("INTERNAL_SYNC_TOKEN")
+    token = request.headers.get("X-Sync-Token") or request.args.get("token")
+    if not expected or token != expected:
+        abort(403)
+
+    active = active_tournament()
+    if not active or not active.is_active:
+        return jsonify({"ok": False, "error": "no active tournament"}), 400
+
+    games = Game.query.filter_by(tournament_id=active.id).all()
+    kickoffs = [g.kickoff_utc() for g in games]
+    if not kickoffs:
+        return jsonify({"ok": True, "sent": 0, "note": "no games scheduled"})
+
+    first_kickoff = min(kickoffs)
+    now = datetime.now(timezone("UTC"))
+    window_open = first_kickoff - timedelta(days=3)
+    if now < window_open or now >= first_kickoff:
+        return jsonify({"ok": True, "sent": 0, "note": "outside 3-day pre-kickoff window"})
+
+    # Signed up (activated) but not paid yet.
+    targets = (
+        Participant.query.filter_by(tournament_id=active.id, is_active=True, is_paid=False)
+        .join(Participant.user)
+        .options(contains_eager(Participant.user))
+        .filter(
+            Participant.payment_reminder_sent.is_(False),
+            User.password_hash.isnot(None),
+            User.email != ADMIN_EMAIL,
+        )
+        .all()
+    )
+
+    entry_fee = current_app.config.get("ENTRY_FEE_LABEL", "")
+    bank_details = current_app.config.get("BANK_DETAILS", [])
+    whatsapp_url = current_app.config.get("SUPPORT_WHATSAPP_URL", "")
+
+    sent, failed = 0, []
+    for part in targets:
+        try:
+            send_payment_reminder_email(part.user.email, entry_fee, bank_details, whatsapp_url)
+            part.payment_reminder_sent = True
+            db.session.commit()  # persist per-user so a later error can't re-send
+            sent += 1
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.warning("payment reminder failed for %s: %s", part.user.email, e)
+            failed.append(part.user.email)
+    return jsonify({"ok": True, "sent": sent, "failed": failed})
 
 
 # --- Reminder: make your pick (kickoff within 2h, no prediction yet) ---

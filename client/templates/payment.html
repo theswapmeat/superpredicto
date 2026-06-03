@@ -9,7 +9,7 @@
         Entry fee
       </span>
       <h1 class="auth-title">Payment <span>Required</span></h1>
-      <p class="auth-sub">Pay your <b style="color:var(--text)">AED 275</b> entry fee by bank transfer to join the 2026 FIFA World Cup tournament.</p>
+      <p class="auth-sub">Pay your <b style="color:var(--text)">{{ config.ENTRY_FEE_LABEL }}</b> entry fee by bank transfer to join the 2026 FIFA World Cup tournament.</p>
     </div>
 
     <div class="sp-note" style="margin-bottom:18px">
@@ -17,10 +17,9 @@
       <div>
         <div style="font-family:'Saira Condensed',sans-serif; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-2); font-size:12px; margin-bottom:8px">Bank transfer details</div>
         <table style="width:100%; font-size:14px; color:var(--text)">
-          <tr><td style="color:var(--muted); padding:3px 14px 3px 0">Name</td><td>Anup Paul Chackunny</td></tr>
-          <tr><td style="color:var(--muted); padding:3px 14px 3px 0">Bank</td><td>Emirates NBD</td></tr>
-          <tr><td style="color:var(--muted); padding:3px 14px 3px 0">Account</td><td>1014040525401</td></tr>
-          <tr><td style="color:var(--muted); padding:3px 14px 3px 0">IBAN</td><td>AE270260001014040525401</td></tr>
+          {% for label, value in config.BANK_DETAILS %}
+          <tr><td style="color:var(--muted); padding:3px 14px 3px 0">{{ label }}</td><td>{{ value }}</td></tr>
+          {% endfor %}
         </table>
       </div>
     </div>
