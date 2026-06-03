@@ -17,7 +17,7 @@
       </span>
       <h1 class="page-title">{% if tournament and not tournament.is_active %}Final <span>Leaderboard</span>{% else %}<span>Leaderboard</span>{% endif %}</h1>
       <p class="ph-note"><i class="bi bi-hand-index-thumb"></i> Click any player to see their predictions.</p>
-      {% if tournament and tournament.is_active %}<p class="ph-note"><i class="bi bi-arrow-repeat"></i> Standings update every 5 minutes and include live matches — points can move until full-time.</p>{% endif %}
+      {% if tournament and tournament.is_active %}<p class="ph-note"><i class="bi bi-arrow-repeat"></i> Standings update every minute and include live matches — points can move until full-time.</p>{% endif %}
     </div>
   </div>
 </section>

@@ -1470,12 +1470,20 @@ def internal_sync_scores():
         summary = sync_fixtures(
             api_key, active.id, create_missing=True, write_scores=True
         )
-        run_prediction_scoring(active.id)
+        # Only rerun scoring when a score actually moved. Picks are locked during
+        # live games, so nothing else can change a result, and a status flip
+        # (e.g. IN_PLAY -> FINISHED with the same score) yields identical points.
+        # This keeps every-minute polling cheap — most minutes are pure no-ops.
+        rescored = bool(summary.get("scores_updated"))
+        if rescored:
+            run_prediction_scoring(active.id)
     except Exception as e:
         db.session.rollback()
         return jsonify({"ok": False, "error": str(e)}), 502
 
-    return jsonify({"ok": True, "tournament": active.year, "sync": summary})
+    return jsonify(
+        {"ok": True, "tournament": active.year, "rescored": rescored, "sync": summary}
+    )
 
 
 def _kickoff_dubai_str(game):

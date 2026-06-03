@@ -1,9 +1,8 @@
 # DigitalOcean Functions project: scheduled jobs that poke the app's token-guarded
-# /internal/* endpoints. Three functions, each a tiny stdlib POST:
-#   sync/poll        every 5m  -> /internal/sync-scores    (live scores + rescoring)
-#   remind/signups   hourly    -> /internal/remind-signups  (one-off 24h-to-kickoff nudge)
-#   remind/payments  hourly    -> /internal/remind-payments (one-off 3-days-to-kickoff pay nudge)
-#   remind/picks     every 10m -> /internal/remind-picks    (kickoff-in-2h pick nudge)
+# /internal/* endpoints. THREE scheduled triggers (DO caps triggers per namespace):
+#   sync/poll      every 1m  -> /internal/sync-scores                      (live scores + rescoring)
+#   remind/hourly  hourly    -> /internal/remind-signups + remind-payments (24h signup + 3-day pay nudges)
+#   remind/picks   every 10m -> /internal/remind-picks                     (kickoff-in-2h pick nudge)
 #
 # Scheduler crons run year-round (5-field cron has no year field); each function
 # hard-codes a UTC window and no-ops outside it, and the app enforces the precise
@@ -30,19 +29,23 @@ packages:
         limits:
           timeout: 60000     # ms — the endpoint also talks to football-data.org
         triggers:
+          # Name kept as poll-5min (renaming would churn the trigger and risk DO's
+          # per-namespace trigger cap); it now fires EVERY MINUTE so the live
+          # leaderboard refreshes ~1/min during matches.
           - name: poll-5min
             sourceType: scheduler
             sourceDetails:
-              cron: '*/5 * * * *'   # every 5 minutes (UTC)
+              cron: '* * * * *'     # every minute (UTC)
               withBody: {}
   - name: remind
     parameters: {}
     environment: {}
     functions:
-      # "Finish signing up" — one-off email ~24h before first kickoff to invited
-      # but never-activated participants. Fires hourly; the function loosely gates
-      # to the pre-tournament days and the app enforces the exact 24h window + once-per-user.
-      - name: signups
+      # Hourly reminders — signups + payments MERGED into one trigger to stay within
+      # DigitalOcean's per-namespace scheduled-trigger limit. POSTs to BOTH
+      # /internal/remind-signups and /internal/remind-payments; each is window-gated
+      # and idempotent in the app, so one hourly call drives both safely.
+      - name: hourly
         binary: false
         main: ''
         runtime: 'python:default'
@@ -54,7 +57,7 @@ packages:
         limits:
           timeout: 60000
         triggers:
-          - name: signups-hourly
+          - name: reminders-hourly
             sourceType: scheduler
             sourceDetails:
               cron: '0 * * * *'    # hourly, on the hour (UTC)
@@ -77,24 +80,4 @@ packages:
             sourceType: scheduler
             sourceDetails:
               cron: '*/10 * * * *'   # every 10 minutes (UTC)
-              withBody: {}
-      # "Pay your entry" — one-off email ~3 days before first kickoff to signed-up
-      # but unpaid participants. Fires hourly; the app enforces the exact 3-day
-      # window + once-per-participant.
-      - name: payments
-        binary: false
-        main: ''
-        runtime: 'python:default'
-        web: false
-        parameters: {}
-        environment:
-          APP_URL: ${APP_URL}
-          SYNC_TOKEN: ${SYNC_TOKEN}
-        limits:
-          timeout: 60000
-        triggers:
-          - name: payments-hourly
-            sourceType: scheduler
-            sourceDetails:
-              cron: '0 * * * *'    # hourly, on the hour (UTC)
               withBody: {}
