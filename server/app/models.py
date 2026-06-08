@@ -16,20 +16,12 @@ class User(db.Model):
     first_name = db.Column(db.String, nullable=True)
     last_name = db.Column(db.String, nullable=True)
     display_name = db.Column(db.String(20), nullable=True)
-    is_paid = db.Column(db.Boolean, default=False)
-    is_active = db.Column(db.Boolean, default=True)
     avatar = db.Column(db.String)
     password_hash = db.Column(db.String, nullable=True)
     must_change_password = db.Column(db.Boolean, default=True)
     # One-shot flag: set True once the "24h to kickoff, finish signing up" blast
     # has been emailed to this (still-unactivated) invitee, so it's sent only once.
     signup_reminder_sent = db.Column(db.Boolean, default=False, nullable=False)
-
-    perfect_picks = db.Column(db.Integer, nullable=True)
-    picks_scoring_one = db.Column(db.Integer, nullable=True)
-    picks_scoring_two = db.Column(db.Integer, nullable=True)
-    picks_scoring_zero = db.Column(db.Integer, nullable=True)
-    invalid_picks = db.Column(db.Integer, nullable=True)
 
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
     updated_at = db.Column(
