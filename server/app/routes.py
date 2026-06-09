@@ -115,13 +115,14 @@ def earliest_live_game(tournament_id):
 
 
 def build_leaderboard(tournament, current_user_id=None):
-    """Ranked leaderboard entries for one tournament (active, named participants).
+    """Ranked leaderboard entries for one tournament (active, named participants;
+    plus paid-only for the live season — archived seasons show everyone).
 
     Each entry carries user_id so rows can link to that user's predictions.
     """
     if not tournament:
         return []
-    participants = (
+    q = (
         Participant.query.filter_by(tournament_id=tournament.id, is_active=True)
         .join(Participant.user)
         .options(contains_eager(Participant.user))  # populate p.user from the join (no N+1)
@@ -134,8 +135,13 @@ def build_leaderboard(tournament, current_user_id=None):
             User.display_name.isnot(None),
             User.display_name != "",
         )
-        .all()
     )
+    # The LIVE leaderboard is the paying field only — signed-up-but-unpaid players
+    # never appear. Archived seasons show everyone (old payment flags may be
+    # unreliable and the field is settled), so gate the filter to the active season.
+    if tournament.is_active:
+        q = q.filter(Participant.is_paid.is_(True))
+    participants = q.all()
     entries = [
         {
             "user_id": p.user_id,
