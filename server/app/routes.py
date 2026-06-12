@@ -621,6 +621,12 @@ def predictions():
         .filter((Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae_naive)
     )
 
+    # Paid-only, matching the leaderboard: an unpaid player's picks never show
+    # (even via the default "All Users" view or a ?user_id= deep-link).
+    paid_ids = paid_user_ids_subquery(active)
+    if paid_ids is not None:
+        query = query.filter(UserPrediction.user_id.in_(paid_ids))
+
     if user_id:
         query = query.filter(UserPrediction.user_id == user_id)
     if game_id:
@@ -636,6 +642,8 @@ def predictions():
         .filter(
             Participant.tournament_id == active.id,
             Participant.is_active == True,
+            # Paid-only field, matching the leaderboard and the list above.
+            Participant.is_paid.is_(True),
             User.email != "admin@superpredicto.com",
             User.first_name.isnot(None),
             User.first_name != "",
@@ -701,6 +709,11 @@ def predictions_filter():
             (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae_naive,
         )
     )
+
+    # Paid-only, matching predictions() and the leaderboard.
+    paid_ids = paid_user_ids_subquery(active)
+    if paid_ids is not None:
+        query = query.filter(UserPrediction.user_id.in_(paid_ids))
 
     if user_id:
         query = query.filter(UserPrediction.user_id == user_id)
@@ -840,6 +853,24 @@ def active_tournament():
 def is_archived(tournament):
     """Archived (non-active) tournaments are read-only — no scoring or edits."""
     return bool(tournament) and not tournament.is_active
+
+
+def paid_user_ids_subquery(tournament):
+    """Scalar subquery of user_ids in a tournament's *paying* field, or None.
+
+    Mirrors the leaderboard's paid-only gate (build_leaderboard): the live
+    season shows only paid, active participants, so /predictions matches —
+    signed-up-but-unpaid players don't appear in the list or the user filter.
+    Returns None for archived seasons (no gate), but /predictions only ever
+    shows the active season. Use with UserPrediction.user_id.in_(...).
+    """
+    if not tournament or not tournament.is_active:
+        return None
+    return db.session.query(Participant.user_id).filter(
+        Participant.tournament_id == tournament.id,
+        Participant.is_active.is_(True),
+        Participant.is_paid.is_(True),
+    )
 
 
 # --- Dashboard (Admin Only) ---
