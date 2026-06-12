@@ -600,6 +600,12 @@ def predictions():
 
     uae = timezone("Asia/Dubai")
     now_uae = datetime.now(uae)
+    # Bare Dubai wall-clock for SQL comparisons. The stored kickoff
+    # (date_of_game + time_of_game) is a tz-naive Dubai wall-clock; comparing it
+    # against a tz-aware `now` makes Postgres reinterpret it in the session
+    # timezone (UTC on Supabase), shifting every kickoff +4h. Comparing naive-to-
+    # naive keeps both sides in identical Dubai wall-clock terms.
+    now_uae_naive = now_uae.replace(tzinfo=None)
 
     active = active_tournament()
     if not active:
@@ -612,7 +618,7 @@ def predictions():
         .filter(User.email != "admin@superpredicto.com")
         .filter(Game.tournament_id == active.id)
         # Only predictions for games that have already started
-        .filter((Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae)
+        .filter((Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae_naive)
     )
 
     if user_id:
@@ -645,7 +651,7 @@ def predictions():
     all_games = (
         Game.query.filter(
             Game.tournament_id == active.id,
-            (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae,
+            (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae_naive,
         )
         .order_by(Game.date_of_game, Game.time_of_game)
         .all()
@@ -672,6 +678,8 @@ def predictions_filter():
 
     uae = timezone("Asia/Dubai")
     now_uae = datetime.now(uae)
+    # Naive Dubai wall-clock for the SQL kickoff comparison (see predictions()).
+    now_uae_naive = now_uae.replace(tzinfo=None)
 
     active = active_tournament()
     active_id = active.id if active else -1
@@ -690,7 +698,7 @@ def predictions_filter():
     query = query.filter(
         or_(
             Game.is_completed == True,
-            (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae,
+            (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae_naive,
         )
     )
 
@@ -1778,12 +1786,14 @@ def prediction_check():
         abort(403)
     uae = timezone("Asia/Dubai")
     now_uae = datetime.now(uae)
+    # Naive Dubai wall-clock for the SQL kickoff comparison (see predictions()).
+    now_uae_naive = now_uae.replace(tzinfo=None)
 
     try:
         query = UserPrediction.query.join(UserPrediction.game).filter(
             or_(
                 Game.is_completed == True,
-                (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae,
+                (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae_naive,
             )
         )
         count = query.count()
