@@ -49,7 +49,7 @@
   <div class="field">
     <label>Rows per page</label>
     <div class="filterseg" id="perPageSeg">
-      <button type="button" class="on" data-perpage="10">10</button>
+      <button type="button" class="on" data-perpage="12">12</button>
       <button type="button" data-perpage="50">50</button>
       <button type="button" data-perpage="100">100</button>
     </div>
@@ -104,7 +104,7 @@
     // Only show the skeleton if the fetch is actually slow (>180ms). On a fast
     // response the current table is replaced directly — no skeleton flash.
     const skeletonTimer = setTimeout(() => {
-      target.innerHTML = buildSkeleton(parseInt(perPage, 10) > 10 ? 10 : 8);
+      target.innerHTML = buildSkeleton(Math.min(parseInt(perPage, 10) || 12, 12));
     }, 180);
 
     fetch(`/predictions/filter?${params.toString()}`)
@@ -130,6 +130,8 @@
     b.addEventListener("click", () => {
       document.querySelectorAll("#perPageSeg button").forEach((x) => x.classList.remove("on"));
       b.classList.add("on");
+      // Remember the choice so it sticks when the user returns to the page.
+      localStorage.setItem("predPerPage", b.dataset.perpage);
       updatePredictions();
     });
   });
@@ -145,6 +147,17 @@
       const banner = document.getElementById("predictionsIntroBanner");
       if (banner) banner.style.display = "none";
     }
+    // Restore the remembered rows-per-page choice. Validate against the actual
+    // buttons so a stale value (e.g. an old "10") falls back to the default.
+    const savedPerPage = localStorage.getItem("predPerPage");
+    if (savedPerPage) {
+      const match = document.querySelector('#perPageSeg button[data-perpage="' + savedPerPage + '"]');
+      if (match) {
+        document.querySelectorAll("#perPageSeg button").forEach((x) => x.classList.remove("on"));
+        match.classList.add("on");
+      }
+    }
+
     // Honour deep-links like /predictions?user_id=5 (e.g. from the leaderboard):
     // pre-select the dropdowns before the first fetch.
     const qp = new URLSearchParams(window.location.search);

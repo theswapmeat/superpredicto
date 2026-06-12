@@ -596,7 +596,7 @@ def predictions():
     user_id = request.args.get("user_id", type=int)
     game_id = request.args.get("game_id", type=int)
     page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 50, type=int)
+    per_page = request.args.get("per_page", 12, type=int)
 
     uae = timezone("Asia/Dubai")
     now_uae = datetime.now(uae)
@@ -682,7 +682,7 @@ def predictions_filter():
     user_id = request.args.get("user_id", type=int)
     game_id = request.args.get("game_id", type=int)
     page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 50, type=int)
+    per_page = request.args.get("per_page", 12, type=int)
 
     uae = timezone("Asia/Dubai")
     now_uae = datetime.now(uae)
