@@ -732,6 +732,22 @@ def guidelines():
 
 
 # --- Full Leaderboard ---
+def tournament_has_live_games(tournament):
+    """True if an active tournament has a match currently in play.
+
+    Drives the leaderboard's "Live" pill and the client's live-poll loop (it
+    stops polling once nothing is in play). Archived seasons are never live.
+    """
+    return bool(
+        tournament
+        and tournament.is_active
+        and Game.query.filter(
+            Game.tournament_id == tournament.id,
+            Game.status.in_(("IN_PLAY", "PAUSED")),
+        ).first()
+    )
+
+
 @main.route("/leaderboard")
 @login_required
 def leaderboard():
@@ -744,20 +760,31 @@ def leaderboard():
         selected = active_tournament() or (tournaments[0] if tournaments else None)
 
     entries = build_leaderboard(selected, session.get("user_id"))
-    any_live = bool(
-        selected
-        and selected.is_active
-        and Game.query.filter(
-            Game.tournament_id == selected.id,
-            Game.status.in_(("IN_PLAY", "PAUSED")),
-        ).first()
-    )
     return render_template(
         "leaderboard.html",
         leaderboard=entries,
         tournament=selected,
-        any_live=any_live,
+        any_live=tournament_has_live_games(selected),
     )
+
+
+@main.route("/leaderboard/live")
+@login_required
+def leaderboard_live():
+    """JSON feed for the live-updating leaderboard: the rendered rows partial
+    plus whether any match is still in play. The page polls this every 30s
+    while a match is live and swaps in the rows without a full refresh.
+    """
+    selected = None
+    sel_id = request.args.get("tournament_id", type=int)
+    if sel_id:
+        selected = Tournament.query.get(sel_id)
+    if not selected:
+        selected = active_tournament()
+
+    entries = build_leaderboard(selected, session.get("user_id"))
+    html = render_template("partials/_leaderboard_rows.html", leaderboard=entries)
+    return jsonify({"html": html, "any_live": tournament_has_live_games(selected)})
 
 
 # --- Lock a single pick from the landing page ---

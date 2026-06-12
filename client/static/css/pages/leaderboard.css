@@ -13,6 +13,17 @@
 /* The clickable-row + mobile tap-to-expand breakdown styles are shared and live
    in components.css (used by this page and the index podium). */
 
+/* Live update: a row whose stats just changed gets a brief emerald flash so the
+   eye catches the movement during the 30s poll. Honour reduced-motion. */
+@keyframes lbFlash {
+  0%   { background-color:var(--em-dim); }
+  100% { background-color:transparent; }
+}
+.lb-flash td { animation:lbFlash 1.1s ease-out; }
+@media (prefers-reduced-motion:reduce) {
+  .lb-flash td { animation:none; }
+}
+
 @media (max-width:768px) {
   .pwrap { padding-left:18px; padding-right:18px; }
   .ph-inner { align-items:flex-start; }
