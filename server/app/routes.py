@@ -1261,33 +1261,6 @@ def delete_user():
 
 
 # --- Test User Creation ---
-@main.route("/test", methods=["GET", "POST"])
-def test_create_user():
-    if request.method == "POST":
-        email = request.form["email"].strip().lower()
-        first_name = request.form["first_name"]
-        last_name = request.form["last_name"]
-        password = request.form["password"]
-
-        if User.query.filter_by(email=email).first():
-            flash("Email already exists.", "danger")
-            return render_template("test.html")
-
-        user = User(
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            password_hash=generate_password_hash(password),
-            must_change_password=True,
-        )
-        db.session.add(user)
-        db.session.commit()
-        flash("User created successfully!", "success")
-        return redirect(url_for("main.test_create_user"))
-
-    return render_template("test.html")
-
-
 # --- Profile Page ---
 @main.route("/profile", methods=["GET", "POST"])
 @login_required
@@ -1341,12 +1314,17 @@ def profile():
 
 
 # --- Payment ---
-@main.route("/payment", methods=["GET", "POST"])
+@main.route("/payment")
 @login_required
 def payment():
+    # GET only: this page shows bank-transfer instructions. Payment is settled
+    # out-of-band (bank transfer) and confirmed by the admin marking the
+    # participant Paid in the dashboard, OR verified server-side via PayPal in
+    # /payment-success. There is deliberately NO self-service "mark me paid"
+    # path here — that would let any user onto the paid leaderboard for free.
     user = User.query.get(session["user_id"])
 
-    if request.method == "GET" and request.args.get("from_picks"):
+    if request.args.get("from_picks"):
         flash("Please complete your payment to submit picks.", "warning")
 
     if not user.first_name or not user.last_name:
@@ -1371,13 +1349,6 @@ def payment():
     if part.is_paid:
         flash("You're already paid up!", "info")
         return redirect(url_for("main.index"))
-
-    if request.method == "POST":
-        # Simulate successful payment
-        part.is_paid = True
-        db.session.commit()
-        flash("Payment successful! You can now submit your picks.", "success")
-        return redirect(url_for("main.submit_picks"))
 
     return render_template("payment.html")
 

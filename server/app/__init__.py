@@ -35,6 +35,25 @@ def create_app():
     # Load configuration
     app.config.from_object(Config)
 
+    # Fail loud rather than silently falling back to the weak, source-committed
+    # defaults for these secrets. SECRET_KEY signs session cookies (a forged one
+    # = an admin session) and SECURITY_PASSWORD_SALT salts reset tokens (a forged
+    # one = account takeover). Outside local dev, a missing/typo'd env var would
+    # otherwise downgrade both to a publicly-known value with no signal — so crash
+    # the boot instead, turning a silent hole into an obvious deploy-time error.
+    if _APP_ENV != "dev":
+        for _key, _weak in (
+            ("SECRET_KEY", "supersecretkey"),
+            ("SECURITY_PASSWORD_SALT", "another-secret"),
+        ):
+            _val = app.config.get(_key)
+            if not _val or _val == _weak:
+                raise RuntimeError(
+                    f"{_key} is unset or using the insecure built-in default "
+                    f"(APP_ENV={_APP_ENV}). Set a strong, random {_key} environment "
+                    "variable before starting the app."
+                )
+
     # Initialize extensions with app
     db.init_app(app)
     migrate.init_app(app, db)
