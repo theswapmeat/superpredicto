@@ -21,6 +21,24 @@
 
 <main class="pwrap">
   <div class="tgrid">
+    {# Static teaser for the next season — deliberately NOT a DB tournament
+       (no games/leaderboard yet), so it never feeds the real tournament lists.
+       Purely promotional; the button is disabled until 2028 goes live. #}
+    <div class="tcard upcoming">
+      <div class="tcard-media">
+        <img
+          src="{{ url_for('static', filename='images/2028_UEFA_Euro.svg.png') }}"
+          class="emblem"
+          alt="UEFA Euro 2028"
+        />
+        <span class="tpill upcoming">Upcoming</span>
+      </div>
+      <div class="tcard-body">
+        <h3 class="tcard-title">UEFA Euro 2028</h3>
+        <p class="tcard-text">Coming 2028 — the next SuperPredicto season. Stay tuned.</p>
+        <span class="tbtn disabled"><i class="bi bi-hourglass-split"></i> Coming 2028</span>
+      </div>
+    </div>
     {% for t in tournaments %}
     <div class="tcard {{ 'active' if t.is_active else '' }}">
       <div class="tcard-media">
