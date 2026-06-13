@@ -73,6 +73,8 @@
         <div class="g-meta">
           <span class="g-no">Game {{ game.game_number }}</span>
           <span class="g-time"><i class="bi bi-clock"></i><span class="gt" data-utc="{{ game.kickoff_utc().isoformat() }}">{{ game.time_of_game.strftime('%I:%M %p') }}</span></span>
+          <!-- mobile: lock sits by the time for locked games (hidden until .game.locked) -->
+          <span class="meta-lock"><i class="bi bi-lock-fill"></i></span>
         </div>
         <div class="g-match">
           <div class="side home">

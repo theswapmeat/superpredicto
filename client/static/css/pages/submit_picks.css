@@ -39,6 +39,7 @@ footer.site { display:none; }
 .sbox.locked-box.empty { color:var(--muted-2); }
 .sbox.locked-box:hover { border-color:var(--line); }
 .lock-ico { color:var(--muted-2); font-size:17px; margin-left:4px; }
+.meta-lock { display:none; }  /* shown only on mobile, beside the time, for locked games */
 
 /* CLOSING SOON — final 60s before a game's kickoff locks it */
 .game.closing-soon { border-left-color:var(--gold); background:linear-gradient(180deg, rgba(244,199,82,.10), rgba(244,199,82,.02)); }
@@ -62,36 +63,45 @@ footer.site { display:none; }
   .sb-remaining { display:none; }
   .toolbar { justify-content:center; }
 
-  /* Inline the score steppers into the name row: home name → home stepper → dash
-     → away stepper → away name. The names (.g-match) and steppers (.g-score)
-     live in separate blocks, so display:contents lifts their children into one
-     wrapping flex row on .game, and order interleaves them. DOM is unchanged, so
-     the stepper JS + live kickoff-lock keep working. */
-  .game { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px 8px; }
-  .g-meta { flex:0 0 100%; flex-direction:row; align-items:center; gap:12px; }
-  .g-match, .g-score, .locked-score { display:contents; }
-  .tbadge, .vsv, .g-status { display:none; }   /* code badge, "VS", check — not needed inline */
-  .tname { font-size:14.5px; max-width:90px; }
+  /* Fixed-column grid so the score boxes sit in the SAME place on every card —
+     editable, locked or future. The 5 centre columns are fixed (spinner · box ·
+     dash · box · spinner) and the two name columns flex + truncate, so neither
+     name length nor spinner presence ever shifts the boxes. display:contents
+     lifts the names, steppers and boxes into this one grid; the DOM is unchanged
+     so the stepper JS + live kickoff-lock keep working with no JS changes. */
+  .game { display:grid; grid-template-columns:minmax(0,1fr) 30px 52px 14px 52px 30px minmax(0,1fr); column-gap:5px; row-gap:12px; align-items:center; }
+  .g-meta { grid-column:1 / -1; flex-direction:row; align-items:center; gap:12px; }
+  .g-match, .g-score, .stepper, .locked-score { display:contents; }
+  .tbadge, .vsv, .g-status { display:none; }   /* code badge, "VS", predicted-check */
 
-  .side.home { order:1; }
-  .stepper.home { order:2; }
-  .g-score > .dash, .locked-score .dash { order:3; }
-  .stepper.away { order:4; }
-  .side.away { order:5; }
-  /* Locked games read the same inline way (sboxes have no data-side, so order by
-     position): home box → dash → away box → lock icon. */
-  .locked-score .sbox:first-of-type { order:2; }
-  .locked-score .sbox:last-of-type { order:4; }
-  .lock-ico { order:6; }
+  /* Names: flexible columns, single line, truncate with … (never push the boxes). */
+  .side { min-width:0; overflow:hidden; }
+  .side.home { grid-column:1; justify-content:flex-end; }
+  .side.away { grid-column:7; justify-content:flex-start; }
+  .tname { font-size:14.5px; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* Editable: spinners flank the fixed box columns, boxes locked to cols 3 & 5. */
+  .stepper.home .arrows { grid-column:2; }
+  .stepper.home .sbox   { grid-column:3; }
+  .g-score > .dash, .locked-score .dash { grid-column:4; }
+  .stepper.away .sbox   { grid-column:5; }
+  .stepper.away .arrows { grid-column:6; }
+  .arrows, .sbox { justify-self:center; }
+
+  /* Locked: same box columns (spinner cols 2 & 6 just left empty), boxes
+     normalised to the editable size, lock moved up beside the time. */
+  .locked-score .sbox:first-of-type { grid-column:3; }
+  .locked-score .sbox:last-of-type  { grid-column:5; }
+  .sbox.locked-box { width:52px; height:54px; font-size:30px; }
+  .locked-score .lock-ico { display:none; }
+  .game.locked .meta-lock { display:inline-flex; align-items:center; color:var(--muted-2); font-size:14px; }
 }
 @media (max-width:400px) {
-  /* keep the home/VS/away row from overflowing on the smallest phones */
-  .tbadge { width:34px; height:34px; font-size:12px; border-radius:9px; }
-  .tname { font-size:13px; max-width:66px; }
-  .g-match { gap:10px; }
-  .sbox { width:46px; height:48px; font-size:26px; }
-  .g-score { gap:8px; }
+  /* Smallest phones: shrink the fixed centre columns + boxes to keep one line. */
+  .game { grid-template-columns:minmax(0,1fr) 26px 46px 12px 46px 26px minmax(0,1fr); column-gap:4px; }
+  .sbox, .sbox.locked-box { width:46px; height:48px; font-size:26px; }
   .arrows button { width:24px; height:22px; }
+  .tname { font-size:13px; }
 }
 
 /* UNSAVED-PICKS MODAL — match the app's dark theme + fonts */
