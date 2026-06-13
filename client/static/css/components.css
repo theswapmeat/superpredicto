@@ -25,7 +25,18 @@ header.nav { display:block; position:sticky; top:0; z-index:50; height:var(--nav
 .nav-inner { height:100%; display:flex; align-items:center; justify-content:space-between; gap:26px; max-width:1240px; margin:0 auto; padding:0 32px; }
 .brand { display:flex; align-items:center; flex:0 0 auto; }
 .brand img { height:30px; width:auto; display:block; }
-.nav-toggle { display:none; background:transparent; border:1px solid var(--line-strong); color:var(--text); border-radius:8px; padding:5px 12px; font-size:20px; line-height:1; cursor:pointer; }
+/* Hamburger: 3 bars in a flex-centred box (perfectly centred vs the old ☰ glyph),
+   morphing to an X when the menu is open. Hidden on desktop; shown in the mobile
+   media query below. */
+.nav-toggle { display:none; align-items:center; justify-content:center; width:42px; height:38px; padding:0; background:transparent; border:1px solid var(--line-strong); color:var(--text); border-radius:8px; cursor:pointer; }
+.nt-bars { position:relative; width:20px; height:14px; }
+.nt-bars span { position:absolute; left:0; right:0; height:2px; border-radius:2px; background:currentColor; transition:top .25s ease, transform .25s ease, opacity .2s ease; }
+.nt-bars span:nth-child(1) { top:0; }
+.nt-bars span:nth-child(2) { top:6px; }
+.nt-bars span:nth-child(3) { top:12px; }
+.nav-toggle.open .nt-bars span:nth-child(1) { top:6px; transform:rotate(45deg); }
+.nav-toggle.open .nt-bars span:nth-child(2) { opacity:0; }
+.nav-toggle.open .nt-bars span:nth-child(3) { top:6px; transform:rotate(-45deg); }
 .nav-menu { display:flex; align-items:center; gap:26px; margin-left:auto; }
 nav.links { display:flex; align-items:center; gap:9px; }
 nav.links a { font-family:"Saira Condensed",sans-serif; font-weight:600; font-size:14px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); padding:8px 12px; border-radius:8px; white-space:nowrap; transition:color .15s ease, background .15s ease; }
@@ -138,9 +149,12 @@ footer.site { border-top:1px solid var(--line); padding:30px 0; flex-shrink:0; }
 }
 
 @media (max-width:900px) {
-  .nav-toggle { display:block; }
-  .nav-menu { display:none; position:absolute; top:var(--nav-h); left:0; right:0; flex-direction:column; align-items:stretch; gap:0; background:rgba(8,12,26,.98); border-bottom:1px solid var(--line); padding:12px 20px 18px; }
-  .nav-menu.open { display:flex; }
+  .nav-toggle { display:inline-flex; }
+  /* Kept in the DOM and animated (opacity/transform) so open AND close are smooth
+     — display:none/flex can't transition. visibility + pointer-events keep it
+     non-interactive while hidden. */
+  .nav-menu { display:flex; position:absolute; top:var(--nav-h); left:0; right:0; flex-direction:column; align-items:stretch; gap:0; background:rgba(8,12,26,.98); border-bottom:1px solid var(--line); padding:12px 20px 18px; opacity:0; visibility:hidden; transform:translateY(-10px); pointer-events:none; transition:opacity .22s ease, transform .22s ease, visibility .22s ease; }
+  .nav-menu.open { opacity:1; visibility:visible; transform:translateY(0); pointer-events:auto; }
   nav.links { flex-direction:column; align-items:stretch; gap:2px; margin-left:0; }
   nav.links a { padding:12px 8px; }
   nav.links a.active { box-shadow:inset 3px 0 0 0 var(--em); padding-left:12px; }

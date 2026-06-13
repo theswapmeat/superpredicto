@@ -27,4 +27,7 @@
 @media (max-width:768px) {
   .pwrap { padding-left:18px; padding-right:18px; }
   .ph-inner { align-items:flex-start; }
+  /* Points is the last visible column on mobile; give it the same right-edge
+     inset the Rank pill reads as on the left, so it isn't flush to the card. */
+  .table-card td.points, .table-card .colrow th:nth-child(3) { padding-right:26px; }
 }

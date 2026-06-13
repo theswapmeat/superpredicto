@@ -40,7 +40,9 @@
     <header class="nav">
       <div class="nav-inner">
         <a class="brand" href="/"><img src="{{ url_for('static', filename='brand/superpredicto-ondark.svg') }}" alt="SuperPredicto" /></a>
-        <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
+          <span class="nt-bars"><span></span><span></span><span></span></span>
+        </button>
         <div class="nav-menu" id="navMenu">
           <nav class="links">
             {% if is_admin_user %}
@@ -145,7 +147,11 @@
     <script>
       var navToggle = document.getElementById("navToggle");
       var navMenu = document.getElementById("navMenu");
-      if (navToggle) navToggle.addEventListener("click", function () { navMenu.classList.toggle("open"); });
+      if (navToggle) navToggle.addEventListener("click", function () {
+        var open = navMenu.classList.toggle("open");   // slide/fade the menu
+        navToggle.classList.toggle("open", open);       // morph bars <-> X
+        navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      });
 
       // Password show/hide toggle (any .sp-pw > .pw-toggle on any page).
       document.addEventListener("click", function (e) {
