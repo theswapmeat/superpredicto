@@ -58,13 +58,31 @@ footer.site { display:none; }
 @media (max-width:720px) {
   .pwrap, .savebar-inner { padding-left:18px; padding-right:18px; }
   .ph-inner { align-items:flex-start; }
-  .game { grid-template-columns:1fr; gap:14px; }
-  .g-meta { flex-direction:row; align-items:center; gap:12px; }
-  .g-match, .g-score { justify-content:center; }
-  .tname { font-size:14.5px; max-width:90px; }
   .savebar-inner { padding-top:12px; padding-bottom:12px; gap:14px; }
   .sb-remaining { display:none; }
   .toolbar { justify-content:center; }
+
+  /* Inline the score steppers into the name row: home name → home stepper → dash
+     → away stepper → away name. The names (.g-match) and steppers (.g-score)
+     live in separate blocks, so display:contents lifts their children into one
+     wrapping flex row on .game, and order interleaves them. DOM is unchanged, so
+     the stepper JS + live kickoff-lock keep working. */
+  .game { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px 8px; }
+  .g-meta { flex:0 0 100%; flex-direction:row; align-items:center; gap:12px; }
+  .g-match, .g-score, .locked-score { display:contents; }
+  .tbadge, .vsv, .g-status { display:none; }   /* code badge, "VS", check — not needed inline */
+  .tname { font-size:14.5px; max-width:90px; }
+
+  .side.home { order:1; }
+  .stepper.home { order:2; }
+  .g-score > .dash, .locked-score .dash { order:3; }
+  .stepper.away { order:4; }
+  .side.away { order:5; }
+  /* Locked games read the same inline way (sboxes have no data-side, so order by
+     position): home box → dash → away box → lock icon. */
+  .locked-score .sbox:first-of-type { order:2; }
+  .locked-score .sbox:last-of-type { order:4; }
+  .lock-ico { order:6; }
 }
 @media (max-width:400px) {
   /* keep the home/VS/away row from overflowing on the smallest phones */

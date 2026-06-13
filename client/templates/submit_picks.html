@@ -87,7 +87,7 @@
         </div>
         <div class="g-score">
           {% if editable %}
-          <div class="stepper">
+          <div class="stepper home">
             <div class="arrows">
               <button type="button" data-act="inc" data-side="home" aria-label="increase home">▲</button>
               <button type="button" data-act="dec" data-side="home" aria-label="decrease home">▼</button>
@@ -95,7 +95,7 @@
             <div class="sbox {% if not hh %}empty{% endif %}" data-side="home" tabindex="0" role="spinbutton">{{ fh if hh else '–' }}</div>
           </div>
           <span class="dash">–</span>
-          <div class="stepper">
+          <div class="stepper away">
             <div class="sbox {% if not ha %}empty{% endif %}" data-side="away" tabindex="0" role="spinbutton">{{ fa if ha else '–' }}</div>
             <div class="arrows">
               <button type="button" data-act="inc" data-side="away" aria-label="increase away">▲</button>
