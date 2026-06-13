@@ -44,21 +44,36 @@
     {% for game in games %}
     {% set completed = game.is_completed %}
     {% set live = game.is_live %}
+    {# Mobile-only middle label: FT / PENS / HT / vs. PENS uses the already-stored
+       pen columns (no migration); extra time has no persisted phase so it falls
+       through to vs (still flagged live by the time-pulse). #}
+    {% if completed %}{% set mstatus, mcls = 'FT', 'is-ft' %}
+    {% elif game.home_team_pens is not none %}{% set mstatus, mcls = 'PENS', 'is-pens' %}
+    {% elif game.status == 'PAUSED' %}{% set mstatus, mcls = 'HT', 'is-ht' %}
+    {% else %}{% set mstatus, mcls = 'vs', '' %}{% endif %}
     <div class="game-item game{% if completed %} completed{% endif %}{% if live %} live{% endif %}"
          id="game-{{ game.id }}" data-utc="{{ game.kickoff_utc().isoformat() }}"
          data-completed="{{ 1 if completed else 0 }}" data-live="{{ 1 if live else 0 }}">
       <div class="g-meta">
         <span class="g-no">Game {{ game.game_number }}</span>
         <span class="g-time"><i class="bi bi-clock"></i><span class="gt" data-utc="{{ game.kickoff_utc().isoformat() }}">{{ game.time_of_game.strftime('%I:%M %p') }}</span></span>
+        <span class="live-pip"><span class="dot"></span>Live</span>
       </div>
       <div class="g-match">
         <div class="side home">
           <span class="tname">{{ game.home_team }}</span>
-          <span class="tbadge home">{{ game.home_team_code or game.home_team[:3]|upper }}</span>
+          <span class="tbadge home">
+            <span class="bdg-code">{{ game.home_team_code or game.home_team[:3]|upper }}</span>
+            <span class="bdg-score">{{ game.home_team_score if game.home_team_score is not none else 0 }}</span>
+          </span>
         </div>
         <span class="vsv">VS</span>
+        <span class="vsv-mob {{ mcls }}">{{ mstatus }}</span>
         <div class="side away">
-          <span class="tbadge away">{{ game.away_team_code or game.away_team[:3]|upper }}</span>
+          <span class="tbadge away">
+            <span class="bdg-code">{{ game.away_team_code or game.away_team[:3]|upper }}</span>
+            <span class="bdg-score">{{ game.away_team_score if game.away_team_score is not none else 0 }}</span>
+          </span>
           <span class="tname">{{ game.away_team }}</span>
         </div>
       </div>
