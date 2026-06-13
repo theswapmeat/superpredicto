@@ -70,9 +70,13 @@ footer.site { display:none; }
      lifts the names, steppers and boxes into this one grid; the DOM is unchanged
      so the stepper JS + live kickoff-lock keep working with no JS changes. */
   .game { display:grid; grid-template-columns:minmax(0,1fr) 30px 52px 14px 52px 30px minmax(0,1fr); column-gap:5px; row-gap:12px; align-items:center; }
-  .g-meta { grid-column:1 / -1; flex-direction:row; align-items:center; gap:12px; }
+  .g-meta { grid-column:1 / -1; grid-row:1; flex-direction:row; align-items:center; gap:12px; }
   .g-match, .g-score, .stepper, .locked-score { display:contents; }
   .tbadge, .vsv, .g-status { display:none; }   /* code badge, "VS", predicted-check */
+  /* Pin every play item to row 2 explicitly. Without this, grid auto-placement
+     (names come before steppers in the DOM) bumps the boxes onto a 3rd row. */
+  .side, .stepper .arrows, .stepper .sbox, .g-score > .dash,
+  .locked-score .sbox, .locked-score .dash { grid-row:2; }
 
   /* Names: flexible columns, single line, truncate with … (never push the boxes). */
   .side { min-width:0; overflow:hidden; }
