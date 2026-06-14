@@ -20,6 +20,7 @@ from sqlalchemy.orm import joinedload, contains_eager
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func, desc, cast, String, Interval, or_
 from .utils import (
+    absolute_url,
     generate_reset_token,
     confirm_reset_token,
     send_password_reset_email,
@@ -368,9 +369,7 @@ def forgot_password():
 
         if user:
             token = generate_reset_token(user.email)
-            reset_url = url_for(
-                "main.reset_password_token", token=token, _external=True
-            )
+            reset_url = absolute_url("main.reset_password_token", token=token)
             send_password_reset_email(user.email, reset_url)
 
         flash("If that email exists, a reset link has been sent.", "info")
@@ -1072,9 +1071,7 @@ def invite_user():
         # If they never finished signup, re-send the invite link.
         if not existing_user.password_hash:
             token = generate_reset_token(email)
-            reset_url = url_for(
-                "main.reset_password_token", token=token, mode="invite", _external=True
-            )
+            reset_url = absolute_url("main.reset_password_token", token=token, mode="invite")
             try:
                 send_invite_email(email, reset_url)
                 message += f" Invite link re-sent to {email}."
@@ -1091,9 +1088,7 @@ def invite_user():
     db.session.commit()
 
     token = generate_reset_token(email)
-    reset_url = url_for(
-        "main.reset_password_token", token=token, mode="invite", _external=True
-    )
+    reset_url = absolute_url("main.reset_password_token", token=token, mode="invite")
     try:
         send_invite_email(email, reset_url)
         return _invite_feedback(
@@ -1146,9 +1141,7 @@ def add_participants():
         # locks them out. With password_hash = None they must use the link
         # (login is blocked until they set a new password).
         token = generate_reset_token(user.email)
-        set_url = url_for(
-            "main.reset_password_token", token=token, mode="invite", _external=True
-        )
+        set_url = absolute_url("main.reset_password_token", token=token, mode="invite")
         try:
             send_tournament_invite_email(user.email, set_url, selected.year)
             user.password_hash = None
@@ -1439,9 +1432,7 @@ def email_preview(kind=None):
         build_tournament_invite_email,
     )
 
-    sample_url = url_for(
-        "main.reset_password_token", token="SAMPLE-TOKEN-1234", mode="invite", _external=True
-    )
+    sample_url = absolute_url("main.reset_password_token", token="SAMPLE-TOKEN-1234", mode="invite")
     builders = {
         "invite": lambda: build_invite_email(sample_url),
         "reset": lambda: build_password_reset_email(sample_url),
@@ -1590,9 +1581,7 @@ def internal_remind_signups():
     sent, failed = 0, []
     for user in targets:
         reset_token = generate_reset_token(user.email)
-        set_url = url_for(
-            "main.reset_password_token", token=reset_token, mode="invite", _external=True
-        )
+        set_url = absolute_url("main.reset_password_token", token=reset_token, mode="invite")
         try:
             send_signup_reminder_email(user.email, set_url, hours_left)
             user.signup_reminder_sent = True
@@ -1720,7 +1709,7 @@ def internal_remind_picks():
         for r in PickReminder.query.filter(PickReminder.game_id.in_(soon_ids)).all()
     }
 
-    picks_url = url_for("main.submit_picks", _external=True)
+    picks_url = absolute_url("main.submit_picks")
 
     def _miss_streak(part):
         """Consecutive most-recent locked games (since they joined) with no pick.

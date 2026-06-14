@@ -3,12 +3,21 @@ import requests
 from flask import current_app, url_for
 from itsdangerous import URLSafeTimedSerializer
 
-# Public, absolute URL to the email logo. Emails are read in an inbox, so the
-# image needs a fully-qualified URL; url_for(_external) gives the right host in
-# each environment, and we fall back to the prod domain outside a request.
+# Absolute URL on the public domain for use in EMAILS. We do NOT use
+# url_for(_external=True) because that stamps the host of whatever request
+# triggered the send — and cron-fired reminders arrive on the DigitalOcean
+# ingress host, not superpredicto.com. Building from PUBLIC_BASE_URL keeps every
+# link/image on the custom domain regardless of trigger.
+def absolute_url(endpoint, **values):
+    base = current_app.config.get("PUBLIC_BASE_URL", "https://superpredicto.com").rstrip("/")
+    return base + url_for(endpoint, **values)
+
+
+# Public, absolute URL to the email logo (read in an inbox, so it must be fully
+# qualified). Falls back to the prod domain outside an app context.
 def _logo_url():
     try:
-        return url_for("static", filename="brand/superpredicto-ondark.png", _external=True)
+        return absolute_url("static", filename="brand/superpredicto-ondark.png")
     except Exception:
         return "https://superpredicto.com/static/brand/superpredicto-ondark.png"
 

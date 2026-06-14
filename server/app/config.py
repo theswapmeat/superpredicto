@@ -14,6 +14,11 @@ class Config:
     PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID")
     PAYPAL_CLIENT_SECRET = os.getenv("PAYPAL_CLIENT_SECRET")
     PERMANENT_SESSION_LIFETIME = timedelta(days=14)
+    # Public domain used to build absolute links/images in EMAILS. url_for(_external)
+    # would otherwise stamp the host of whatever triggered the send — and cron-fired
+    # reminders hit the DigitalOcean ingress (…ondigitalocean.app), not the custom
+    # domain. This keeps every email pointing at superpredicto.com regardless.
+    PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://superpredicto.com")
     # Bump (or set the env var) to cache-bust static CSS/JS via ?v=ASSET_VERSION.
     ASSET_VERSION = os.getenv("ASSET_VERSION", "4")
     # Live scores (football-data.org) + the secret that guards the cron sync endpoint.
