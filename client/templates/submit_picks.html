@@ -293,7 +293,10 @@
       var saveBtn = document.getElementById("saveBtn");
       // Enabled only when there's an actual unsaved pick to persist and nothing is half-filled.
       if (saveBtn) saveBtn.disabled = !hasSavableChange() || half;
-      applyFilter();
+      // NOTE: deliberately NOT re-filtering here. Filtering reflects SAVED state,
+      // so a game being edited (e.g. completed under "Needs pick") stays visible
+      // until it's saved — the page reload after save re-applies the filter.
+      // applyFilter() runs only on filter-button clicks and initial load.
     }
 
     // ---- score boxes / steppers ----
@@ -448,6 +451,7 @@
     buildDays();
     snapshotInitial();
     refreshAll();
+    applyFilter();   // initial filter pass (refreshAll no longer re-filters on edits)
     focusGame();
     setupUnsavedGuard();
     setupKickoffGuards();
