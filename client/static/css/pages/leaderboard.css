@@ -27,7 +27,28 @@
 @media (max-width:768px) {
   .pwrap { padding-left:18px; padding-right:18px; }
   .ph-inner { align-items:flex-start; }
-  /* Points is the last visible column on mobile; give it the same right-edge
-     inset the Rank pill reads as on the left, so it isn't flush to the card. */
-  .table-card td.points, .table-card .colrow th:nth-child(3) { padding-right:26px; }
+
+  /* Pin the table to the viewport so it can never overflow — that overflow is
+     what pushed the Points column off the right edge on narrow phones. Fixed
+     layout with defined Rank/Points widths; Player takes the rest and its name
+     truncates, so the three columns always fit at every width. */
+  .table-card table { table-layout:fixed; width:100%; }
+  .table-card thead .colrow th, .table-card tbody td { padding-left:10px; padding-right:10px; }
+  .table-card .colrow th:first-child, .table-card td.rank { width:46px; }
+  .table-card .colrow th:nth-child(3), .table-card td.points { width:60px; }
+  /* Player name truncates with … (the YOU chip + chevron stay put). */
+  .playercell { min-width:0; gap:10px; }
+  .pname { min-width:0; }
+  .pname-txt { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .youchip, .pname .chev { flex:0 0 auto; }
+}
+@media (max-width:380px) {
+  /* Smallest phones (e.g. Galaxy S8+, 360px and below): shrink the space hogs
+     so everything stays comfortable rather than cramped — still never clipped. */
+  .table-card thead .colrow th, .table-card tbody td { padding-left:8px; padding-right:8px; }
+  .table-card .colrow th:first-child, .table-card td.rank { width:40px; }
+  .table-card .colrow th:nth-child(3), .table-card td.points { width:54px; }
+  .rankwrap { width:34px; height:34px; font-size:15px; }
+  .pavatar { width:34px; height:34px; font-size:14px; }
+  td.points .pts { font-size:22px; }
 }
