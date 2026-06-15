@@ -20,9 +20,8 @@
           </td>
           <td>
             <span class="g-teams">
-              <span class="g-side"><span class="g-team">{{ prediction.game.home_team }}</span><span class="g-pred">{{ prediction.home_score_prediction if prediction.home_score_prediction is not none else '–' }}</span></span>
-              <span class="vs">VS</span>
-              <span class="g-side"><span class="g-team">{{ prediction.game.away_team }}</span><span class="g-pred">{{ prediction.away_score_prediction if prediction.away_score_prediction is not none else '–' }}</span></span>
+              <span class="g-full">{{ prediction.game.home_team }}<span class="vs">VS</span>{{ prediction.game.away_team }}</span>
+              <span class="g-compact">{{ prediction.game.home_team_code or prediction.game.home_team[:3]|upper }} <span class="g-pred">({{ prediction.home_score_prediction if prediction.home_score_prediction is not none else '–' }})</span> <span class="cvs">vs</span> {{ prediction.game.away_team_code or prediction.game.away_team[:3]|upper }} <span class="g-pred">({{ prediction.away_score_prediction if prediction.away_score_prediction is not none else '–' }})</span></span>
             </span>
           </td>
           <td>

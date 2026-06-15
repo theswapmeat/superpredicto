@@ -39,9 +39,10 @@
 .u-name { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:16px; letter-spacing:.01em; }
 .g-teams { font-family:"Saira Condensed",sans-serif; font-weight:600; font-size:15px; color:var(--text); white-space:nowrap; }
 .g-teams .vs { color:var(--muted-2); font-size:12px; letter-spacing:.08em; margin:0 7px; }
-/* Per-team predicted score — hidden on desktop (the Prediction column shows it),
-   revealed under each team on mobile (see the ≤760px block). */
-.g-pred { display:none; }
+/* Mobile shows a compact "MEX (2) vs RSA (0)" scoreline (codes + the player's
+   pick) instead of full team names; the desktop full-name version is .g-full.
+   Hidden on desktop — the Prediction column already shows the pick there. */
+.g-compact { display:none; }
 .score-cell { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:17px; letter-spacing:.04em; color:var(--text); white-space:nowrap; }
 .score-cell.muted { color:var(--muted-2); }
 /* points pill */
@@ -70,11 +71,10 @@
   .pred-table thead th:nth-child(4), .pred-table tbody td:nth-child(4) { display:none; }
   .pager { justify-content:center; }
 
-  /* Show each player's predicted score centred under its team. The Prediction
-     column is hidden on mobile, so surface the pick here instead. */
-  .g-teams { display:flex; align-items:flex-start; justify-content:center; gap:8px; white-space:normal; }
-  .g-side { display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0; }
-  .g-team { text-align:center; }
-  .g-teams .vs { margin:0; align-self:flex-start; padding-top:2px; }
-  .g-pred { display:block; font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:18px; line-height:1; color:var(--emb); }
+  /* Compact scoreline with codes + the player's pick, e.g. "MEX (2) vs RSA (0)".
+     One short line — identical shape on every row, no name-length wrapping. */
+  .g-full { display:none; }
+  .g-compact { display:inline; white-space:nowrap; }
+  .g-compact .g-pred { font-weight:800; color:var(--emb); }
+  .g-compact .cvs { color:var(--muted-2); font-size:12px; letter-spacing:.06em; margin:0 2px; }
 }
