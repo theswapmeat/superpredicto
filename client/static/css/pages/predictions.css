@@ -58,6 +58,11 @@
 .pager a:hover { color:var(--text); border-color:var(--line-strong); }
 .pager .pg.active { background:var(--em); color:#06210F; border-color:transparent; }
 .pager .pg.disabled { opacity:.4; cursor:not-allowed; }
+/* ellipsis gap between windowed page numbers */
+.pager .pg.gap { border:none; background:transparent; min-width:auto; padding:0 4px; color:var(--muted-2); cursor:default; }
+
+/* breathing room so the pager doesn't hug the footer (esp. at 12 rows/page) */
+main.pwrap { padding-bottom:56px; }
 
 .pred-foot { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:6px; flex-wrap:wrap; }
 
