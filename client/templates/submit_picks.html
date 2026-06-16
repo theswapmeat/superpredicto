@@ -37,6 +37,7 @@
 <div class="pwrap toolbar">
   <div class="filterseg">
     <button type="button" class="on" data-filter="all">All games</button>
+    <button type="button" data-filter="upcoming">Upcoming</button>
     <button type="button" data-filter="todo">Needs pick</button>
     <button type="button" data-filter="done">Predicted</button>
   </div>
@@ -264,7 +265,8 @@
     function applyFilter() {
       list.querySelectorAll(".game-item").forEach(function (it) {
         var show = true;
-        if (filter === "todo") show = it.dataset.editable === "1" && !isPredicted(it);
+        if (filter === "upcoming") show = it.dataset.editable === "1";   // not yet kicked off
+        else if (filter === "todo") show = it.dataset.editable === "1" && !isPredicted(it);
         else if (filter === "done") show = isPredicted(it);
         it.style.display = show ? "" : "none";
       });
