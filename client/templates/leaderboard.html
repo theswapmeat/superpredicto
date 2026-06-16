@@ -23,6 +23,9 @@
 </section>
 
 <main class="pwrap" style="padding-bottom:64px;">
+  {% if tournament and tournament.is_active %}
+  <div class="lb-after">After <b id="lbGamesCount">{{ games_counted }}</b> <span id="lbGamesWord">{{ 'game' if games_counted == 1 else 'games' }}</span></div>
+  {% endif %}
   <div class="table-card"
        id="lbCard"
        data-live-url="{{ url_for('main.leaderboard_live', tournament_id=tournament.id) if (tournament and tournament.is_active) else '' }}"
@@ -132,6 +135,13 @@
           if (typeof data.html === "string" && data.html !== body.innerHTML) {
             body.innerHTML = data.html;
             flashChanged(before);
+          }
+          // Keep the "After X games" caption in step with the live table.
+          if (typeof data.games_counted === "number") {
+            var gc = document.getElementById("lbGamesCount");
+            var gw = document.getElementById("lbGamesWord");
+            if (gc) gc.textContent = data.games_counted;
+            if (gw) gw.textContent = data.games_counted === 1 ? "game" : "games";
           }
           // Speed up while live, fall back to the heartbeat once nothing's in play.
           schedule(data.any_live ? LIVE_MS : IDLE_MS);

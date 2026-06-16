@@ -272,6 +272,7 @@ def index():
         user_pick=user_pick,
         is_eligible=is_eligible,
         match_count=match_count,
+        games_counted=games_counted_for_leaderboard(selected),
         team_count=48,
         perfect_pts=4,
     )
@@ -747,6 +748,20 @@ def tournament_has_live_games(tournament):
     )
 
 
+def games_counted_for_leaderboard(tournament):
+    """How many games' results the current standings reflect: kicked-off games
+    (in progress + completed). Excludes games not yet started. Drives the subtle
+    "After X games" caption. Uses naive Dubai wall-clock so the SQL comparison
+    matches the stored (tz-naive) kickoff (see predictions())."""
+    if not tournament:
+        return 0
+    now_uae_naive = datetime.now(timezone("Asia/Dubai")).replace(tzinfo=None)
+    return Game.query.filter(
+        Game.tournament_id == tournament.id,
+        (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae_naive,
+    ).count()
+
+
 @main.route("/leaderboard")
 @login_required
 def leaderboard():
@@ -764,6 +779,7 @@ def leaderboard():
         leaderboard=entries,
         tournament=selected,
         any_live=tournament_has_live_games(selected),
+        games_counted=games_counted_for_leaderboard(selected),
     )
 
 
@@ -783,7 +799,11 @@ def leaderboard_live():
 
     entries = build_leaderboard(selected, session.get("user_id"))
     html = render_template("partials/_leaderboard_rows.html", leaderboard=entries)
-    return jsonify({"html": html, "any_live": tournament_has_live_games(selected)})
+    return jsonify({
+        "html": html,
+        "any_live": tournament_has_live_games(selected),
+        "games_counted": games_counted_for_leaderboard(selected),
+    })
 
 
 # --- Lock a single pick from the landing page ---

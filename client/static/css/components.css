@@ -188,6 +188,10 @@ h1.page-title { font-family:"Saira Condensed",sans-serif; font-weight:900; font-
 h1.page-title span { color:var(--emb); }
 .ph-note i { color:var(--muted-2); }
 .livepill .dot { width:8px; height:8px; border-radius:50%; background:#ff6472; box-shadow:0 0 0 0 rgba(255,100,114,.6); animation:livepulse 1.5s ease-out infinite; }
+/* Subtle "After N games" caption above the leaderboard (page + homepage). */
+.lb-after { font-family:"Saira Condensed",sans-serif; font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted-2); text-align:right; margin:0 2px 10px auto; }
+.lb-after b { color:var(--muted); font-weight:800; }
+
 .table-card { background:linear-gradient(180deg,var(--ink-2),#0A0F22); border:1px solid var(--line); border-radius:18px; overflow:hidden; box-shadow:0 40px 90px -50px rgba(0,0,0,.9); }
 .table-scroll { overflow-x:auto; }
 .table-card table { width:100%; border-collapse:collapse; }

@@ -141,6 +141,9 @@
         <p class="board-note">Standings update every minute and include live matches — points can move until full-time.</p>
         {% endif %}
       </div>
+      {% if tournament and tournament.is_active %}
+      <div class="lb-after">After <b>{{ games_counted }}</b> {{ 'game' if games_counted == 1 else 'games' }}</div>
+      {% endif %}
     </div>
 
     <div class="table-card">
