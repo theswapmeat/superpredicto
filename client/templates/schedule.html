@@ -29,6 +29,7 @@
 <div class="pwrap toolbar">
   <div class="filterseg">
     <button type="button" class="on" data-filter="all">All matches</button>
+    <button type="button" data-filter="live">Live</button>
     <button type="button" data-filter="upcoming">Upcoming</button>
     <button type="button" data-filter="completed">Completed</button>
   </div>
@@ -158,10 +159,14 @@
     // ---- filters ----
     var filter = "all";
     function applyFilter() {
+      var now = Date.now();
       list.querySelectorAll(".game-item").forEach(function (it) {
+        var started = new Date(it.dataset.utc).getTime() <= now;
+        var completed = it.dataset.completed === "1";
         var show = true;
-        if (filter === "completed") show = it.dataset.completed === "1";
-        else if (filter === "upcoming") show = it.dataset.completed === "0";
+        if (filter === "completed") show = completed;
+        else if (filter === "live") show = started && !completed;   // kicked off, not finished
+        else if (filter === "upcoming") show = !started;            // future only (excludes live)
         it.style.display = show ? "" : "none";
       });
       list.querySelectorAll(".day").forEach(function (d) {
@@ -187,6 +192,20 @@
         document.querySelectorAll(".filterseg button").forEach(function (x) { x.classList.remove("on"); });
         savedBtn.classList.add("on");
         filter = savedFilter;
+      }
+    }
+    // Don't restore to a blank schedule: if "Live" was remembered but nothing is
+    // live now, fall back to All.
+    if (filter === "live") {
+      var nowL = Date.now();
+      var anyLive = Array.prototype.some.call(list.querySelectorAll(".game-item"), function (it) {
+        return new Date(it.dataset.utc).getTime() <= nowL && it.dataset.completed !== "1";
+      });
+      if (!anyLive) {
+        filter = "all";
+        document.querySelectorAll(".filterseg button").forEach(function (x) { x.classList.remove("on"); });
+        var allBtn = document.querySelector('.filterseg button[data-filter="all"]');
+        if (allBtn) allBtn.classList.add("on");
       }
     }
 
