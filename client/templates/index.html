@@ -36,7 +36,10 @@
       </div>
       <div class="matchup">
         <div class="team">
-          <div class="badge home">{{ live_game.home_team_code or live_game.home_team[:3]|upper }}</div>
+          <div class="badge home {{ 'has-crest' if live_game.home_team_crest }}">
+            {% if live_game.home_team_crest %}<img class="badge-crest" src="{{ live_game.home_team_crest }}" alt="" loading="lazy" onerror="this.closest('.tbadge,.badge').classList.remove('has-crest'); this.remove();">{% endif %}
+            <span class="badge-tla">{{ live_game.home_team_code or live_game.home_team[:3]|upper }}</span>
+          </div>
           <div class="nm">{{ live_game.home_team }}</div>
         </div>
         <div class="score livescore">
@@ -45,7 +48,10 @@
           <div class="scoreval">{{ live_game.away_team_score if live_game.away_team_score is not none else 0 }}</div>
         </div>
         <div class="team">
-          <div class="badge away">{{ live_game.away_team_code or live_game.away_team[:3]|upper }}</div>
+          <div class="badge away {{ 'has-crest' if live_game.away_team_crest }}">
+            {% if live_game.away_team_crest %}<img class="badge-crest" src="{{ live_game.away_team_crest }}" alt="" loading="lazy" onerror="this.closest('.tbadge,.badge').classList.remove('has-crest'); this.remove();">{% endif %}
+            <span class="badge-tla">{{ live_game.away_team_code or live_game.away_team[:3]|upper }}</span>
+          </div>
           <div class="nm">{{ live_game.away_team }}</div>
         </div>
       </div>
@@ -72,7 +78,10 @@
         <input type="hidden" name="away_score" id="awayScore" value="{{ ia }}" />
         <div class="matchup">
           <div class="team">
-            <div class="badge home">{{ open_game.home_team_code or open_game.home_team[:3]|upper }}</div>
+            <div class="badge home {{ 'has-crest' if open_game.home_team_crest }}">
+              {% if open_game.home_team_crest %}<img class="badge-crest" src="{{ open_game.home_team_crest }}" alt="" loading="lazy" onerror="this.closest('.tbadge,.badge').classList.remove('has-crest'); this.remove();">{% endif %}
+              <span class="badge-tla">{{ open_game.home_team_code or open_game.home_team[:3]|upper }}</span>
+            </div>
             <div class="nm">{{ open_game.home_team }}</div>
           </div>
           <div class="score">
@@ -93,7 +102,10 @@
             {% endif %}
           </div>
           <div class="team">
-            <div class="badge away">{{ open_game.away_team_code or open_game.away_team[:3]|upper }}</div>
+            <div class="badge away {{ 'has-crest' if open_game.away_team_crest }}">
+              {% if open_game.away_team_crest %}<img class="badge-crest" src="{{ open_game.away_team_crest }}" alt="" loading="lazy" onerror="this.closest('.tbadge,.badge').classList.remove('has-crest'); this.remove();">{% endif %}
+              <span class="badge-tla">{{ open_game.away_team_code or open_game.away_team[:3]|upper }}</span>
+            </div>
             <div class="nm">{{ open_game.away_team }}</div>
           </div>
         </div>

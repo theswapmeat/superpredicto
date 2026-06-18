@@ -36,6 +36,11 @@ h1.hero-title em { color:var(--emb); font-style:normal; display:block; transform
 .badge { width:60px; height:60px; border-radius:16px; display:flex; align-items:center; justify-content:center; text-align:center; font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:22px; border:1px solid var(--line-strong); }
 .badge.home { background:linear-gradient(160deg,#1d3a8a,#0f1f4d); color:#cfe0ff; }
 .badge.away { background:linear-gradient(160deg,#7a1530,#3d0f1c); color:#ffd4dd; }
+/* Desktop: crest replaces the TLA in the pickcard badge (mobile keeps the TLA). */
+@media (min-width:769px) {
+  .badge .badge-crest { display:block; }
+  .badge.has-crest .badge-tla { display:none; }
+}
 .team .nm { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:14.5px; letter-spacing:.03em; text-transform:uppercase; color:var(--text); text-align:center; max-width:120px; }
 .score { display:flex; align-items:center; justify-content:center; gap:8px; }
 .livescore { gap:14px; }

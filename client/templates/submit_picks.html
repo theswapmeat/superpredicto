@@ -80,11 +80,17 @@
         <div class="g-match">
           <div class="side home">
             <span class="tname">{{ game.home_team }}</span>
-            <span class="tbadge home">{{ game.home_team_code or game.home_team[:3]|upper }}</span>
+            <span class="tbadge home {{ 'has-crest' if game.home_team_crest }}">
+              {% if game.home_team_crest %}<img class="badge-crest" src="{{ game.home_team_crest }}" alt="" loading="lazy" onerror="this.closest('.tbadge,.badge').classList.remove('has-crest'); this.remove();">{% endif %}
+              <span class="bdg-code">{{ game.home_team_code or game.home_team[:3]|upper }}</span>
+            </span>
           </div>
           <span class="vsv">VS</span>
           <div class="side away">
-            <span class="tbadge away">{{ game.away_team_code or game.away_team[:3]|upper }}</span>
+            <span class="tbadge away {{ 'has-crest' if game.away_team_crest }}">
+              {% if game.away_team_crest %}<img class="badge-crest" src="{{ game.away_team_crest }}" alt="" loading="lazy" onerror="this.closest('.tbadge,.badge').classList.remove('has-crest'); this.remove();">{% endif %}
+              <span class="bdg-code">{{ game.away_team_code or game.away_team[:3]|upper }}</span>
+            </span>
             <span class="tname">{{ game.away_team }}</span>
           </div>
         </div>
