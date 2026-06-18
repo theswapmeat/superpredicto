@@ -341,9 +341,23 @@
     document.querySelectorAll(".filterseg button").forEach(function (b) {
       b.addEventListener("click", function () {
         document.querySelectorAll(".filterseg button").forEach(function (x) { x.classList.remove("on"); });
-        b.classList.add("on"); filter = b.dataset.filter; applyFilter();
+        b.classList.add("on"); filter = b.dataset.filter;
+        localStorage.setItem("spPicksFilter", filter);   // remember the choice
+        applyFilter();
       });
     });
+
+    // Restore the saved filter (validated against the live buttons so a stale
+    // value falls back to "all").
+    var savedFilter = localStorage.getItem("spPicksFilter");
+    if (savedFilter) {
+      var savedBtn = document.querySelector('.filterseg button[data-filter="' + savedFilter + '"]');
+      if (savedBtn) {
+        document.querySelectorAll(".filterseg button").forEach(function (x) { x.classList.remove("on"); });
+        savedBtn.classList.add("on");
+        filter = savedFilter;
+      }
+    }
 
     // ---- collapse all ----
     var allCollapsed = false;

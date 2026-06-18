@@ -652,7 +652,7 @@ def predictions():
             User.display_name.isnot(None),
             User.display_name != "",
         )
-        .order_by(User.first_name, User.last_name)
+        .order_by(func.lower(User.display_name))   # sort the dropdown by username
         .all()
     )
 
