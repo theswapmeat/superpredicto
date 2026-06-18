@@ -99,6 +99,9 @@
     <p class="empty-note">No matches have been scheduled for this tournament yet.</p>
     {% endfor %}
   </div>
+  <!-- shown by applyFilter when a filter hides every game (kept outside #sched-list,
+       which buildDays wipes and rebuilds) -->
+  <p id="schedEmpty" class="empty-note" style="display:none;"></p>
 </main>
 {% endblock %}
 
@@ -173,7 +176,25 @@
         var any = Array.from(d.querySelectorAll(".game-item")).some(function (it) { return it.style.display !== "none"; });
         d.style.display = any ? "" : "none";
       });
+      // Empty state: a filter hid every game (but games do exist) -> show a message
+      // instead of a blank page.
+      var items = list.querySelectorAll(".game-item");
+      var anyVisible = Array.prototype.some.call(items, function (it) { return it.style.display !== "none"; });
+      var emptyEl = document.getElementById("schedEmpty");
+      if (emptyEl) {
+        if (items.length && !anyVisible) {
+          emptyEl.textContent = EMPTY_MSG[filter] || "No games match this filter.";
+          emptyEl.style.display = "";
+        } else {
+          emptyEl.style.display = "none";
+        }
+      }
     }
+    var EMPTY_MSG = {
+      live: "No live games at the moment.",
+      upcoming: "No upcoming games right now.",
+      completed: "No completed games yet.",
+    };
     document.querySelectorAll(".filterseg button").forEach(function (b) {
       b.addEventListener("click", function () {
         document.querySelectorAll(".filterseg button").forEach(function (x) { x.classList.remove("on"); });
