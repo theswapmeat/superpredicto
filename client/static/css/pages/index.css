@@ -39,6 +39,7 @@ h1.hero-title em { color:var(--emb); font-style:normal; display:block; transform
 /* Desktop: crest replaces the TLA in the pickcard badge (mobile keeps the TLA). */
 @media (min-width:769px) {
   .badge .badge-crest { display:block; }
+  .badge.has-crest { overflow:hidden; }
   .badge.has-crest .badge-tla { display:none; }
 }
 .team .nm { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:14.5px; letter-spacing:.03em; text-transform:uppercase; color:var(--text); text-align:center; max-width:120px; }

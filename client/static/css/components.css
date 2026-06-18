@@ -273,13 +273,15 @@ td.invalid .cell-num:not(.zero) { color:#FF6B7D; }
 .tbadge { width:42px; height:42px; border-radius:11px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; text-align:center; font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:14px; border:1px solid var(--line-strong); }
 .tbadge.home { background:linear-gradient(160deg,#1b2a57,#101938); color:#dfe8ff; }
 .tbadge.away { background:linear-gradient(160deg,#5a1730,#330f1d); color:#ffd6df; }
-/* Team crest shown inside a badge instead of the TLA. Contained + capped so it
-   never stretches and keeps the same box. Hidden by default (mobile keeps the
-   TLA/score); revealed on desktop via the min-width swaps below / in index.css. */
-.badge-crest { max-width:70%; max-height:70%; object-fit:contain; display:none; }
+/* Team crest shown inside a badge instead of the TLA. object-fit:cover fills the
+   whole box (a clean flag tile) without stretching; the badge clips it to its
+   rounded corners. Hidden by default (mobile keeps the TLA/score); revealed on
+   desktop via the min-width swaps below / in index.css. */
+.badge-crest { width:100%; height:100%; object-fit:cover; display:none; }
 @media (min-width:721px) {
   .tbadge .badge-crest { display:block; }
-  .tbadge.has-crest .bdg-code { display:none; }   /* crest replaces the TLA on desktop */
+  .tbadge.has-crest { overflow:hidden; }            /* clip the crest to the box corners */
+  .tbadge.has-crest .bdg-code { display:none; }     /* crest replaces the TLA on desktop */
 }
 .tname { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:16px; letter-spacing:.01em; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; max-width:150px; }
 .vsv { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:12px; letter-spacing:.1em; color:var(--muted-2); }
