@@ -38,8 +38,12 @@ h1.hero-title em { color:var(--emb); font-style:normal; display:block; transform
 .badge.away { background:linear-gradient(160deg,#7a1530,#3d0f1c); color:#ffd4dd; }
 /* Desktop: crest replaces the TLA in the pickcard badge (mobile keeps the TLA). */
 @media (min-width:769px) {
-  .badge .badge-crest { display:block; }
-  .badge.has-crest { overflow:hidden; }
+  /* These crest images are self-contained rounded flags with their own border +
+     transparent margins, so a coloured box behind them shows as an ugly ring.
+     Drop the badge's gradient/border and let the flag stand on its own (contain,
+     so its built-in rounding isn't cropped). */
+  .badge.has-crest { background:none; border:none; overflow:visible; }
+  .badge.has-crest .badge-crest { display:block; object-fit:contain; }
   .badge.has-crest .badge-tla { display:none; }
 }
 .team .nm { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:14.5px; letter-spacing:.03em; text-transform:uppercase; color:var(--text); text-align:center; max-width:120px; }
