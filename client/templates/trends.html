@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Prediction Trends — SuperPredicto{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/trends.css') }}?v={{ config.ASSET_VERSION }}" />
+{% endblock %}
+
+{% block body %}
+<section class="page-head">
+  <div class="pwrap ph-inner">
+    <div class="ph-left">
+      {% if tournament %}<span class="tournament-pill"><span class="dot"></span> {{ tournament.name }}</span>{% endif %}
+      <span class="kicker">
+        <svg class="hb" viewBox="0 0 240 60" fill="none"><path pathLength="100" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30" /></svg>
+        Insights
+      </span>
+      <h1 class="page-title">Prediction <span>Trends</span></h1>
+      <p class="ph-note"><i class="bi bi-bar-chart-line"></i> How the whole league is predicting — an anonymous view of every pick.</p>
+    </div>
+  </div>
+</section>
+
+<main class="pwrap" style="padding-bottom:64px;">
+  {% if trends.n == 0 %}
+  <div class="no-rows">No completed games with predictions yet — the predicted-vs-actual view appears once matches finish.</div>
+  {% else %}
+  <div class="toolbar">
+    <div class="filterseg" id="metricSeg">
+      <button type="button" class="on" data-metric="margin">Goal margin</button>
+      <button type="button" data-metric="total">Total goals</button>
+    </div>
+    <div class="tr-n"><b>{{ trends.n }}</b> picks across <b>{{ trends.games }}</b> games</div>
+  </div>
+
+  <div class="panel chart-card">
+    <div class="chart-box"><canvas id="trendChart"></canvas></div>
+  </div>
+  <p class="chart-cap" id="chartCap"></p>
+
+  <div class="read-guide" id="readGuide">
+    <button type="button" class="rg-close" id="rgClose" aria-label="Dismiss guide"><i class="bi bi-x-lg"></i></button>
+    <div class="rg-title"><i class="bi bi-info-circle"></i> How to read this</div>
+    <p><b class="c-pred">Green</b> = what players predicted · <b class="c-actual">Gold</b> = what actually happened — each shown as a share of all picks / all games. When the <b class="c-actual">gold</b> bar is taller than the <b class="c-pred">green</b> one, that result happened <i>more</i> often than the crowd expected; when green is taller, the crowd over-predicted it.</p>
+    <p>The <b>dashed line</b> is the smooth shape the <b class="c-pred">predicted</b> bars roughly follow — a bell curve for goal margins, a right-skewed curve for total goals. It's a visual guide only, not extra data.</p>
+  </div>
+
+  <div class="stat-row" id="statRow"></div>
+  {% endif %}
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if trends.n != 0 %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  (function () {
+    var T = {{ trends|tojson }};
+    var metric = "margin";
+    var chart = null;
+    var canvas = document.getElementById("trendChart");
+
+    // ---- shape overlays on the PREDICTED series, scaled to % (bucket width 1) ----
+    function normalCurve(labels, mean, std) {
+      if (!std || std <= 0) return labels.map(function () { return null; });
+      var k = 1 / (std * Math.sqrt(2 * Math.PI));
+      return labels.map(function (x) {
+        var z = (x - mean) / std;
+        return 100 * k * Math.exp(-0.5 * z * z);
+      });
+    }
+    function poissonCurve(labels, lambda) {
+      if (lambda <= 0) return labels.map(function () { return null; });
+      return labels.map(function (kk) {
+        var f = 1; for (var j = 2; j <= kk; j++) f *= j;     // kk!
+        return 100 * Math.exp(-lambda) * Math.pow(lambda, kk) / f;
+      });
+    }
+    function marginTicks(labels) {
+      return labels.map(function (x, i) {
+        if (i === 0) return "≤" + x;
+        if (i === labels.length - 1) return "≥+" + x;
+        return x > 0 ? "+" + x : "" + x;
+      });
+    }
+    function totalTicks(labels) {
+      return labels.map(function (x, i) { return i === labels.length - 1 ? x + "+" : "" + x; });
+    }
+
+    var MUTED = "#8E97B2", GRID = "rgba(255,255,255,.06)";
+
+    function render() {
+      var d = T[metric];
+      var ticks = metric === "margin" ? marginTicks(d.labels) : totalTicks(d.labels);
+      var curve = metric === "margin"
+        ? normalCurve(d.labels, d.mean, d.std)
+        : poissonCurve(d.labels, d.mean);
+
+      var data = {
+        labels: ticks,
+        datasets: [
+          { type: "bar", label: "Predicted", data: d.pred, order: 2,
+            backgroundColor: "rgba(0,209,122,.45)", borderColor: "#1DEF93", borderWidth: 1, borderRadius: 5, maxBarThickness: 40 },
+          { type: "bar", label: "Actual", data: d.actual, order: 2,
+            backgroundColor: "rgba(244,199,82,.5)", borderColor: "#F4C752", borderWidth: 1, borderRadius: 5, maxBarThickness: 40 },
+          { type: "line", label: metric === "margin" ? "Bell curve" : "Trend", data: curve, order: 1,
+            borderColor: "#C9D2E4", borderWidth: 2, borderDash: [5, 4], pointRadius: 0, tension: 0.4, fill: false, spanGaps: true },
+        ],
+      };
+      var opts = {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: { grid: { color: GRID }, ticks: { color: MUTED },
+               title: { display: true, color: MUTED, text: metric === "margin" ? "Goal margin" : "Total goals" } },
+          y: { beginAtZero: true, grid: { color: GRID },
+               ticks: { color: MUTED, callback: function (v) { return v + "%"; } },
+               title: { display: true, color: MUTED, text: "% of picks / games in this bucket" } },
+        },
+        plugins: {
+          legend: { position: "top", labels: { color: "#EAEEF8", boxWidth: 14, boxHeight: 14, padding: 20, font: { size: 13 } } },
+          tooltip: {
+            intersect: false, mode: "index",
+            filter: function (item) { return item.dataset.type !== "line"; },   // no tooltip for the smooth overlay
+            callbacks: { label: function (c) { return c.dataset.label + ": " + c.parsed.y.toFixed(1) + "%"; } },
+          },
+        },
+      };
+      if (chart) { chart.data = data; chart.options = opts; chart.update(); }
+      else { chart = new Chart(canvas, { data: data, options: opts }); }
+      updateCaptionAndStats();
+    }
+
+    function chip(label, value) {
+      return '<div class="stat"><span class="s-val">' + value + '</span><span class="s-lbl">' + label + '</span></div>';
+    }
+    function updateCaptionAndStats() {
+      var d = T[metric];
+      var cap = document.getElementById("chartCap");
+      var row = document.getElementById("statRow");
+      if (metric === "margin") {
+        cap.innerHTML = "Each bar is a <b>goal margin</b>. The middle (<b>0</b>) is a draw; bars further out are bigger winning margins — e.g. <b>+2</b> or <b>−2</b> is a two-goal win. Left vs right is only which team is listed first, so it has no home/away meaning.";
+        row.innerHTML =
+          chip("Draws predicted", d.draw_pred + "%") +
+          chip("Draws actual", d.draw_actual + "%") +
+          chip("Avg margin (picks)", d.avg_abs + " goals") +
+          (d.you_abs !== null ? chip("Your avg margin", d.you_abs + " goals") : "");
+      } else {
+        cap.innerHTML = "Each bar is a <b>total-goals</b> count — the goals scored by both teams combined in a match (so <b>2</b> covers 2-0, 1-1 and 0-2).";
+        row.innerHTML =
+          chip("League predicted", d.avg_pred + " goals") +
+          chip("Actual", d.avg_actual + " goals") +
+          (d.you !== null ? chip("You predict", d.you + " goals") : "");
+      }
+    }
+
+    document.querySelectorAll("#metricSeg button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        document.querySelectorAll("#metricSeg button").forEach(function (x) { x.classList.remove("on"); });
+        b.classList.add("on"); metric = b.dataset.metric; render();
+      });
+    });
+
+    // Dismissible "how to read" guide — remembered per browser.
+    var guide = document.getElementById("readGuide");
+    if (guide) {
+      if (localStorage.getItem("hideTrendsGuide") === "true") guide.style.display = "none";
+      var rgClose = document.getElementById("rgClose");
+      if (rgClose) rgClose.addEventListener("click", function () {
+        guide.style.display = "none";
+        localStorage.setItem("hideTrendsGuide", "true");
+      });
+    }
+
+    render();
+  })();
+</script>
+{% endif %}
+{% endblock %}

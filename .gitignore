@@ -43,6 +43,7 @@ Thumbs.db
 
 # === Local dev/test seed + preview scripts (not for the repo) ===
 server/seed_dummy_dev.py
+server/seed_dummy_predictions.py
 server/_render_demo.py
 
 # === Random Files ===

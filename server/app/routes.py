@@ -725,6 +725,103 @@ def predictions_filter():
     return render_template("partials/_predictions_table.html", predictions=predictions)
 
 
+# --- Prediction Trends: the crowd's picks vs actual results, over completed games ---
+@main.route("/trends")
+@login_required
+def trends():
+    active = active_tournament()
+    if not active:
+        flash("There is no active tournament right now.", "warning")
+        return redirect(url_for("main.index"))
+
+    # Only completed games, so we can compare predictions against reality over the
+    # same set of matches. Both series are anonymous aggregates (bucket %s only).
+    completed = Game.query.filter(
+        Game.tournament_id == active.id,
+        Game.is_completed.is_(True),
+        Game.home_team_score.isnot(None),
+        Game.away_team_score.isnot(None),
+    ).all()
+    completed_ids = [g.id for g in completed]
+
+    preds = []
+    if completed_ids:
+        q = UserPrediction.query.filter(
+            UserPrediction.game_id.in_(completed_ids),
+            UserPrediction.home_score_prediction.isnot(None),
+            UserPrediction.away_score_prediction.isnot(None),
+        )
+        paid_ids = paid_user_ids_subquery(active)
+        if paid_ids is not None:
+            q = q.filter(UserPrediction.user_id.in_(paid_ids))
+        preds = q.all()
+
+    # Same game universe for both series: completed games that actually have picks.
+    game_by_id = {g.id: g for g in completed}
+    actual_games = [game_by_id[gid] for gid in {p.game_id for p in preds}]
+
+    uid = session.get("user_id")
+    n = len(preds)
+
+    def clamp(v, lo, hi):
+        return max(lo, min(hi, v))
+
+    def mean(xs):
+        return (sum(xs) / len(xs)) if xs else 0.0
+
+    def dist_pct(values, labels, lo, hi):
+        c = {x: 0 for x in labels}
+        for v in values:
+            c[clamp(v, lo, hi)] += 1
+        tot = len(values)
+        return [round(100 * c[x] / tot, 1) if tot else 0 for x in labels]
+
+    def pct(c, tot):
+        return round(100 * c / tot) if tot else 0
+
+    M_LO, M_HI, T_HI = -6, 6, 9
+    m_labels = list(range(M_LO, M_HI + 1))
+    t_labels = list(range(0, T_HI + 1))
+
+    p_margins = [(p.home_score_prediction - p.away_score_prediction) for p in preds]
+    p_totals = [(p.home_score_prediction + p.away_score_prediction) for p in preds]
+    a_margins = [(g.home_team_score - g.away_team_score) for g in actual_games]
+    a_totals = [(g.home_team_score + g.away_team_score) for g in actual_games]
+
+    mean_m = mean(p_margins)
+    std_m = (mean([(m - mean_m) ** 2 for m in p_margins])) ** 0.5 if p_margins else 0.0
+
+    me = [p for p in preds if p.user_id == uid]
+    you_abs = mean([abs(p.home_score_prediction - p.away_score_prediction) for p in me]) if me else None
+    you_t = mean([(p.home_score_prediction + p.away_score_prediction) for p in me]) if me else None
+
+    data = {
+        "n": n,
+        "games": len(actual_games),
+        "margin": {
+            "labels": m_labels,
+            "pred": dist_pct(p_margins, m_labels, M_LO, M_HI),
+            "actual": dist_pct(a_margins, m_labels, M_LO, M_HI),
+            "mean": round(mean_m, 2),   # signed mean/std drive the bell overlay only
+            "std": round(std_m, 2),
+            "draw_pred": pct(sum(1 for m in p_margins if m == 0), len(p_margins)),
+            "draw_actual": pct(sum(1 for m in a_margins if m == 0), len(a_margins)),
+            "avg_abs": round(mean([abs(m) for m in p_margins]), 1),
+            "you_abs": round(you_abs, 1) if you_abs is not None else None,
+        },
+        "total": {
+            "labels": t_labels,
+            "pred": dist_pct(p_totals, t_labels, 0, T_HI),
+            "actual": dist_pct(a_totals, t_labels, 0, T_HI),
+            "mean": round(mean(p_totals), 2),
+            "avg_pred": round(mean(p_totals), 1),
+            "avg_actual": round(mean(a_totals), 1),
+            "you": round(you_t, 1) if you_t is not None else None,
+        },
+    }
+    return render_template("trends.html", tournament=active, trends=data)
+
+
 # --- Scoring Guidelines ---
 @main.route("/guidelines")
 def guidelines():

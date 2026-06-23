@@ -1,0 +1,41 @@
+.pwrap { max-width:1040px; margin:0 auto; padding:0 32px; }
+
+/* PAGE HEADER (shared pattern) */
+.page-head { position:relative; padding:40px 0 18px; }
+.ph-note { font-size:14px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+
+/* TOOLBAR — metric toggle + count */
+.toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:8px auto 18px; flex-wrap:wrap; }
+.tr-n { font-family:"Saira Condensed",sans-serif; font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-2); }
+.tr-n b { color:var(--text); font-weight:800; font-size:16px; margin:0 4px; }
+
+/* CHART CARD */
+.chart-card { background:linear-gradient(180deg,var(--ink-2),#0A0F22); border:1px solid var(--line); border-radius:18px; padding:18px 20px 20px; box-shadow:0 40px 90px -50px rgba(0,0,0,.9); }
+.chart-cap { font-size:13.5px; line-height:1.55; color:var(--muted); margin:14px 2px 0; }
+.c-pred { color:var(--emb); font-weight:700; }
+.c-actual { color:var(--gold); font-weight:700; }
+
+/* "How to read this" guide (below the chart, dismissible) */
+.read-guide { position:relative; background:linear-gradient(180deg,var(--ink-2),#0A0F22); border:1px solid var(--line); border-radius:12px; padding:14px 40px 14px 16px; margin-top:16px; }
+.rg-close { position:absolute; top:9px; right:9px; background:transparent; border:none; color:var(--muted-2); cursor:pointer; font-size:15px; line-height:1; padding:4px; border-radius:6px; }
+.rg-close:hover { color:var(--text); background:rgba(255,255,255,.06); }
+.read-guide .rg-title { display:inline-flex; align-items:center; gap:6px; margin-bottom:9px; font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-2); }
+.read-guide .rg-title i { color:var(--emb); font-size:14px; }
+.read-guide p { font-size:13px; line-height:1.6; color:var(--muted); margin:0 0 8px; }
+.read-guide p:last-child { margin-bottom:0; }
+.chart-box { position:relative; height:360px; }
+
+/* STAT CARDS */
+.stat-row { display:flex; flex-wrap:wrap; gap:12px; margin-top:18px; }
+.stat { flex:1 1 140px; background:linear-gradient(180deg,var(--ink-2),#0A0F22); border:1px solid var(--line); border-radius:14px; padding:14px 16px; display:flex; flex-direction:column; gap:4px; }
+.s-val { font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:24px; color:var(--emb); line-height:1; }
+.s-lbl { font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-2); }
+
+.no-rows { text-align:center; color:var(--muted); padding:60px 16px; font-size:15px; }
+
+@media (max-width:760px) {
+  .pwrap { padding-left:18px; padding-right:18px; }
+  .ph-inner { align-items:flex-start; }
+  .chart-box { height:300px; }
+  .toolbar { justify-content:center; }
+}
