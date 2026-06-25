@@ -12,6 +12,7 @@ from flask import (
 )
 from datetime import datetime, timedelta
 from pytz import timezone
+from . import limiter
 from .models import db, User, Game, UserPrediction, Tournament, Participant, PickReminder
 from .pick_scoring import classify_pick
 from functools import wraps
@@ -310,6 +311,7 @@ def login_required(f):
 
 # --- Login ---
 @main.route("/login", methods=["GET", "POST"])
+@limiter.limit("8 per minute; 40 per hour", methods=["POST"])  # brute-force guard
 def login():
     # ✅ Redirect already-logged-in users to home
     if "user_id" in session:
@@ -363,6 +365,7 @@ def logout():
 
 # --- Forgot Password ---
 @main.route("/forgot-password", methods=["GET", "POST"])
+@limiter.limit("5 per hour", methods=["POST"])  # limit reset-email spam + abuse
 def forgot_password():
     if request.method == "POST":
         email = request.form["email"].strip().lower()
@@ -381,6 +384,7 @@ def forgot_password():
 
 # --- Reset Password ---
 @main.route("/reset-password/<token>", methods=["GET", "POST"])
+@limiter.limit("12 per hour", methods=["POST"])  # throttle password-set submissions
 def reset_password_token(token):
     mode = request.args.get("mode", "reset")
     # Invites get a 7-day activation window; password resets stay short (24h).

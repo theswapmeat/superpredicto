@@ -13,6 +13,7 @@ click==8.2.1
 colorama==0.4.6
 deprecation==2.1.0
 Flask==3.1.1
+Flask-Limiter==3.8.0
 Flask-Migrate==4.1.0
 Flask-SQLAlchemy==3.1.1
 frozenlist==1.6.2

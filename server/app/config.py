@@ -14,6 +14,12 @@ class Config:
     PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID")
     PAYPAL_CLIENT_SECRET = os.getenv("PAYPAL_CLIENT_SECRET")
     PERMANENT_SESSION_LIFETIME = timedelta(days=14)
+    # Session-cookie hardening. HttpOnly keeps JS from reading the cookie (XSS
+    # can't steal the session); SameSite=Lax blunts CSRF; Secure restricts it to
+    # HTTPS in prod (left off in local dev, which is plain HTTP).
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = os.getenv("APP_ENV", "dev") != "dev"
     # Public domain used to build absolute links/images in EMAILS. url_for(_external)
     # would otherwise stamp the host of whatever triggered the send — and cron-fired
     # reminders hit the DigitalOcean ingress (…ondigitalocean.app), not the custom

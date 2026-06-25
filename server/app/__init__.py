@@ -14,11 +14,22 @@ load_dotenv(os.path.join(_SERVER_DIR, f".env.{_APP_ENV}"), override=True)  # env
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
 from .config import Config
 
 # Initialize extensions
 db = SQLAlchemy()
 migrate = Migrate()
+# Per-IP rate limiting (brute-force protection on auth routes). Defaults to an
+# in-memory store; set RATELIMIT_STORAGE_URI (e.g. a Redis URL) so the limit is
+# shared across workers/instances instead of being per-process.
+limiter = Limiter(
+    key_func=get_remote_address,
+    storage_uri=os.getenv("RATELIMIT_STORAGE_URI", "memory://"),
+    default_limits=[],  # no global limit — applied per-route on the sensitive ones
+)
 
 
 def create_app():
@@ -31,6 +42,12 @@ def create_app():
             os.path.join(os.path.dirname(__file__), "../../client/templates")
         ),
     )
+
+    # Behind DigitalOcean's proxy: trust one hop of X-Forwarded-For/Proto so the
+    # REAL client IP (not the load balancer) is used for rate limiting, and so the
+    # app knows the request arrived over HTTPS. Without this every visitor shares
+    # the proxy's IP and the per-IP limits would throttle everyone together.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
     # Load configuration
     app.config.from_object(Config)
@@ -57,6 +74,7 @@ def create_app():
     # Initialize extensions with app
     db.init_app(app)
     migrate.init_app(app, db)
+    limiter.init_app(app)
 
     # Register blueprints
     from .routes import main, keepalive_bp
@@ -80,5 +98,14 @@ def create_app():
     @app.errorhandler(401)
     def unauthorized_error(error):
         return render_template("401.html"), 401
+
+    @app.errorhandler(429)
+    def too_many_requests(error):
+        # Rate limit hit (e.g. too many login/reset attempts from one IP).
+        return (
+            "<h3 style='font-family:sans-serif'>Too many attempts</h3>"
+            "<p style='font-family:sans-serif'>Please wait a minute and try again.</p>",
+            429,
+        )
 
     return app
