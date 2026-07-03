@@ -72,9 +72,26 @@ def sync_fixtures(api_key, tournament_id, *, create_missing=True, write_scores=T
     matches = [m for m in fetch_wc_matches(api_key) if m.get("id")]
     matches.sort(key=lambda m: m.get("utcDate") or "")
 
+    # Per-run egress saver: a FINISHED game that no admin has hand-corrected is
+    # settled — its teams, kickoff and score can never change again — so there is
+    # nothing to re-read or rewrite for it. Pull a cheap (external_id, status)
+    # projection for ALL games, but full ORM rows ONLY for the not-yet-settled
+    # ones. This avoids re-fetching ~100 heavy Game rows (crest URLs and all) on
+    # every 5-minute sync for the rest of the tournament; settled games shrink the
+    # heavy read toward zero as matches complete.
+    status_rows = (
+        db.session.query(Game.external_id, Game.is_completed, Game.manual_override)
+        .filter(Game.tournament_id == tournament_id, Game.external_id.isnot(None))
+        .all()
+    )
+    settled_ext = {ext for ext, done, override in status_rows if done and not override}
     by_ext = {
         g.external_id: g
-        for g in Game.query.filter_by(tournament_id=tournament_id).all()
+        for g in Game.query.filter(
+            Game.tournament_id == tournament_id,
+            Game.external_id.isnot(None),
+            db.or_(Game.is_completed.is_(False), Game.manual_override.is_(True)),
+        ).all()
         if g.external_id is not None
     }
 
@@ -116,6 +133,11 @@ def sync_fixtures(api_key, tournament_id, *, create_missing=True, write_scores=T
 
         g = by_ext.get(ext)
         if g is None:
+            if ext in settled_ext:
+                # Already FINISHED & settled locally — the API can't change it, and
+                # it was intentionally left out of the heavy load above. Skip it
+                # (without this guard it would be mistaken for a new fixture).
+                continue
             if not create_missing:
                 continue
             g = Game(
