@@ -621,8 +621,9 @@ def predictions():
         .join(UserPrediction.game)
         .filter(User.email != "admin@superpredicto.com")
         .filter(Game.tournament_id == active.id)
-        # Only predictions for games that have already started
-        .filter((Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae_naive)
+        # Only predictions for visible games (started, or completed-only when the
+        # admin has hidden currently-live games).
+        .filter(predictions_game_filter(active, now_uae_naive))
     )
 
     # Paid-only, matching the leaderboard: an unpaid player's picks never show
@@ -663,7 +664,7 @@ def predictions():
     all_games = (
         Game.query.filter(
             Game.tournament_id == active.id,
-            (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae_naive,
+            predictions_game_filter(active, now_uae_naive),
         )
         .order_by(Game.date_of_game, Game.time_of_game)
         .all()
@@ -706,13 +707,9 @@ def predictions_filter():
         .filter(Game.tournament_id == active_id)
     )
 
-    # Only predictions for games that have started or completed
-    query = query.filter(
-        or_(
-            Game.is_completed == True,
-            (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_uae_naive,
-        )
-    )
+    # Only predictions for visible games (started, or completed-only when the
+    # admin has hidden currently-live games).
+    query = query.filter(predictions_game_filter(active, now_uae_naive))
 
     # Paid-only, matching predictions() and the leaderboard.
     paid_ids = paid_user_ids_subquery(active)
@@ -997,6 +994,21 @@ def active_tournament():
     return Tournament.query.filter_by(is_active=True).first()
 
 
+def predictions_game_filter(tournament, now_naive):
+    """SQL condition for which games' predictions are visible on /predictions.
+
+    Default: any game that has kicked off (started or completed). When the admin
+    has flipped `hide_live_predictions` on, restrict to COMPLETED games only —
+    a game that has started but isn't finished stays hidden until it completes.
+    `now_naive` is the current Dubai wall-clock as a tz-naive datetime (see the
+    kickoff-comparison note in predictions()).
+    """
+    started = (Game.date_of_game + cast(Game.time_of_game, Interval)) <= now_naive
+    if tournament and tournament.hide_live_predictions:
+        return Game.is_completed.is_(True)
+    return started
+
+
 def is_archived(tournament):
     """Archived (non-active) tournaments are read-only — no scoring or edits."""
     return bool(tournament) and not tournament.is_active
@@ -1146,6 +1158,31 @@ def update_games():
     db.session.commit()
     flash("Match results saved.", "success")
     return redirect(url_for("main.match_scores", tournament_id=selected.id))
+
+
+# --- Toggle: hide currently-live games on /predictions (Admin Only) ---
+@main.route("/dashboard/toggle-live-predictions", methods=["POST"])
+@login_required
+def toggle_live_predictions():
+    if not is_admin():
+        flash("Access denied.", "danger")
+        return redirect(url_for("main.index"))
+
+    selected = get_selected_tournament()
+    if is_archived(selected):
+        flash("This tournament is archived and can't be modified.", "warning")
+        return redirect(url_for("main.dashboard", tournament_id=selected.id))
+
+    # Checkbox present ("on") => hide live games; absent => show them.
+    selected.hide_live_predictions = request.form.get("hide_live_predictions") == "on"
+    db.session.commit()
+    flash(
+        "Predictions now hide games currently in play."
+        if selected.hide_live_predictions
+        else "Predictions now show games as soon as they kick off.",
+        "success",
+    )
+    return redirect(url_for("main.dashboard", tournament_id=selected.id))
 
 
 # --- Invite User / Enroll in Tournament (Admin Only) ---

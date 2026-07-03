@@ -42,6 +42,12 @@ class Tournament(db.Model):
     name = db.Column(db.String(100), nullable=False)
     # Exactly one tournament should be active (the "current" one the app shows by default).
     is_active = db.Column(db.Boolean, default=False, nullable=False)
+    # Admin toggle: when True, the /predictions page hides games that have kicked
+    # off but aren't finished yet (only completed games show). Default False keeps
+    # the original behaviour — started games appear the moment they kick off.
+    hide_live_predictions = db.Column(
+        db.Boolean, default=False, nullable=False, server_default=db.false()
+    )
 
     __table_args__ = (db.UniqueConstraint("year", name="uq_tournaments_year"),)
 

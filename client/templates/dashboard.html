@@ -49,6 +49,24 @@
     </form>
   </div>
 
+  <!-- Predictions display setting -->
+  <div class="panel adm-panel">
+    <div class="adm-panel-h" style="margin-bottom:6px;">Predictions page</div>
+    <form method="post" action="{{ url_for('main.toggle_live_predictions') }}" id="hideLiveForm">
+      <input type="hidden" name="tournament_id" value="{{ selected_tournament.id }}" />
+      <label class="adm-toggle">
+        <input type="checkbox" name="hide_live_predictions" id="hideLiveChk"
+               {% if selected_tournament.hide_live_predictions %}checked{% endif %}
+               {% if ro %}disabled{% endif %} />
+        <span class="adm-switch" aria-hidden="true"></span>
+        <span class="adm-toggle-txt">
+          <b>Hide games currently in play</b>
+          <span class="adm-muted">When on, a game that has kicked off won't appear here until it's finished. Completed games always show.</span>
+        </span>
+      </label>
+    </form>
+  </div>
+
   <!-- Participants -->
   <div class="panel adm-panel">
     <div class="adm-panel-h">
@@ -177,6 +195,16 @@
     f.confirm_email.value = typed.trim();
     f.submit();
   }
+
+  // Predictions "hide live games" toggle — flip = save (full-page submit).
+  (function () {
+    var chk = document.getElementById("hideLiveChk");
+    if (!chk || chk.disabled) return;
+    chk.addEventListener("change", function () {
+      if (window.SP) window.SP.showLoader();
+      document.getElementById("hideLiveForm").submit();
+    });
+  })();
 
   (function () {
     var dd = document.getElementById("tourDD");
