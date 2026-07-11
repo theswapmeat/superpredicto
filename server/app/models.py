@@ -48,10 +48,13 @@ class Tournament(db.Model):
     hide_live_predictions = db.Column(
         db.Boolean, default=False, nullable=False, server_default=db.false()
     )
-    # Admin toggle: "Offline / manual mode" for when the live-scores API is gone.
-    # When True: the 5-min score sync is paused (no API calls), the leaderboard
-    # stops live-polling and counts completed games only, and /predictions hides
-    # provisional (in-play) scoring. Default False = normal live behaviour.
+    # Admin toggle: "Free-tier mode" for when the live-scores API drops to the
+    # free tier (schedule + final results still available, but no live in-play
+    # scores). When True: the sync keeps running but writes FINAL scores only
+    # (schedule/knockouts/final results stay current); the leaderboard stops
+    # live-polling and counts completed games only; /predictions hides provisional
+    # scoring; and nothing shows as "live". Default False = normal live behaviour.
+    # (Column name is historical — the switch was originally "Offline mode".)
     offline_mode = db.Column(
         db.Boolean, default=False, nullable=False, server_default=db.false()
     )

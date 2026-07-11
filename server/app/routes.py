@@ -1180,8 +1180,8 @@ TOGGLEABLE_SETTINGS = {
         "Predictions now show games as soon as they kick off.",
     ),
     "offline_mode": (
-        "Offline mode ON — score sync paused, leaderboard frozen, live prediction scoring off.",
-        "Online mode — live scores, leaderboard and prediction scoring resumed.",
+        "Free-tier mode ON — schedule + final scores keep syncing; live/provisional scoring off.",
+        "Free-tier mode OFF — full live scores and provisional scoring resumed.",
     ),
 }
 
@@ -1684,21 +1684,24 @@ def internal_sync_scores():
     if not active or not active.is_active:
         return jsonify({"ok": False, "error": "no active tournament"}), 400
 
-    # Offline / manual mode: don't touch the (expired) live-scores API. The
-    # scheduler still fires every 5 min but this is a cheap no-op until an admin
-    # switches back to Online.
-    if active.offline_mode:
-        return jsonify({"ok": True, "paused": True, "reason": "offline_mode"})
-
     api_key = current_app.config.get("FOOTBALL_DATA_API_KEY")
     if not api_key:
         return jsonify({"ok": False, "error": "FOOTBALL_DATA_API_KEY not set"}), 500
 
     from .football_data import sync_fixtures
 
+    # Free-tier mode: keep syncing the schedule + FINAL results, but ignore
+    # in-play scores (free tier has no reliable live scores) so nothing moves
+    # until full-time. Normal mode writes live/provisional scores as before.
+    finals_only = active.offline_mode
+
     try:
         summary = sync_fixtures(
-            api_key, active.id, create_missing=True, write_scores=True
+            api_key,
+            active.id,
+            create_missing=True,
+            write_scores=True,
+            finals_only=finals_only,
         )
         # Only rerun scoring when a score actually moved. Picks are locked during
         # live games, so nothing else can change a result, and a status flip

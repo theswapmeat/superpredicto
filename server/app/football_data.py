@@ -59,7 +59,9 @@ def _crest(side):
     return ((side or {}).get("crest") or "").strip() or None
 
 
-def sync_fixtures(api_key, tournament_id, *, create_missing=True, write_scores=True):
+def sync_fixtures(
+    api_key, tournament_id, *, create_missing=True, write_scores=True, finals_only=False
+):
     """Upsert one tournament's games from football-data.org. Returns a summary dict.
 
     - Game <-> fixture matched by external_id.
@@ -68,6 +70,9 @@ def sync_fixtures(api_key, tournament_id, *, create_missing=True, write_scores=T
       automatically as the bracket resolves; never blanked back to "TBD").
     - Scores + is_completed written only when write_scores and the game is NOT
       manual_override (an admin's hand-correction always wins).
+    - finals_only: write a score ONLY for FINISHED games (skip in-play scores).
+      Used by "Free-tier mode", where live in-play scores are unavailable/unreliable
+      — the schedule + final results still sync, but nothing moves until full-time.
     """
     matches = [m for m in fetch_wc_matches(api_key) if m.get("id")]
     matches.sort(key=lambda m: m.get("utcDate") or "")
@@ -182,7 +187,7 @@ def sync_fixtures(api_key, tournament_id, *, create_missing=True, write_scores=T
             if away_crest:
                 g.away_team_crest = away_crest
 
-        if write_scores and not g.manual_override:
+        if write_scores and not g.manual_override and (finished or not finals_only):
             if (
                 g.home_team_score,
                 g.away_team_score,
