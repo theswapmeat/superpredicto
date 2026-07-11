@@ -35,7 +35,9 @@
             {% endif %}
           </td>
           <td>
-            {% if prediction.game.home_team_score is not none and prediction.game.away_team_score is not none %}
+            {# Offline mode hides provisional (in-play) scoring — points show only
+               once a game is completed. #}
+            {% if prediction.game.home_team_score is not none and prediction.game.away_team_score is not none and (prediction.game.is_completed or not hide_live_scoring|default(false)) %}
             <span class="pts p{{ prediction.points_earned }}">{{ prediction.points_earned }}</span>
             {% set reason = pick_reason(prediction) %}
             {% if reason %}<span class="pts-reason">{{ reason }}</span>{% endif %}

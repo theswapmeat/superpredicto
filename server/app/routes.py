@@ -245,7 +245,10 @@ def index():
     )
     if show_hero:
         # A live game takes over the hero card; otherwise show the next pickable one.
-        live_game = earliest_live_game(selected.id)
+        # Offline / manual mode: no "live" match on the homepage (statuses are
+        # frozen while the sync is paused, so a stale IN_PLAY would otherwise show
+        # a match as live forever). Falls back to the next open game.
+        live_game = None if selected.offline_mode else earliest_live_game(selected.id)
         open_game = earliest_open_game(selected.id)
         if user_id:
             part = Participant.query.filter_by(
@@ -677,6 +680,7 @@ def predictions():
         games=all_games,
         per_page=per_page,
         tournament=active,
+        hide_live_scoring=active.offline_mode,
     )
 
 
@@ -723,7 +727,11 @@ def predictions_filter():
 
     query = query.order_by(Game.game_number.asc())
     predictions = query.paginate(page=page, per_page=per_page)
-    return render_template("partials/_predictions_table.html", predictions=predictions)
+    return render_template(
+        "partials/_predictions_table.html",
+        predictions=predictions,
+        hide_live_scoring=active.offline_mode if active else False,
+    )
 
 
 # --- Prediction Trends: the crowd's picks vs actual results, over completed games ---
@@ -839,6 +847,10 @@ def tournament_has_live_games(tournament):
     return bool(
         tournament
         and tournament.is_active
+        # Offline / manual mode freezes the leaderboard: never "live", so the
+        # client stops polling and the Live pill is hidden even if a stale
+        # IN_PLAY status lingers from the last sync before the API went away.
+        and not tournament.offline_mode
         and Game.query.filter(
             Game.tournament_id == tournament.id,
             Game.status.in_(("IN_PLAY", "PAUSED")),
@@ -1160,10 +1172,23 @@ def update_games():
     return redirect(url_for("main.match_scores", tournament_id=selected.id))
 
 
-# --- Toggle: hide currently-live games on /predictions (Admin Only) ---
-@main.route("/dashboard/toggle-live-predictions", methods=["POST"])
+# --- Toggle an allow-listed boolean setting on the selected tournament (Admin) ---
+# field -> (on_message, off_message) shown as a flash after the flip.
+TOGGLEABLE_SETTINGS = {
+    "hide_live_predictions": (
+        "Predictions now hide games currently in play.",
+        "Predictions now show games as soon as they kick off.",
+    ),
+    "offline_mode": (
+        "Offline mode ON — score sync paused, leaderboard frozen, live prediction scoring off.",
+        "Online mode — live scores, leaderboard and prediction scoring resumed.",
+    ),
+}
+
+
+@main.route("/dashboard/toggle-setting", methods=["POST"])
 @login_required
-def toggle_live_predictions():
+def toggle_setting():
     if not is_admin():
         flash("Access denied.", "danger")
         return redirect(url_for("main.index"))
@@ -1173,15 +1198,17 @@ def toggle_live_predictions():
         flash("This tournament is archived and can't be modified.", "warning")
         return redirect(url_for("main.dashboard", tournament_id=selected.id))
 
-    # Checkbox present ("on") => hide live games; absent => show them.
-    selected.hide_live_predictions = request.form.get("hide_live_predictions") == "on"
+    field = request.form.get("setting")
+    if field not in TOGGLEABLE_SETTINGS:
+        flash("Unknown setting.", "danger")
+        return redirect(url_for("main.dashboard", tournament_id=selected.id))
+
+    # Checkbox present ("on") => True; absent => False.
+    new_val = request.form.get(field) == "on"
+    setattr(selected, field, new_val)
     db.session.commit()
-    flash(
-        "Predictions now hide games currently in play."
-        if selected.hide_live_predictions
-        else "Predictions now show games as soon as they kick off.",
-        "success",
-    )
+    on_msg, off_msg = TOGGLEABLE_SETTINGS[field]
+    flash(on_msg if new_val else off_msg, "success")
     return redirect(url_for("main.dashboard", tournament_id=selected.id))
 
 
@@ -1572,7 +1599,12 @@ def schedule():
         if active
         else []
     )
-    return render_template("schedule.html", games=games, tournament=active)
+    return render_template(
+        "schedule.html",
+        games=games,
+        tournament=active,
+        offline=bool(active and active.offline_mode),
+    )
 
 
 # --- Email previews (DEV ONLY) ---
@@ -1651,6 +1683,12 @@ def internal_sync_scores():
     active = active_tournament()
     if not active or not active.is_active:
         return jsonify({"ok": False, "error": "no active tournament"}), 400
+
+    # Offline / manual mode: don't touch the (expired) live-scores API. The
+    # scheduler still fires every 5 min but this is a cheap no-op until an admin
+    # switches back to Online.
+    if active.offline_mode:
+        return jsonify({"ok": True, "paused": True, "reason": "offline_mode"})
 
     api_key = current_app.config.get("FOOTBALL_DATA_API_KEY")
     if not api_key:

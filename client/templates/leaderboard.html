@@ -17,7 +17,7 @@
       </span>
       <h1 class="page-title">{% if tournament and not tournament.is_active %}Final <span>Leaderboard</span>{% else %}<span>Leaderboard</span>{% endif %}</h1>
       <p class="ph-note"><i class="bi bi-hand-index-thumb"></i> Click any player to see their predictions.</p>
-      {% if tournament and tournament.is_active %}<p class="ph-note"><i class="bi bi-arrow-repeat"></i> Standings update every minute and include live matches — points can move until full-time.</p>{% endif %}
+      {% if tournament and tournament.is_active and not tournament.offline_mode %}<p class="ph-note"><i class="bi bi-arrow-repeat"></i> Standings update every minute and include live matches — points can move until full-time.</p>{% endif %}
     </div>
   </div>
 </section>
@@ -28,7 +28,7 @@
   {% endif %}
   <div class="table-card"
        id="lbCard"
-       data-live-url="{{ url_for('main.leaderboard_live', tournament_id=tournament.id) if (tournament and tournament.is_active) else '' }}"
+       data-live-url="{{ url_for('main.leaderboard_live', tournament_id=tournament.id) if (tournament and tournament.is_active and not tournament.offline_mode) else '' }}"
        data-any-live="{{ 'true' if any_live else 'false' }}">
     <div class="table-scroll">
       <table>

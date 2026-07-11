@@ -48,6 +48,13 @@ class Tournament(db.Model):
     hide_live_predictions = db.Column(
         db.Boolean, default=False, nullable=False, server_default=db.false()
     )
+    # Admin toggle: "Offline / manual mode" for when the live-scores API is gone.
+    # When True: the 5-min score sync is paused (no API calls), the leaderboard
+    # stops live-polling and counts completed games only, and /predictions hides
+    # provisional (in-play) scoring. Default False = normal live behaviour.
+    offline_mode = db.Column(
+        db.Boolean, default=False, nullable=False, server_default=db.false()
+    )
 
     __table_args__ = (db.UniqueConstraint("year", name="uq_tournaments_year"),)
 

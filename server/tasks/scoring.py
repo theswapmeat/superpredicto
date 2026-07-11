@@ -1,7 +1,7 @@
 from flask import current_app
 
 from app import db
-from app.models import Participant, Game, UserPrediction
+from app.models import Participant, Game, UserPrediction, Tournament
 from app.pick_scoring import classify_pick, COUNTER_ATTR
 
 
@@ -28,12 +28,19 @@ def run_prediction_scoring(tournament_id):
             p.picks_scoring_zero = 0
             p.invalid_picks = 0
 
-        # Any game with both scores set — final OR in-play (provisional).
-        scored_games = Game.query.filter(
+        # Any game with both scores set — final OR in-play (provisional). In
+        # Offline / manual mode the leaderboard is frozen to full-time results,
+        # so only COMPLETED games count (no provisional movement mid-match).
+        tournament = Tournament.query.get(tournament_id)
+        offline = bool(tournament and tournament.offline_mode)
+        games_q = Game.query.filter(
             Game.tournament_id == tournament_id,
             Game.home_team_score.isnot(None),
             Game.away_team_score.isnot(None),
-        ).all()
+        )
+        if offline:
+            games_q = games_q.filter(Game.is_completed.is_(True))
+        scored_games = games_q.all()
         game_ids = [g.id for g in scored_games]
         predictions = (
             UserPrediction.query.filter(UserPrediction.game_id.in_(game_ids)).all()

@@ -49,19 +49,38 @@
     </form>
   </div>
 
-  <!-- Predictions display setting -->
+  <!-- Live / display settings -->
   <div class="panel adm-panel">
-    <div class="adm-panel-h" style="margin-bottom:6px;">Predictions page</div>
-    <form method="post" action="{{ url_for('main.toggle_live_predictions') }}" id="hideLiveForm">
+    <div class="adm-panel-h" style="margin-bottom:14px;">Live settings</div>
+
+    <!-- Online / Offline (manual) mode -->
+    <form method="post" action="{{ url_for('main.toggle_setting') }}">
       <input type="hidden" name="tournament_id" value="{{ selected_tournament.id }}" />
+      <input type="hidden" name="setting" value="offline_mode" />
       <label class="adm-toggle">
-        <input type="checkbox" name="hide_live_predictions" id="hideLiveChk"
+        <input type="checkbox" name="offline_mode" class="adm-auto-toggle"
+               {% if selected_tournament.offline_mode %}checked{% endif %}
+               {% if ro %}disabled{% endif %} />
+        <span class="adm-switch" aria-hidden="true"></span>
+        <span class="adm-toggle-txt">
+          <b>Offline / manual mode</b>
+          <span class="adm-muted">Turn on when the live-scores API is unavailable. Pauses the score sync, freezes the leaderboard (completed games only, no live refresh) and hides provisional scoring on /predictions. Enter results by hand on Match Scores, then use "Run scoring now".</span>
+        </span>
+      </label>
+    </form>
+
+    <!-- Hide in-play games on /predictions -->
+    <form method="post" action="{{ url_for('main.toggle_setting') }}" style="margin-top:16px;">
+      <input type="hidden" name="tournament_id" value="{{ selected_tournament.id }}" />
+      <input type="hidden" name="setting" value="hide_live_predictions" />
+      <label class="adm-toggle">
+        <input type="checkbox" name="hide_live_predictions" class="adm-auto-toggle"
                {% if selected_tournament.hide_live_predictions %}checked{% endif %}
                {% if ro %}disabled{% endif %} />
         <span class="adm-switch" aria-hidden="true"></span>
         <span class="adm-toggle-txt">
-          <b>Hide games currently in play</b>
-          <span class="adm-muted">When on, a game that has kicked off won't appear here until it's finished. Completed games always show.</span>
+          <b>Hide games currently in play (predictions page)</b>
+          <span class="adm-muted">When on, a game that has kicked off won't appear on /predictions until it's finished. Completed games always show.</span>
         </span>
       </label>
     </form>
@@ -196,13 +215,14 @@
     f.submit();
   }
 
-  // Predictions "hide live games" toggle — flip = save (full-page submit).
+  // Admin setting switches — flip = save (each submits its own form).
   (function () {
-    var chk = document.getElementById("hideLiveChk");
-    if (!chk || chk.disabled) return;
-    chk.addEventListener("change", function () {
-      if (window.SP) window.SP.showLoader();
-      document.getElementById("hideLiveForm").submit();
+    document.querySelectorAll(".adm-auto-toggle").forEach(function (chk) {
+      if (chk.disabled) return;
+      chk.addEventListener("change", function () {
+        if (window.SP) window.SP.showLoader();
+        chk.closest("form").submit();
+      });
     });
   })();
 

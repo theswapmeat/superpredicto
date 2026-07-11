@@ -41,16 +41,18 @@
 </div>
 
 <main class="pwrap" id="sched-main">
-  <div id="sched-list">
+  <div id="sched-list"{% if offline|default(false) %} data-offline="1"{% endif %}>
     {% for game in games %}
     {% set completed = game.is_completed %}
-    {% set live = game.is_live %}
+    {# Offline / manual mode has no "live": statuses are frozen and games await a
+       hand-entered result, so never pulse them as live. #}
+    {% set live = game.is_live and not offline|default(false) %}
     {# Mobile-only middle label: FT / PENS / HT / vs. PENS uses the already-stored
        pen columns (no migration); extra time has no persisted phase so it falls
        through to vs (still flagged live by the time-pulse). #}
     {% if completed %}{% set mstatus, mcls = 'FT', 'is-ft' %}
     {% elif game.home_team_pens is not none %}{% set mstatus, mcls = 'PENS', 'is-pens' %}
-    {% elif game.status == 'PAUSED' %}{% set mstatus, mcls = 'HT', 'is-ht' %}
+    {% elif game.status == 'PAUSED' and not offline|default(false) %}{% set mstatus, mcls = 'HT', 'is-ht' %}
     {% else %}{% set mstatus, mcls = 'vs', '' %}{% endif %}
     <div class="game-item game{% if completed %} completed{% endif %}{% if live %} live{% endif %}"
          id="game-{{ game.id }}" data-utc="{{ game.kickoff_utc().isoformat() }}"
@@ -118,13 +120,16 @@
     function buildDays() {
       var items = Array.from(list.querySelectorAll(".game-item"));
       if (!items.length) return;
+      // Offline / manual mode: don't apply the time-based live pulse — a game
+      // past kickoff is just awaiting a hand-entered result, not "live".
+      var offline = list.dataset.offline === "1";
       var groups = new Map();
       items.forEach(function (it) {
         var d = new Date(it.dataset.utc);
         var gt = it.querySelector(".gt");
         if (gt) gt.textContent = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
         // mark live = kicked off but not completed
-        if (it.dataset.completed === "0" && d.getTime() <= now) {
+        if (!offline && it.dataset.completed === "0" && d.getTime() <= now) {
           it.classList.add("live");
           var soon = it.querySelector("[data-soon]");
           if (soon) { soon.classList.remove("soon"); soon.classList.add("live"); soon.textContent = "Live / Pending"; }
