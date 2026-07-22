@@ -52,3 +52,5 @@ schedule.json
 supabase_schema.sql
 createtables.py
 test_connection.py
+# Generated static archive (built by tools/export_static_site.py)
+static_site/
