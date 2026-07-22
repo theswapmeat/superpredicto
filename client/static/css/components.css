@@ -42,8 +42,6 @@ nav.links { display:flex; align-items:center; gap:9px; }
 nav.links a { font-family:"Saira Condensed",sans-serif; font-weight:600; font-size:14px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); padding:8px 12px; border-radius:8px; white-space:nowrap; transition:color .15s ease, background .15s ease; }
 nav.links a:hover { color:var(--text); background:rgba(255,255,255,.05); }
 nav.links a.active { color:var(--emb); box-shadow:inset 0 -2px 0 0 var(--em); }
-/* "New" badge on a nav link (e.g. Trends) — remove once the feature isn't new. */
-.nav-new { display:inline-block; font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:#06210F; background:var(--em); border-radius:5px; padding:1px 5px; margin-left:5px; vertical-align:middle; line-height:1.5; }
 .nav-right { display:flex; align-items:center; gap:14px; flex:0 0 auto; }
 .nav-user-mb { display:none; }  /* desktop uses the avatar dropdown; this is the mobile inline menu */
 .sp-btn { font-family:"Saira Condensed",sans-serif; font-weight:700; letter-spacing:.04em; text-transform:uppercase; font-size:14px; line-height:1; display:inline-flex; align-items:center; justify-content:center; gap:9px; padding:12px 20px; border-radius:9px; cursor:pointer; border:1px solid transparent; transition:transform .12s ease, background .15s ease; }
