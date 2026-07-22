@@ -1,3 +1,12 @@
+# ============================================================================
+# DECOMMISSIONED 2026-07-23 — NOT DEPLOYED.
+# After the 2026 tournament, the DigitalOcean Functions namespace and all three
+# scheduled triggers were deleted (cost-down to free). Nothing in this folder is
+# live. It's kept as the ready-made blueprint to re-enable these crons for a
+# future tournament — see README.md to redeploy. Do NOT `doctl serverless deploy`
+# this unless you intend to recreate the scheduled jobs.
+# ============================================================================
+#
 # DigitalOcean Functions project: scheduled jobs that poke the app's token-guarded
 # /internal/* endpoints. THREE scheduled triggers (DO caps triggers per namespace):
 #   sync/poll      every 1m  -> /internal/sync-scores                      (live scores + rescoring)

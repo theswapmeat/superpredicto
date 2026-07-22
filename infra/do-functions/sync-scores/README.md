@@ -1,5 +1,10 @@
 # Live-score sync — DigitalOcean Functions (scheduled)
 
+> **⚠️ DECOMMISSIONED 2026-07-23 — not currently deployed.** After the 2026
+> tournament the Functions namespace and all three triggers were deleted to drop
+> to $0. This folder is kept as the blueprint: follow the setup + deploy steps
+> below to re-enable the crons for a future tournament.
+
 A serverless cron, native to DigitalOcean, that replaces the old GitHub Actions
 workflow. Every 5 minutes a scheduled trigger invokes the `sync/poll` function,
 which POSTs to the app's `/internal/sync-scores` endpoint (X-Sync-Token header).
