@@ -16,6 +16,7 @@ Usage (from repo root):
     APP_ENV=prod python tools/export_static_site.py --domain superpredicto.com
 """
 import os
+import random
 import shutil
 import sys
 
@@ -31,7 +32,7 @@ sys.path.insert(0, SERVER_DIR)
 from jinja2 import ChoiceLoader, DictLoader, Environment, FileSystemLoader, select_autoescape
 
 from app import create_app  # noqa: E402  (path set above)
-from app.models import Participant, Tournament, User  # noqa: E402
+from app.models import Game, Participant, Tournament, User  # noqa: E402
 from app.routes import _user_initials, assign_leaderboard_ranks  # noqa: E402
 
 ADMIN_EMAIL = "admin@superpredicto.com"
@@ -132,14 +133,49 @@ def main():
             with open(os.path.join(OUT_DIR, name), "w", encoding="utf-8") as f:
                 f.write(html)
 
+        # Example matchup for the archived homepage's right-hand card — no upcoming
+        # fixtures exist, so show a random REAL past fixture as an illustration.
+        real_games = Game.query.filter(
+            Game.tournament_id == latest.id,
+            Game.home_team != "TBD", Game.away_team != "TBD",
+        ).all()
+        example_game = None
+        if real_games:
+            g = random.choice(real_games)
+            example_game = {
+                "home_team": g.home_team, "away_team": g.away_team,
+                "home_team_code": g.home_team_code, "away_team_code": g.away_team_code,
+                "home_team_crest": g.home_team_crest, "away_team_crest": g.away_team_crest,
+                "stage_label": g.stage_label,
+                "example_home": random.randint(0, 3),
+                "example_away": random.randint(0, 3),
+                "kick_label": g.date_of_game.strftime("%b %d")
+                + " · " + g.time_of_game.strftime("%I:%M %p"),
+            }
+        match_count = Game.query.filter_by(tournament_id=latest.id).count()
+
         # --- pages ---
+        # Newest tournament = the root homepage (hero overview + example card +
+        # its final leaderboard). Older tournaments = a plain standings page.
+        idx = env.get_template("index.html")
         lb = env.get_template("leaderboard.html")
         for t in tournaments:
             entries = standings_for(t)
-            html = lb.render(
-                tournament=t, leaderboard=entries, any_live=False,
-                games_counted=0, active_page="leaderboard",
-            )
+            if t.id == latest.id:
+                html = idx.render(
+                    tournament=t, leaderboard=entries,
+                    show_hero=True, archive=True, logged_in=True,
+                    example_game=example_game,
+                    live_game=None, open_game=None, user_pick=None,
+                    is_eligible=False, any_live=False,
+                    match_count=match_count, team_count=48, perfect_pts=4,
+                    games_counted=0, active_page="leaderboard",
+                )
+            else:
+                html = lb.render(
+                    tournament=t, leaderboard=entries, any_live=False,
+                    games_counted=0, active_page="leaderboard",
+                )
             write(id_to_file[t.id], html)
             print(f"  {id_to_file[t.id]:22} {t.name} ({t.year}) — {len(entries)} players")
 
