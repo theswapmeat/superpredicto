@@ -14,6 +14,7 @@
       <h1 class="hero-title"><span class="l1">Call every match.</span><em>Run the table.</em></h1>
       {% if archive %}
       <p class="hero-sub">The {{ tournament.name }} is done and dusted — {{ match_count }} matches, every scoreline predicted, and one champion of predictions crowned. The final standings are below.</p>
+      <p class="hero-sub">And we're not stopping here. <b>UEFA Euro 2028</b> is on the horizon — a brand-new tournament, a clean leaderboard, and everything to play for. Start sharpening your instincts, rally your rivals, and get ready to <b>win big</b>.</p>
       {% else %}
       <p class="hero-sub">Lock in your scoreline before kickoff, bank points for every correct call, and climb a leaderboard that updates the moment the final whistle blows. {{ match_count }} matches. One champion of predictions.</p>
       {% endif %}
@@ -68,7 +69,7 @@
       </div>
       <div class="pc-foot">
         <span class="pc-kick">Example fixture · <b>{{ example_game.kick_label }}</b></span>
-        <span class="lockbtn locked" aria-disabled="true">Example</span>
+        <button type="button" class="lockbtn">Save pick</button>
       </div>
       {% elif live_game %}
       <div class="pc-head">
