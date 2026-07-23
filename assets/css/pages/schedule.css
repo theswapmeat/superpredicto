@@ -1,0 +1,67 @@
+.pwrap { max-width:1040px; margin:0 auto; padding:0 32px; }
+
+/* PAGE HEADER (shared with /submit-picks & /predictions) */
+.page-head { position:relative; padding:40px 0 18px; }
+.ph-note { font-size:14px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+
+/* count card (right) — mirrors progress/info card */
+.count-card { display:flex; align-items:center; gap:16px; background:linear-gradient(180deg,var(--panel),var(--ink-2)); border:1px solid var(--line-strong); border-radius:16px; padding:14px 22px; box-shadow:0 24px 50px -34px rgba(0,0,0,.8); }
+.count-card .cc-num { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:30px; line-height:1; color:var(--emb); }
+.count-card .cc-lbl { font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-2); }
+
+/* TOOLBAR — centered container, space-between contents */
+.toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:8px auto 22px; flex-wrap:wrap; }
+.game.completed { border-left-color:var(--em); background:linear-gradient(180deg, rgba(0,209,122,.06), rgba(0,209,122,.02)); }
+.game.live { border-left-color:var(--gold); }
+.game:not(.completed) .g-no { color:var(--muted-2); }
+
+/* RESULT area (right) */
+.g-result { display:flex; align-items:center; gap:10px; flex:0 0 auto; min-width:130px; justify-content:flex-end; flex-wrap:wrap; }
+.sbox { width:48px; height:50px; border-radius:11px; background:#070B18; border:1.5px solid var(--line-strong); display:grid; place-items:center; font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:26px; color:var(--text); }
+.game.completed .sbox { border-color:rgba(0,209,122,.5); }
+.tag { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:11px; letter-spacing:.1em; text-transform:uppercase; padding:5px 10px; border-radius:7px; white-space:nowrap; }
+.tag.ft { background:var(--em-dim); color:var(--emb); border:1px solid rgba(0,209,122,.4); }
+.tag.pens { background:rgba(255,255,255,.04); color:var(--muted); border:1px solid var(--line); text-transform:none; letter-spacing:.02em; font-weight:700; }
+.tag.live { background:rgba(244,199,82,.14); color:var(--gold); border:1px solid rgba(244,199,82,.4); }
+.tag.soon { background:rgba(255,255,255,.05); color:var(--muted); border:1px solid var(--line); }
+.tag.livenow { display:inline-flex; align-items:center; gap:6px; background:rgba(255,100,114,.14); color:#ff6472; border:1px solid rgba(255,100,114,.45); }
+.tag.livenow .dot { width:7px; height:7px; border-radius:50%; background:#ff6472; box-shadow:0 0 0 0 rgba(255,100,114,.6); animation:livepulse 1.5s ease-out infinite; }
+.game.live .sbox { border-color:rgba(255,100,114,.5); }
+
+/* Mobile-only match-row bits: the score shown inside the team badge, the middle
+   status label (FT/HT/PENS/vs), and a live pulse beside the time. Hidden by
+   default; the ≤720px block reveals them, so desktop/tablet are unchanged. */
+.bdg-score, .vsv-mob, .live-pip { display:none; }
+.vsv-mob { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:12px; letter-spacing:.08em; text-transform:uppercase; align-items:center; padding:4px 9px; border-radius:7px; color:var(--muted-2); }
+.vsv-mob.is-ft { background:var(--em-dim); color:var(--emb); border:1px solid rgba(0,209,122,.4); }
+.vsv-mob.is-ht { background:rgba(255,100,114,.14); color:#ff6472; border:1px solid rgba(255,100,114,.45); }
+.vsv-mob.is-pens { background:rgba(244,199,82,.14); color:var(--gold); border:1px solid rgba(244,199,82,.4); }
+.live-pip { gap:5px; align-items:center; font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:#ff6472; }
+.live-pip .dot { width:7px; height:7px; border-radius:50%; background:#ff6472; box-shadow:0 0 0 0 rgba(255,100,114,.6); animation:livepulse 1.5s ease-out infinite; }
+
+#sched-main { padding-bottom:60px; }
+
+@media (max-width:720px) {
+  .pwrap { padding-left:18px; padding-right:18px; }
+  .ph-inner { align-items:flex-start; }
+  .game { grid-template-columns:1fr; gap:14px; }
+  .g-meta { flex-direction:row; align-items:center; gap:12px; }
+  .g-match { justify-content:center; }
+  .tname { font-size:14.5px; max-width:90px; }
+  /* Score now lives in the team badge; drop the separate (off-centre) score row. */
+  .g-result { display:none; }
+  /* Swap badge code → score for games that have one; keep code for upcoming. */
+  .game.completed .bdg-code, .game.live .bdg-code { display:none; }
+  .game.completed .bdg-score, .game.live .bdg-score { display:inline; }
+  /* Middle: VS → FT/HT/PENS/vs. Live pulse moves up beside the time. */
+  .vsv { display:none; }
+  .vsv-mob { display:inline-flex; }
+  .game.live .live-pip { display:inline-flex; }
+  .toolbar { justify-content:center; }
+}
+@media (max-width:400px) {
+  .tbadge { width:34px; height:34px; font-size:12px; border-radius:9px; }
+  .tname { font-size:13px; max-width:66px; }
+  .g-match { gap:10px; }
+  .sbox { width:44px; height:46px; font-size:24px; }
+}

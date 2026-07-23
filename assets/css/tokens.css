@@ -1,0 +1,25 @@
+/* SuperPredicto design tokens — the navy/emerald palette + shared scalars.
+   Loaded first (after Bootstrap) so everything downstream can use the variables,
+   and so the [data-bs-theme] overrides win over Bootstrap's defaults. */
+:root {
+  --ink:#0B1020; --ink-2:#0E1530; --panel:#121A37; --panel-2:#162043;
+  --line:rgba(255,255,255,.09); --line-strong:rgba(255,255,255,.16);
+  --em:#00D17A; --emb:#1DEF93; --em-dim:rgba(0,209,122,.14);
+  --text:#EAEEF8; --muted:#8E97B2; --muted-2:#646E8C;
+  --gold:#F4C752; --silver:#C9D2E4; --bronze:#D8965A;
+  --nav-h:74px;
+}
+/* Theme Bootstrap's dark mode to the SuperPredicto navy/green palette */
+[data-bs-theme="dark"] {
+  --bs-body-bg:#0B1020;
+  --bs-body-color:#EAEEF8;
+  --bs-emphasis-color:#ffffff;
+  --bs-secondary-bg:#121A37;
+  --bs-tertiary-bg:#0E1530;
+  --bs-border-color:rgba(255,255,255,.12);
+  --bs-primary:#00D17A;
+  --bs-primary-rgb:0,209,122;
+  --bs-link-color:#1DEF93;
+  --bs-link-color-rgb:29,239,147;
+  --bs-link-hover-color:#1DEF93;
+}

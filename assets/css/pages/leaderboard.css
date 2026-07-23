@@ -1,0 +1,54 @@
+/* Leaderboard page. Shared bits (tokens, livepulse keyframe, reduced-motion) live
+   in tokens.css / components.css. The page-head + table styles here are still
+   page-local; they get promoted to components.css in the shared-component pass. */
+.pwrap { max-width:1040px; margin:0 auto; padding:0 32px; }
+
+/* PAGE HEADER (shared pattern) */
+.page-head { position:relative; padding:40px 0 20px; }
+.ph-note { font-size:14px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+.livepill { display:inline-flex; align-items:center; gap:6px; margin-left:4px; padding:3px 10px; border-radius:999px; background:rgba(255,100,114,.12); color:#ff6472; font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+.youchip { font-family:"Saira Condensed",sans-serif; font-weight:700; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--emb); background:var(--em-dim); border:1px solid rgba(0,209,122,.3); padding:2px 7px; border-radius:5px; }
+.emptyrow td { padding:40px 18px; color:var(--muted); text-align:center; }
+
+/* The clickable-row + mobile tap-to-expand breakdown styles are shared and live
+   in components.css (used by this page and the index podium). */
+
+/* Live update: a row whose stats just changed gets a brief emerald flash so the
+   eye catches the movement during the 30s poll. Honour reduced-motion. */
+@keyframes lbFlash {
+  0%   { background-color:var(--em-dim); }
+  100% { background-color:transparent; }
+}
+.lb-flash td { animation:lbFlash 1.1s ease-out; }
+@media (prefers-reduced-motion:reduce) {
+  .lb-flash td { animation:none; }
+}
+
+@media (max-width:768px) {
+  .pwrap { padding-left:18px; padding-right:18px; }
+  .ph-inner { align-items:flex-start; }
+
+  /* Pin the table to the viewport so it can never overflow — that overflow is
+     what pushed the Points column off the right edge on narrow phones. Fixed
+     layout with defined Rank/Points widths; Player takes the rest and its name
+     truncates, so the three columns always fit at every width. */
+  .table-card table { table-layout:fixed; width:100%; }
+  .table-card thead .colrow th, .table-card tbody td { padding-left:10px; padding-right:10px; }
+  .table-card .colrow th:first-child, .table-card td.rank { width:46px; }
+  .table-card .colrow th:nth-child(3), .table-card td.points { width:60px; }
+  /* Player name truncates with … (the YOU chip + chevron stay put). */
+  .playercell { min-width:0; gap:10px; }
+  .pname { min-width:0; }
+  .pname-txt { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .youchip, .pname .chev { flex:0 0 auto; }
+}
+@media (max-width:380px) {
+  /* Smallest phones (e.g. Galaxy S8+, 360px and below): shrink the space hogs
+     so everything stays comfortable rather than cramped — still never clipped. */
+  .table-card thead .colrow th, .table-card tbody td { padding-left:8px; padding-right:8px; }
+  .table-card .colrow th:first-child, .table-card td.rank { width:40px; }
+  .table-card .colrow th:nth-child(3), .table-card td.points { width:54px; }
+  .rankwrap { width:34px; height:34px; font-size:15px; }
+  .pavatar { width:34px; height:34px; font-size:14px; }
+  td.points .pts { font-size:22px; }
+}

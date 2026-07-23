@@ -1,0 +1,230 @@
+<!-- templates/guidelines.html -->
+
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Scoring Guidelines — SuperPredicto</title>
+
+    <link rel="icon" type="image/svg+xml" href="assets/favicon/fav-a-pulse.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon/favicon-64x64.png" />
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800;900&family=Saira:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="assets/css/tokens.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+
+    
+<link rel="stylesheet" href="assets/css/pages/guidelines.css?v=4" />
+
+    
+
+    <style>
+      /* Static archive: no JS, no backend — neutralise interactive affordances. */
+      .nav-toggle { display: none !important; }
+      .nav-menu { display: flex !important; }
+      .lb-row.clickable { cursor: default; }
+      .lb-row .chev, .lbd-link { display: none !important; }
+    </style>
+  </head>
+
+  <body>
+    <header class="nav">
+      <div class="nav-inner">
+        <a class="brand" href="index.html"><img src="assets/brand/superpredicto-ondark.svg" alt="SuperPredicto" /></a>
+        <div class="nav-menu">
+          <nav class="links">
+            <a href="tournaments.html" class="">Tournaments</a>
+            <a href="guidelines.html" class="active">Scoring Guidelines</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="page">
+      
+<section class="page-head">
+  <div class="pwrap ph-inner">
+    <div class="ph-left">
+      <span class="kicker">
+        <svg class="hb" viewBox="0 0 240 60" fill="none"><path pathLength="100" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M0,30 L96,30 L106,30 L114,8 L122,52 L130,30 L240,30" /></svg>
+        How Scoring Works
+      </span>
+      <h1 class="page-title">Scoring <span>Guidelines</span></h1>
+      <p class="ph-note"><i class="bi bi-trophy"></i> Points are awarded per match based on how close your predicted scoreline is to the final result.</p>
+    </div>
+  </div>
+</section>
+
+<main class="pwrap" id="guide-main">
+  <div class="guide-grid">
+
+    <!-- LEFT: rules of play -->
+    <section class="guide-col">
+      <h2 class="col-head">Rules of play</h2>
+
+      <h3 class="sec-head">Deadlines &amp; pick lock</h3>
+      <div class="rules">
+        <div class="rule">
+          <span class="ico"><i class="bi bi-pencil-square"></i></span>
+          <p>Enter or change a pick any time <b>right up until that match's kickoff</b>. You can amend a saved pick as many times as you like before then.</p>
+        </div>
+        <div class="rule">
+          <span class="ico"><i class="bi bi-lock-fill"></i></span>
+          <p>Each match <b>locks individually at its own kickoff</b> — there's no single deadline for the round. Once a match starts, its pick is frozen and can't be edited.</p>
+        </div>
+        <div class="rule">
+          <span class="ico"><i class="bi bi-stopwatch"></i></span>
+          <p>A warning appears in the <b>final minute</b> before kickoff, then the inputs lock automatically the moment the match begins. <span class="muted">A pick you save at 6:57pm for a 7:00pm kickoff counts; one you try to change at 7:01pm does not.</span></p>
+        </div>
+        <div class="rule">
+          <span class="ico"><i class="bi bi-globe"></i></span>
+          <p>All kickoff times are shown in <b>your local timezone</b> — the deadline is whatever the clock says where you are.</p>
+        </div>
+        <div class="rule r0">
+          <span class="ico"><i class="bi bi-x-octagon-fill"></i></span>
+          <p>No pick saved by kickoff counts as a <span class="warn">missed pick</span> <span class="muted">(an invalid pick, 0 points).</span> Once entered, a pick can be amended but <b>never deleted</b>.</p>
+        </div>
+      </div>
+
+      <h3 class="sec-head">Live scoring</h3>
+      <div class="rules">
+        <div class="rule">
+          <span class="ico"><i class="bi bi-broadcast"></i></span>
+          <p>During matches the leaderboard refreshes <b>about every minute</b> as live scores come in.</p>
+        </div>
+        <div class="rule">
+          <span class="ico"><i class="bi bi-arrow-repeat"></i></span>
+          <p>While a match is in play, your points for it are <b>provisional</b> and can change — a late goal can flip the result. Points become <b>final once the match ends</b>.</p>
+        </div>
+      </div>
+
+      <h3 class="sec-head">Knockout stages</h3>
+      <div class="rules">
+        <div class="rule">
+          <span class="ico"><i class="bi bi-diagram-3"></i></span>
+          <p>In the knockout stages, if a match is <b>level after 90 minutes</b> it goes to extra time — your pick is scored on the <b>score at the end of extra time</b>, not the 90-minute score.</p>
+        </div>
+        <div class="rule">
+          <span class="ico"><i class="bi bi-slash-circle"></i></span>
+          <p><b>Penalty shootouts don't count</b> toward the final score. A match decided on penalties is scored as the <b>tied result</b> it finished on after extra time.</p>
+        </div>
+      </div>
+
+      <h3 class="sec-head">Leaderboard &amp; ties</h3>
+      <div class="rules">
+        <div class="rule">
+          <span class="ico"><i class="bi bi-list-ol"></i></span>
+          <p>Players are ranked by <b>total points</b>. Ties break in order by: most <b>perfect (4-pt) picks</b>, then most <b>2-pt picks</b>, then most <b>1-pt picks</b>, then <b>fewest invalid picks</b>.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: scoring -->
+    <section class="guide-col">
+      <h2 class="col-head">Scoring</h2>
+
+      <h3 class="sec-head">Points per prediction</h3>
+      <div class="rules">
+        <div class="rule r4">
+          <span class="pts p4">4 pts</span>
+          <p>Exact scoreline prediction <span class="muted">(e.g., you predict 2-1 and the actual score is 2-1).</span></p>
+        </div>
+        <div class="rule r2">
+          <span class="pts p2">2 pts</span>
+          <p>Correct result <b>+</b> correct score for the winning team <span class="muted">(e.g., you predict 3-1, actual is 2-1).</span></p>
+        </div>
+        <div class="rule r1">
+          <span class="pts p1">1 pt</span>
+          <p>Correct result, but neither team's score is exact <span class="muted">(e.g., you predict 5-0, actual is 3-2).</span></p>
+        </div>
+        <div class="rule r0">
+          <span class="pts p0">0 pts</span>
+          <p>Incorrect result or invalid pick.<br><span class="warn">Note:</span> <span class="muted">Predictions of</span> <b>1-0 or 0-1</b> <span class="muted">are considered invalid unless the actual score is also exactly 1-0 or 0-1 — in which case 4 points are awarded.</span></p>
+        </div>
+      </div>
+
+      <h3 class="sec-head">Examples</h3>
+      <div class="ex-wrap">
+        <table class="ex-table">
+          <thead>
+            <tr>
+              <th>Actual Score</th>
+              <th>Your Prediction</th>
+              <th>Points</th>
+              <th class="reason">Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="ex-score">2 – 1</span></td>
+              <td><span class="ex-score">2 – 1</span></td>
+              <td><span class="pts p4 sm">4</span></td>
+              <td><span class="reason-txt"><b>Perfect pick</b></span></td>
+            </tr>
+            <tr>
+              <td><span class="ex-score">2 – 1</span></td>
+              <td><span class="ex-score">3 – 1</span></td>
+              <td><span class="pts p2 sm">2</span></td>
+              <td><span class="reason-txt">Correct result, and one score is exact (the away team's here)</span></td>
+            </tr>
+            <tr>
+              <td><span class="ex-score">3 – 2</span></td>
+              <td><span class="ex-score">2 – 3</span></td>
+              <td><span class="pts p0 sm">0</span></td>
+              <td><span class="reason-txt">Incorrect result, and neither score is exact</span></td>
+            </tr>
+            <tr>
+              <td><span class="ex-score">0 – 1</span></td>
+              <td><span class="ex-score">1 – 0</span></td>
+              <td><span class="pts p0 sm">0</span></td>
+              <td><span class="reason-txt"><span class="invalid">Invalid pick</span> — a 1-0 prediction counts as invalid unless it's an exact match</span></td>
+            </tr>
+            <tr>
+              <td><span class="ex-score">3 – 1</span></td>
+              <td><span class="ex-score">0 – 1</span></td>
+              <td><span class="pts p0 sm">0</span></td>
+              <td><span class="reason-txt"><span class="invalid">Invalid pick</span> — a 0-1 prediction counts as invalid unless it's an exact match</span></td>
+            </tr>
+            <tr>
+              <td><span class="ex-score">1 – 0</span></td>
+              <td><span class="ex-score">1 – 0</span></td>
+              <td><span class="pts p4 sm">4</span></td>
+              <td><span class="reason-txt"><b>Valid 1-0 pick</b> (exact match)</span></td>
+            </tr>
+            <tr>
+              <td><span class="ex-score">1 – 1</span></td>
+              <td><span class="ex-score">2 – 2</span></td>
+              <td><span class="pts p1 sm">1</span></td>
+              <td><span class="reason-txt">Correct result (draw), but no exact scores</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+    </main>
+
+    <footer class="site">
+      <div class="foot-inner">
+        <img src="assets/brand/superpredicto-ondark.svg" alt="SuperPredicto" />
+        <div class="foot-links">
+          <a href="tournaments.html">Tournaments</a>
+          <a href="guidelines.html">Scoring Guidelines</a>
+        </div>
+        <span class="foot-copy">© 2026 SuperPredicto</span>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

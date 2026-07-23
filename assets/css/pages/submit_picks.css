@@ -1,0 +1,122 @@
+footer.site { display:none; }
+.pwrap { max-width:1040px; margin:0 auto; padding:0 32px; }
+
+/* PAGE HEADER */
+.page-head { position:relative; padding:40px 0 22px; }
+.ph-note { font-size:14px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+.progress-card { display:flex; align-items:center; gap:18px; background:linear-gradient(180deg,var(--panel),var(--ink-2)); border:1px solid var(--line-strong); border-radius:16px; padding:14px 22px; box-shadow:0 24px 50px -34px rgba(0,0,0,.8); }
+.ring { position:relative; width:60px; height:60px; flex:0 0 auto; }
+.ring svg { transform:rotate(-90deg); }
+.ring .bg { stroke:rgba(255,255,255,.1); }
+.ring .fg { stroke:var(--em); stroke-linecap:round; transition:stroke-dashoffset .5s cubic-bezier(.2,.7,.2,1); }
+.ring .pct { position:absolute; inset:0; display:grid; place-items:center; font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:15px; color:var(--text); }
+.progress-meta { display:flex; flex-direction:column; gap:2px; }
+.progress-meta .big { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:22px; line-height:1; }
+.progress-meta .big b { color:var(--emb); }
+.progress-meta .small { font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-2); }
+
+/* TOOLBAR — centered container, space-between contents */
+.toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:8px auto 22px; flex-wrap:wrap; }
+.game.predicted { border-left-color:var(--em); background:linear-gradient(180deg, rgba(0,209,122,.07), rgba(0,209,122,.02)); box-shadow:inset 0 0 0 1px rgba(0,209,122,.12); }
+.game.locked { opacity:.72; border-left-color:rgba(255,255,255,.12); }
+.game.locked .g-no { color:var(--muted-2); }
+.stepper { display:flex; align-items:center; gap:7px; }
+.sbox { width:52px; height:54px; border-radius:11px; background:#070B18; border:1.5px solid var(--line-strong); display:grid; place-items:center; font-family:"Saira Condensed",sans-serif; font-weight:900; font-size:30px; color:var(--text); cursor:pointer; user-select:none; position:relative; transition:border-color .15s ease, color .15s ease; }
+.sbox.empty { color:var(--muted-2); }
+.sbox:hover { border-color:var(--em); }
+.sbox:focus-visible { outline:2px solid var(--emb); outline-offset:2px; }
+.game.predicted .sbox { border-color:rgba(0,209,122,.5); }
+.arrows { display:flex; flex-direction:column; gap:5px; }
+.arrows button { width:26px; height:24px; border-radius:7px; border:1px solid var(--line-strong); background:rgba(255,255,255,.03); color:var(--muted); cursor:pointer; display:grid; place-items:center; font-size:10px; line-height:1; transition:all .12s ease; }
+.arrows button:hover { border-color:var(--em); color:var(--emb); background:var(--em-dim); }
+.g-status { width:24px; flex:0 0 auto; display:grid; place-items:center; }
+.check { width:22px; height:22px; border-radius:50%; background:var(--em); display:none; place-items:center; color:#06210F; font-size:13px; }
+.game.predicted .check { display:grid; }
+
+/* LOCKED game (kicked off) — disabled fields + lock icon */
+.locked-score { display:flex; align-items:center; gap:10px; }
+.sbox.locked-box { cursor:default; width:48px; height:50px; font-size:26px; border-color:var(--line); background:#070B18; color:var(--muted); }
+.sbox.locked-box.empty { color:var(--muted-2); }
+.sbox.locked-box:hover { border-color:var(--line); }
+.lock-ico { color:var(--muted-2); font-size:17px; margin-left:4px; }
+.meta-lock { display:none; }  /* shown only on mobile, beside the time, for locked games */
+
+/* CLOSING SOON — final 60s before a game's kickoff locks it */
+.game.closing-soon { border-left-color:var(--gold); background:linear-gradient(180deg, rgba(244,199,82,.10), rgba(244,199,82,.02)); }
+.game.closing-soon .sbox { border-color:rgba(244,199,82,.5); }
+.lock-warn { display:inline-flex; align-items:center; gap:6px; margin-top:2px; font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--gold); white-space:nowrap; animation:lockPulse 1s ease-in-out infinite; }
+.lock-warn i { font-size:12px; }
+@keyframes lockPulse { 50% { opacity:.55; } }
+@media (prefers-reduced-motion:reduce) { .lock-warn { animation:none; } }
+
+/* focus highlight (from landing Lock pick) */
+.focus-flash { animation:focusFlash 2.4s ease; }
+@keyframes focusFlash { 0%,100% { box-shadow:0 0 0 0 rgba(0,209,122,0); } 25% { box-shadow:0 0 0 3px rgba(0,209,122,.65); } }
+
+#picks-main { padding-bottom:120px; }
+.savebtn:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+
+@media (max-width:720px) {
+  .pwrap, .savebar-inner { padding-left:18px; padding-right:18px; }
+  .ph-inner { align-items:flex-start; }
+  .savebar-inner { padding-top:12px; padding-bottom:12px; gap:14px; }
+  .sb-remaining { display:none; }
+  .toolbar { justify-content:center; }
+
+  /* Fixed-column grid so the score boxes sit in the SAME place on every card —
+     editable, locked or future. The 5 centre columns are fixed (spinner · box ·
+     dash · box · spinner) and the two name columns flex + truncate, so neither
+     name length nor spinner presence ever shifts the boxes. display:contents
+     lifts the names, steppers and boxes into this one grid; the DOM is unchanged
+     so the stepper JS + live kickoff-lock keep working with no JS changes. */
+  .game { display:grid; grid-template-columns:minmax(0,1fr) 30px 52px 14px 52px 30px minmax(0,1fr); column-gap:5px; row-gap:12px; align-items:center; }
+  .g-meta { grid-column:1 / -1; grid-row:1; flex-direction:row; align-items:center; gap:12px; }
+  .g-match, .g-score, .stepper, .locked-score { display:contents; }
+  .tbadge, .vsv, .g-status { display:none; }   /* code badge, "VS", predicted-check */
+  /* Pin every play item to row 2 explicitly. Without this, grid auto-placement
+     (names come before steppers in the DOM) bumps the boxes onto a 3rd row. */
+  .side, .stepper .arrows, .stepper .sbox, .g-score > .dash,
+  .locked-score .sbox, .locked-score .dash { grid-row:2; }
+
+  /* Names: flexible columns, single line, truncate with … (never push the boxes). */
+  .side { min-width:0; overflow:hidden; }
+  .side.home { grid-column:1; justify-content:flex-end; }
+  .side.away { grid-column:7; justify-content:flex-start; }
+  .tname { font-size:14.5px; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* Editable: spinners flank the fixed box columns, boxes locked to cols 3 & 5. */
+  .stepper.home .arrows { grid-column:2; }
+  .stepper.home .sbox   { grid-column:3; }
+  .g-score > .dash, .locked-score .dash { grid-column:4; }
+  .stepper.away .sbox   { grid-column:5; }
+  .stepper.away .arrows { grid-column:6; }
+  .arrows, .sbox { justify-self:center; }
+
+  /* Locked: same box columns (spinner cols 2 & 6 just left empty), boxes
+     normalised to the editable size, lock moved up beside the time. */
+  .locked-score .sbox:first-of-type { grid-column:3; }
+  .locked-score .sbox:last-of-type  { grid-column:5; }
+  .sbox.locked-box { width:52px; height:54px; font-size:30px; }
+  .locked-score .lock-ico { display:none; }
+  .game.locked .meta-lock { display:inline-flex; align-items:center; color:var(--muted-2); font-size:14px; }
+}
+@media (max-width:400px) {
+  /* Smallest phones: shrink the fixed centre columns + boxes to keep one line. */
+  .game { grid-template-columns:minmax(0,1fr) 26px 46px 12px 46px 26px minmax(0,1fr); column-gap:4px; }
+  .sbox, .sbox.locked-box { width:46px; height:48px; font-size:26px; }
+  .arrows button { width:24px; height:22px; }
+  .tname { font-size:13px; }
+}
+
+/* UNSAVED-PICKS MODAL — match the app's dark theme + fonts */
+#unsavedModal .modal-content { background:linear-gradient(180deg,var(--panel),var(--ink-2)); border:1px solid var(--line-strong); border-radius:16px; box-shadow:0 40px 90px -40px rgba(0,0,0,.85); color:var(--text); }
+#unsavedModal .modal-header { border-bottom:1px solid var(--line); padding:18px 22px; }
+#unsavedModal .modal-title { font-family:"Saira Condensed",sans-serif; font-weight:800; font-size:19px; letter-spacing:.02em; text-transform:uppercase; color:var(--text); display:flex; align-items:center; gap:10px; }
+#unsavedModal .modal-title i { color:var(--gold); }
+#unsavedModal .modal-body { padding:18px 22px 6px; font-size:14.5px; line-height:1.55; color:var(--muted); }
+#unsavedModal .modal-footer { border-top:1px solid var(--line); padding:16px 22px; gap:10px; }
+#unsavedModal .btn-close { filter:invert(1) grayscale(1) brightness(1.6); opacity:.6; }
+#unsavedModal .btn-close:hover { opacity:1; }
+#unsavedModal .sp-btn { font-size:13.5px; padding:11px 18px; }
+.unsaved-leave-btn { background:transparent; color:#FF6B7D; border:1px solid rgba(255,107,125,.45); }
+.unsaved-leave-btn:hover { background:rgba(255,107,125,.14); color:#FF8A95; border-color:rgba(255,107,125,.7); transform:translateY(-1px); }
